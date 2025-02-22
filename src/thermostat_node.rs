@@ -1,7 +1,7 @@
 use homie5::{
     device_description::{
-        FloatRange, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
-        IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        BooleanFormat, FloatRange, HomieDeviceDescription, HomieNodeDescription,
+        HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
     PropertyRef, HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_MINUTES, HOMIE_UNIT_PERCENT,
@@ -190,10 +190,10 @@ impl ThermostatNodeBuilder {
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                     .name("Window open detected")
-                    .format(HomiePropertyFormat::Boolean {
+                    .format(HomiePropertyFormat::Boolean(BooleanFormat {
                         false_val: "closed".to_string(),
                         true_val: "open".to_string(),
-                    })
+                    }))
                     .settable(false)
                     .retained(true)
                     .build()

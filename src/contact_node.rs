@@ -1,6 +1,6 @@
 use homie5::{
     device_description::{
-        HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
+        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
     Homie5DeviceProtocol, HomieID, NodeRef,
@@ -41,10 +41,10 @@ impl ContactNodeBuilder {
             CONTACT_NODE_STATE_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Open/Close state")
-                .format(HomiePropertyFormat::Boolean {
+                .format(HomiePropertyFormat::Boolean(BooleanFormat {
                     false_val: "closed".to_owned(),
                     true_val: "open".to_owned(),
-                })
+                }))
                 .settable(false)
                 .retained(true)
                 .build(),

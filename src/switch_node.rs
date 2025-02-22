@@ -2,8 +2,8 @@ use core::fmt;
 
 use homie5::{
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        BooleanFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
+        NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
     PropertyRef,
@@ -85,10 +85,10 @@ impl SwitchNodeBuilder {
             SWITCH_NODE_STATE_PROP_ID.try_into().unwrap(),
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("On/Off state")
-                .format(HomiePropertyFormat::Boolean {
+                .format(HomiePropertyFormat::Boolean(BooleanFormat {
                     false_val: "off".to_owned(),
                     true_val: "on".to_owned(),
-                })
+                }))
                 .settable(config.settable)
                 .retained(true)
                 .build(),
