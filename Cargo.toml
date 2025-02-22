@@ -1,6 +1,6 @@
 [package]
 name = "hc-homie5-smarthome"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 publish = true
 description = "Homie Homecontrol base library offering sane defaults for smarthome device nodes like switches, sensors,..."
