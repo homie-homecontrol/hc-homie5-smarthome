@@ -1,6 +1,6 @@
 use homie5::{
     device_description::{
-        HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
+        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
     Homie5DeviceProtocol, HomieID, NodeRef,
@@ -41,10 +41,10 @@ impl TiltNodeBuilder {
             TILT_NODE_STATE_PROP_ID.try_into().unwrap(),
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Tilted state")
-                .format(HomiePropertyFormat::Boolean {
+                .format(HomiePropertyFormat::Boolean(BooleanFormat {
                     false_val: "not tilted".to_owned(),
                     true_val: "tilted".to_owned(),
-                })
+                }))
                 .settable(false)
                 .retained(true)
                 .build(),

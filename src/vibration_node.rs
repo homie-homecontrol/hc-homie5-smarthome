@@ -1,6 +1,6 @@
 use homie5::{
     device_description::{
-        HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
+        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
     Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_LUX,
@@ -57,10 +57,10 @@ impl VibrationNodeBuilder {
             VIBRATION_NODE_VIBRATION_PROP_ID.try_into().unwrap(),
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Vibration detected")
-                .format(HomiePropertyFormat::Boolean {
+                .format(HomiePropertyFormat::Boolean(BooleanFormat {
                     false_val: "no-vibration".to_owned(),
                     true_val: "vibration".to_owned(),
-                })
+                }))
                 .retained(true)
                 .settable(false)
                 .build(),
