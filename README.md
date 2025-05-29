@@ -1,7 +1,5 @@
 # Homecontrol Homie5 Smarthome Nodes
 
-# HC Homie5 SmartHome
-
 A Rust implementation of Homie 5.0 convention for smart home devices, providing various node types for home automation.
 
 ## Features
