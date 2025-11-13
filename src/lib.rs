@@ -7,6 +7,7 @@ pub mod maintenance_node;
 pub mod motion_node;
 pub mod numeric_sensor_node;
 pub mod orientation_node;
+pub mod powermeter_node;
 pub mod shutter_node;
 pub mod switch_node;
 pub mod thermostat_node;
@@ -25,6 +26,7 @@ use light_scene_node::LightSceneNodeConfig;
 use maintenance_node::{MaintenanceNode, MaintenanceNodeConfig};
 use motion_node::{MotionNode, MotionNodeConfig};
 use numeric_sensor_node::NumericSensorNode;
+use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
 use serde::{Deserialize, Serialize};
 use shutter_node::{ShutterNode, ShutterNodeConfig};
 use switch_node::{SwitchNode, SwitchNodeConfig};
@@ -67,6 +69,7 @@ pub const SMARTHOME_TYPE_WATER_SENSOR: &str = create_smarthome_type!("water");
 pub const SMARTHOME_TYPE_SHUTTER: &str = create_smarthome_type!("shutter");
 pub const SMARTHOME_TYPE_TILT: &str = create_smarthome_type!("tilt");
 pub const SMARTHOME_TYPE_THERMOSTAT: &str = create_smarthome_type!("thermostat");
+pub const SMARTHOME_TYPE_POWERMETER: &str = create_smarthome_type!("powermeter");
 
 /// SmarthomeType enum representing various smart home device types.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
@@ -88,6 +91,7 @@ pub enum SmarthomeType {
     Shutter,
     Tilt,
     Thermostat,
+    Powermeter,
 }
 
 impl SmarthomeType {
@@ -110,6 +114,7 @@ impl SmarthomeType {
             SmarthomeType::Shutter => SMARTHOME_TYPE_SHUTTER,
             SmarthomeType::Tilt => SMARTHOME_TYPE_TILT,
             SmarthomeType::Thermostat => SMARTHOME_TYPE_THERMOSTAT,
+            SmarthomeType::Powermeter => SMARTHOME_TYPE_POWERMETER,
         }
     }
 
@@ -132,6 +137,7 @@ impl SmarthomeType {
             SMARTHOME_TYPE_SHUTTER => Some(SmarthomeType::Shutter),
             SMARTHOME_TYPE_TILT => Some(SmarthomeType::Tilt),
             SMARTHOME_TYPE_THERMOSTAT => Some(SmarthomeType::Thermostat),
+            SMARTHOME_TYPE_POWERMETER => Some(SmarthomeType::Powermeter),
             _ => None,
         }
     }
@@ -166,6 +172,7 @@ pub enum SmarthomeProperyConfig {
     Thermostat(ThermostatNodeConfig),
     Vibration(VibrationNodeConfig),
     Weather(WeatherNodeConfig),
+    Powermeter(PowermeterNodeConfig),
 }
 
 #[derive(Debug)]
@@ -181,6 +188,7 @@ pub enum SmarthomeNode {
     WaterSensor(WaterSensorNode),
     ShutterNode(ShutterNode),
     TiltNode(TiltNode),
+    Powermeter(PowermeterNode),
 }
 
 #[cfg(test)]
