@@ -1,9 +1,9 @@
 use homie5::{
+    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         FloatRange, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef,
 };
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,11 @@ pub const POWERMETER_NODE_CONSUMPTION_PROP_ID: HomieID = HomieID::new_const("con
 #[derive(Debug)]
 pub struct PowermeterNode {
     pub publisher: PowermeterNodePublisher,
-    pub state: bool,
+    pub power: f64,
+    pub current: f64,
+    pub voltage: f64,
+    pub frequency: Option<f64>,
+    pub consumption: Option<f64>,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
