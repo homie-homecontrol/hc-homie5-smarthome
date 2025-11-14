@@ -1,4 +1,5 @@
 use homie5::{
+    HOMIE_UNIT_HERTZ, HOMIE_UNIT_MILI_AMPERE, HOMIE_UNIT_VOLT, HOMIE_UNIT_WATT,
     Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         FloatRange, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
@@ -21,14 +22,16 @@ pub const POWERMETER_NODE_CONSUMPTION_PROP_ID: HomieID = HomieID::new_const("con
 pub struct PowermeterNode {
     pub publisher: PowermeterNodePublisher,
     pub power: f64,
-    pub current: f64,
-    pub voltage: f64,
+    pub current: Option<f64>,
+    pub voltage: Option<f64>,
     pub frequency: Option<f64>,
     pub consumption: Option<f64>,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct PowermeterNodeConfig {
+    pub current: bool,
+    pub voltage: bool,
     pub frequency: bool,
     pub consumption: bool,
 }
@@ -36,6 +39,8 @@ pub struct PowermeterNodeConfig {
 impl Default for PowermeterNodeConfig {
     fn default() -> Self {
         Self {
+            current: true,
+            voltage: true,
             frequency: false,
             consumption: true,
         }
@@ -76,6 +81,7 @@ impl PowermeterNodeBuilder {
             POWERMETER_NODE_POWER_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
                 .name("Power")
+                .unit(HOMIE_UNIT_WATT)
                 .format(HomiePropertyFormat::FloatRange(FloatRange {
                     min: Some(0.0),
                     max: None,
@@ -85,10 +91,10 @@ impl PowermeterNodeBuilder {
                 .retained(true)
                 .build(),
         )
-        .add_property(
-            POWERMETER_NODE_CURRENT_PROP_ID,
+        .add_property_cond(POWERMETER_NODE_CURRENT_PROP_ID, config.current, || {
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
                 .name("Current")
+                .unit(HOMIE_UNIT_MILI_AMPERE)
                 .format(HomiePropertyFormat::FloatRange(FloatRange {
                     min: Some(0.0),
                     max: None,
@@ -96,12 +102,12 @@ impl PowermeterNodeBuilder {
                 }))
                 .settable(false)
                 .retained(true)
-                .build(),
-        )
-        .add_property(
-            POWERMETER_NODE_VOLTAGE_PROP_ID,
+                .build()
+        })
+        .add_property_cond(POWERMETER_NODE_VOLTAGE_PROP_ID, config.voltage, || {
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
                 .name("Voltage")
+                .unit(HOMIE_UNIT_VOLT)
                 .format(HomiePropertyFormat::FloatRange(FloatRange {
                     min: Some(0.0),
                     max: None,
@@ -109,11 +115,12 @@ impl PowermeterNodeBuilder {
                 }))
                 .settable(false)
                 .retained(true)
-                .build(),
-        )
+                .build()
+        })
         .add_property_cond(POWERMETER_NODE_FREQUENCY_PROP_ID, config.frequency, || {
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
                 .name("Frequency")
+                .unit(HOMIE_UNIT_HERTZ)
                 .format(HomiePropertyFormat::FloatRange(FloatRange {
                     min: Some(0.0),
                     max: None,
@@ -129,6 +136,7 @@ impl PowermeterNodeBuilder {
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
                     .name("Consumption")
+                    .unit("wH") //WATT HOURS
                     .format(HomiePropertyFormat::FloatRange(FloatRange {
                         min: Some(0.0),
                         max: None,
