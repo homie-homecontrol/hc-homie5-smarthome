@@ -26,4 +26,5 @@ bytes = "1.5.0"
 [dependencies]
 chrono = "0.4.31"
 homie5 = "0.8.1"
+# homie5 = { path = "../homie5/" }
 serde = "1.0"
