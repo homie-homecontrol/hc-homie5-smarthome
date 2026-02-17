@@ -1,10 +1,10 @@
 use homie5::{
+    HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_MINUTES, HOMIE_UNIT_PERCENT, Homie5DeviceProtocol,
+    Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
         BooleanFormat, FloatRange, HomieDeviceDescription, HomieNodeDescription,
         HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
-    PropertyRef, HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_MINUTES, HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
@@ -15,8 +15,9 @@ pub const THERMOSTAT_NODE_DEFAULT_NAME: &str = "Thermostat";
 pub const THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID: HomieID = HomieID::new_const("set-temperature");
 pub const THERMOSTAT_NODE_VALVE_PROP_ID: HomieID = HomieID::new_const("valve");
 pub const THERMOSTAT_NODE_MODE_PROP_ID: HomieID = HomieID::new_const("mode");
-pub const THERMOSTAT_NODE_WINDOWOPEN_PROP_ID: HomieID = HomieID::new_const("windowopen");
-pub const THERMOSTAT_NODE_BOOS_STATE_PROP_ID: HomieID = HomieID::new_const("boost-state");
+pub const THERMOSTAT_NODE_WINDOWOPEN_PROP_ID: HomieID = HomieID::new_const("window-open");
+pub const THERMOSTAT_NODE_BOOST_STATE_PROP_ID: HomieID = HomieID::new_const("boost-state");
+pub const THERMOSTAT_NODE_BOOST_TIME_PROP_ID: HomieID = HomieID::new_const("boost-time");
 
 #[derive(Debug)]
 pub struct ThermostatNode {
@@ -26,7 +27,8 @@ pub struct ThermostatNode {
     pub valve: Option<i64>,
     pub mode: Option<ThermostatNodeModes>,
     pub windowopen: Option<bool>,
-    pub boost_state: Option<i64>,
+    pub boost_state: Option<bool>,
+    pub boost_time: Option<i64>,
 }
 
 #[derive(Debug, Default, Copy, PartialEq, Clone, Serialize, Deserialize)]
@@ -111,6 +113,7 @@ impl TryFrom<&str> for ThermostatNodeModes {
 pub enum ThermostatNodeSetEvents {
     Mode(ThermostatNodeModes),
     SetTemperature(f64),
+    Boost(bool),
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -119,6 +122,7 @@ pub struct ThermostatNodeConfig {
     pub valve: bool,
     pub windowopen: bool,
     pub boost_state: bool,
+    pub boost_time: bool,
     pub mode: bool,
     pub modes: Vec<ThermostatNodeModes>,
     pub temp_range: FloatRange,
@@ -131,6 +135,7 @@ impl Default for ThermostatNodeConfig {
             valve: true,
             windowopen: true,
             boost_state: true,
+            boost_time: true,
             mode: true,
             modes: vec![ThermostatNodeModes::Auto, ThermostatNodeModes::Manual],
             temp_range: FloatRange {
@@ -200,7 +205,18 @@ impl ThermostatNodeBuilder {
             },
         )
         .add_property_cond(
-            THERMOSTAT_NODE_BOOS_STATE_PROP_ID,
+            THERMOSTAT_NODE_BOOST_STATE_PROP_ID,
+            config.boost_state,
+            || {
+                PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+                    .name("Boost mode active")
+                    .settable(true)
+                    .retained(true)
+                    .build()
+            },
+        )
+        .add_property_cond(
+            THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
             config.boost_state,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
@@ -212,18 +228,18 @@ impl ThermostatNodeBuilder {
                     }))
                     .unit(HOMIE_UNIT_MINUTES)
                     .settable(false)
-                    .retained(true)
+                    .retained(false)
                     .build()
             },
         )
         .add_property_cond(THERMOSTAT_NODE_MODE_PROP_ID, config.mode, || {
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Change Mode")
+                .name("Mode")
                 .format(HomiePropertyFormat::Enum(
                     config.modes.iter().map(|m| m.into()).collect(),
                 ))
                 .settable(true)
-                .retained(false)
+                .retained(true)
                 .build()
         })
     }
@@ -259,6 +275,7 @@ pub struct ThermostatNodePublisher {
     node: NodeRef,
     set_temperature_prop: HomieID,
     boost_prop: HomieID,
+    boost_time_prop: HomieID,
     mode_prop: HomieID,
     valve_prop: HomieID,
     windowopen_prop: HomieID,
@@ -270,7 +287,8 @@ impl ThermostatNodePublisher {
             node,
             client,
             mode_prop: THERMOSTAT_NODE_MODE_PROP_ID,
-            boost_prop: THERMOSTAT_NODE_BOOS_STATE_PROP_ID,
+            boost_prop: THERMOSTAT_NODE_BOOST_STATE_PROP_ID,
+            boost_time_prop: THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
             valve_prop: THERMOSTAT_NODE_VALVE_PROP_ID,
             windowopen_prop: THERMOSTAT_NODE_WINDOWOPEN_PROP_ID,
             set_temperature_prop: THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID,
@@ -305,10 +323,19 @@ impl ThermostatNodePublisher {
             .publish_target(self.node.node_id(), &self.mode_prop, &mode, true)
     }
 
-    pub fn boost(&self, value: i64) -> homie5::client::Publish {
+    pub fn boost(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
             &self.boost_prop,
+            value.to_string(),
+            true,
+        )
+    }
+
+    pub fn boost_time(&self, value: i64) -> homie5::client::Publish {
+        self.client.publish_value(
+            self.node.node_id(),
+            &self.boost_time_prop,
             value.to_string(),
             true,
         )
@@ -354,6 +381,14 @@ impl ThermostatNodePublisher {
                     } else {
                         None
                     }
+                } else {
+                    None
+                }
+            })?
+        } else if property.match_with_node(&self.node, &self.boost_prop) {
+            desc.with_property(property, |prop_desc| {
+                if let Ok(HomieValue::Bool(value)) = HomieValue::parse(set_value, prop_desc) {
+                    Some(ThermostatNodeSetEvents::Boost(value))
                 } else {
                     None
                 }
