@@ -1,8 +1,8 @@
 use homie5::{
+    HOMIE_UNIT_DEGREE, Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_DEGREE,
 };
 
 use crate::SMARTHOME_TYPE_ORIENTATION;

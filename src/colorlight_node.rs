@@ -1,10 +1,10 @@
 use homie5::{
+    Homie5DeviceProtocol, Homie5Message, HomieColorValue, HomieID, HomieValue, NodeRef,
+    PropertyRef,
     device_description::{
         ColorFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
         IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, HomieColorValue, HomieID, HomieValue, NodeRef,
-    PropertyRef,
 };
 use serde::{Deserialize, Serialize};
 

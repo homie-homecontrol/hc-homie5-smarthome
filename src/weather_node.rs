@@ -1,9 +1,9 @@
 use homie5::{
+    HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_KILOPASCAL, HOMIE_UNIT_PERCENT, Homie5DeviceProtocol,
+    HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_KILOPASCAL,
-    HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 

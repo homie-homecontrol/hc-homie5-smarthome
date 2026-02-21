@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
 use homie5::{
+    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
+    HomieValue, NodeRef, PropertyRef,
     device_description::{
         HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
-    PropertyRef, HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
