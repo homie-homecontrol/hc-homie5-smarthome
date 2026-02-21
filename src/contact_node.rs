@@ -1,9 +1,9 @@
 use homie5::{
+    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef,
 };
 
 use crate::SMARTHOME_TYPE_CONTACT;

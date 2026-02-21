@@ -1,10 +1,10 @@
 use chrono::prelude::*;
 
 use homie5::{
+    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef,
 };
 use serde::{Deserialize, Serialize};
 

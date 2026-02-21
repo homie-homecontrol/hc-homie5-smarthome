@@ -1,3 +1,4 @@
+pub mod alerts;
 pub mod button_node;
 pub mod colorlight_node;
 pub mod contact_node;
@@ -198,19 +199,19 @@ mod tests {
     use tokio::sync::mpsc::channel;
 
     use homie5::{
+        Homie5DeviceProtocol, Homie5Message, HomieDeviceStatus, HomieDomain, HomieID,
         client::{Publish, Subscription},
         device_description::DeviceDescriptionBuilder,
-        parse_mqtt_message, Homie5DeviceProtocol, Homie5Message, HomieDeviceStatus, HomieDomain,
-        HomieID,
+        parse_mqtt_message,
     };
 
     use crate::{
-        dimmer_node::{DimmerNodeBuilder, DIMMER_NODE_DEFAULT_ID},
-        maintenance_node::{MaintenanceNodeBuilder, MAINTENANCE_NODE_DEFAULT_ID},
+        dimmer_node::{DIMMER_NODE_DEFAULT_ID, DimmerNodeBuilder},
+        maintenance_node::{MAINTENANCE_NODE_DEFAULT_ID, MaintenanceNodeBuilder},
         switch_node::{
-            SwitchNodeActions, SwitchNodeBuilder, SwitchNodeSetEvents, SWITCH_NODE_DEFAULT_ID,
+            SWITCH_NODE_DEFAULT_ID, SwitchNodeActions, SwitchNodeBuilder, SwitchNodeSetEvents,
         },
-        weather_node::{WeatherNodeBuilder, WEATHER_NODE_DEFAULT_ID},
+        weather_node::{WEATHER_NODE_DEFAULT_ID, WeatherNodeBuilder},
     };
     #[allow(clippy::large_enum_variant)]
     #[derive(Debug)]

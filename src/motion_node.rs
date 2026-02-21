@@ -1,9 +1,9 @@
 use homie5::{
+    HOMIE_UNIT_LUX, Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_LUX,
 };
 use serde::{Deserialize, Serialize};
 
