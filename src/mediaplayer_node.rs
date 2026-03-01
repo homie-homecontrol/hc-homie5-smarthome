@@ -135,6 +135,16 @@ impl FromStr for ControlState {
 
 const CONTROL_STATE_FORMAT: [&str; 3] = ["on", "off", "disabled"];
 
+// ── Node (state) ────────────────────────────────────────────────────────────
+
+#[derive(Debug)]
+pub struct MediaplayerNode {
+    pub publisher: MediaplayerNodePublisher,
+    pub state: MediaplayerState,
+    pub shuffle: Option<ControlState>,
+    pub repeat: Option<ControlState>,
+}
+
 // ── Set events ──────────────────────────────────────────────────────────────
 
 #[derive(Debug)]

@@ -22,6 +22,16 @@ pub const VOLUME_NODE_MUTE_PROP_ID: HomieID = HomieID::new_const("mute");
 
 const CONTROL_STATE_FORMAT: [&str; 3] = ["on", "off", "disabled"];
 
+// ── Node (state) ────────────────────────────────────────────────────────────
+
+#[derive(Debug)]
+pub struct VolumeNode {
+    pub publisher: VolumeNodePublisher,
+    pub level: i64,
+    pub level_target: i64,
+    pub mute: Option<ControlState>,
+}
+
 // ── Set events ──────────────────────────────────────────────────────────────
 
 #[derive(Debug)]

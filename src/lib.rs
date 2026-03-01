@@ -31,20 +31,21 @@ use color_node::{ColorNode, ColorNodeConfig};
 use contact_node::ContactNode;
 use level_node::{LevelNode, LevelNodeConfig};
 use link_node::{LinkNode, LinkNodeConfig};
-use lock_node::LockNodeConfig;
-use media_info_node::MediaInfoNodeConfig;
-use mediaplayer_node::MediaplayerNodeConfig;
+use lock_node::{LockNode, LockNodeConfig};
+use media_info_node::{MediaInfoNode, MediaInfoNodeConfig};
+use mediaplayer_node::{MediaplayerNode, MediaplayerNodeConfig};
 use motion_node::{MotionNode, MotionNodeConfig};
+use orientation_node::OrientationNode;
 use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
 use scene_node::SceneNodeConfig;
 use serde::{Deserialize, Serialize};
 use shutter_node::{ShutterNode, ShutterNodeConfig};
 use switch_node::{SwitchNode, SwitchNodeConfig};
-use thermostat_node::ThermostatNodeConfig;
+use thermostat_node::{ThermostatNode, ThermostatNodeConfig};
 use tilt_node::TiltNode;
-use valve_node::ValveNodeConfig;
-use vibration_node::VibrationNodeConfig;
-use volume_node::VolumeNodeConfig;
+use valve_node::{ValveNode, ValveNodeConfig};
+use vibration_node::{VibrationNode, VibrationNodeConfig};
+use volume_node::{VolumeNode, VolumeNodeConfig};
 use water_sensor_node::WaterSensorNode;
 
 /// Helper macro to generate capability type strings (`hc-smarthome/v2/cap/<name>`)
@@ -381,6 +382,14 @@ pub enum SmarthomeNode {
     ShutterNode(ShutterNode),
     TiltNode(TiltNode),
     Powermeter(PowermeterNode),
+    LockNode(LockNode),
+    ValveNode(ValveNode),
+    ThermostatNode(ThermostatNode),
+    MediaplayerNode(MediaplayerNode),
+    MediaInfoNode(MediaInfoNode),
+    VolumeNode(VolumeNode),
+    OrientationNode(OrientationNode),
+    VibrationNode(VibrationNode),
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────

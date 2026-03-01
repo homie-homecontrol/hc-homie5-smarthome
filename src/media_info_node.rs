@@ -20,6 +20,21 @@ pub const MEDIA_INFO_NODE_LENGTH_PROP_ID: HomieID = HomieID::new_const("length")
 pub const MEDIA_INFO_NODE_SEEKABLE_PROP_ID: HomieID = HomieID::new_const("seekable");
 pub const MEDIA_INFO_NODE_METADATA_PROP_ID: HomieID = HomieID::new_const("metadata");
 
+// ── Node (state) ────────────────────────────────────────────────────────────
+
+#[derive(Debug)]
+pub struct MediaInfoNode {
+    pub publisher: MediaInfoNodePublisher,
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub description: Option<String>,
+    pub artwork: Option<String>,
+    pub progress: Option<i64>,
+    pub length: Option<i64>,
+    pub seekable: Option<bool>,
+    pub metadata: Option<String>,
+}
+
 // ── Set events ──────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
