@@ -78,7 +78,8 @@ document are to be interpreted as described in
 | Orientation | `orientation` | `hc-smarthome/v2/cap/orientation` | Sensor         | 3-axis orientation and tilt angle             |
 | Button      | `button`      | `hc-smarthome/v2/cap/button`      | Infrastructure | Physical button press events                  |
 | Powermeter  | `powermeter`  | `hc-smarthome/v2/cap/powermeter`  | Infrastructure | Electrical power metering                     |
-| Maintenance | `maintenance` | `hc-smarthome/v2/cap/maintenance` | Infrastructure | Device health metrics (**deprecated** -- see [Alerts](#alerts)) |
+| Battery     | `battery`     | `hc-smarthome/v2/cap/battery`     | Infrastructure | Battery level and voltage readings            |
+| Link        | `link`        | `hc-smarthome/v2/cap/link`        | Infrastructure | Signal strength, link quality, last-seen      |
 
 ---
 
@@ -104,8 +105,11 @@ document are to be interpreted as described in
 | Siren          | `hc-smarthome/v2/dc/siren`          | `switch`     | --                                     | Alarm siren                      |
 | Powermeter     | `hc-smarthome/v2/dc/powermeter`     | `powermeter` | --                                     | Standalone power meter or clamp  |
 
-Any device MAY additionally expose `maintenance` capabilities. The table above
-lists only functional capabilities.
+Any device class MAY additionally expose `battery` and/or `link` capability
+nodes. These are optional for all device classes and provide device health
+readings (battery level/voltage, signal strength, link quality, last-seen
+timestamp). Binary health conditions (low-battery, unreachable) are handled
+by the [Alerts](#alerts) system instead.
 
 ### Interaction Rules
 
@@ -400,24 +404,36 @@ Electrical power metering. Read-only.
 
 ---
 
-#### Maintenance (Deprecated)
+#### Battery
 
-**ID:** `maintenance` | **Type:** `hc-smarthome/v2/cap/maintenance`
+**ID:** `battery` | **Type:** `hc-smarthome/v2/cap/battery`
 
-> **Deprecated.** Binary health conditions (low-battery, reachable) are
-> superseded by the [Alerts](#alerts) system. The `battery-level` and
-> `last-update` value properties may move to a future dedicated capability.
-> New devices SHOULD use alerts instead of the maintenance capability for
-> health signaling.
+Battery health readings. All properties are optional. Read-only.
 
-Device health metrics. All properties are optional. Read-only.
+| Property        | ID        | Datatype | Unit | Format  | Settable | Retained | Optional | Description               |
+| --------------- | --------- | -------- | ---- | ------- | -------- | -------- | -------- | ------------------------- |
+| Battery level   | `level`   | Integer  | `%`  | `0:100` | no       | yes      | yes      | Battery charge percentage |
+| Battery voltage | `voltage` | Integer  | `mV` | --      | no       | yes      | yes      | Raw battery voltage       |
 
-| Property             | ID              | Datatype | Unit | Format  | Settable | Retained | Optional | Description          |
-| -------------------- | --------------- | -------- | ---- | ------- | -------- | -------- | -------- | -------------------- |
-| Low battery          | `low-battery`   | Boolean  | --   | --      | no       | yes      | yes      | Battery is low       |
-| Battery level        | `battery-level` | Integer  | `%`  | `0:100` | no       | yes      | yes      | Battery percentage   |
-| Last update          | `last-update`   | Datetime | --   | --      | no       | yes      | yes      | Last device update   |
-| Reachable            | `reachable`     | Boolean  | --   | --      | no       | yes      | yes      | Device reachable     |
+Binary battery conditions (low, critical) are signaled via
+[Alerts](#alerts) (`hc-battery-low`, `hc-battery-critical`).
+
+---
+
+#### Link
+
+**ID:** `link` | **Type:** `hc-smarthome/v2/cap/link`
+
+Communication link quality readings. All properties are optional. Read-only.
+
+| Property        | ID          | Datatype | Unit  | Format  | Settable | Retained | Optional | Description                        |
+| --------------- | ----------- | -------- | ----- | ------- | -------- | -------- | -------- | ---------------------------------- |
+| Signal strength | `signal`    | Integer  | `dBm` | --      | no       | yes      | yes      | RF signal strength (RSSI)          |
+| Link quality    | `quality`   | Integer  | --    | `0:255` | no       | yes      | yes      | Link quality indicator (LQI)       |
+| Last seen       | `last-seen` | Datetime | --    | --      | no       | yes      | yes      | Timestamp of last received message |
+
+Reachability conditions are signaled via [Alerts](#alerts)
+(`hc-unreachable`, `hc-update-overdue`).
 
 ---
 
@@ -479,9 +495,10 @@ All config structs implement `Default` and `Deserialize` with
 | Climate     | `ClimateNodeConfig`     | `temperature`, `humidity`, `pressure`, `temp_unit`       |
 | Motion      | `MotionNodeConfig`      | `lux`                                                    |
 | Vibration   | `VibrationNodeConfig`   | `vibration_strength`                                     |
-| Maintenance | `MaintenanceNodeConfig` | `low_battery`, `battery_level`, `last_update`, `reachable` |
 | Button      | `ButtonNodeConfig`      | `actions`                                                |
 | Powermeter  | `PowermeterNodeConfig`  | `current`, `voltage`, `frequency`, `consumption`         |
+| Battery     | `BatteryNodeConfig`     | `level`, `voltage`                                       |
+| Link        | `LinkNodeConfig`        | `signal`, `quality`, `last_seen`                         |
 
 ## Code Examples
 
@@ -514,11 +531,11 @@ match publisher.parse_set_event(&device_description, &incoming_event) {
 
 ```rust
 use hc_homie5_smarthome::{
-    switch_node::*, level_node::*, color_node::*, maintenance_node::*,
+    switch_node::*, level_node::*, color_node::*, battery_node::*, link_node::*,
 };
 use homie5::device_description::DeviceDescriptionBuilder;
 
-// A full-color light = switch + level + color + maintenance
+// A full-color light = switch + level + color + battery + link
 let desc = DeviceDescriptionBuilder::new()
     .name("Living Room Lamp")
     .add_node(
@@ -534,18 +551,14 @@ let desc = DeviceDescriptionBuilder::new()
         ColorNodeBuilder::new(&Default::default()).build(),
     )
     .add_node(
-        MAINTENANCE_NODE_DEFAULT_ID,
-        MaintenanceNodeBuilder::new(Default::default()).build(),
+        BATTERY_NODE_DEFAULT_ID,
+        BatteryNodeBuilder::new(&Default::default()).build(),
+    )
+    .add_node(
+        LINK_NODE_DEFAULT_ID,
+        LinkNodeBuilder::new(&Default::default()).build(),
     )
     .build();
 ```
 
-## Deprecated Modules
 
-### `numeric_sensor_node`
-
-Deprecated. Will be removed in a future version. Use dedicated typed
-capabilities instead:
-- Temperature, humidity, pressure: use `climate`
-- Power, current, voltage, frequency, energy: use `powermeter`
-- Other numeric readings: define a typed extension via `smarthome_ext!`

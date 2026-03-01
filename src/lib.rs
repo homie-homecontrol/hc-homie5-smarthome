@@ -1,14 +1,13 @@
 pub mod alerts;
+pub mod battery_node;
 pub mod button_node;
 pub mod climate_node;
 pub mod color_node;
 pub mod contact_node;
 pub mod level_node;
+pub mod link_node;
 pub mod lock_node;
-pub mod maintenance_node;
 pub mod motion_node;
-#[allow(deprecated)]
-pub mod numeric_sensor_node;
 pub mod orientation_node;
 pub mod powermeter_node;
 pub mod scene_node;
@@ -22,16 +21,15 @@ pub mod water_sensor_node;
 
 use std::{fmt, str::FromStr};
 
+use battery_node::{BatteryNode, BatteryNodeConfig};
 use button_node::ButtonNodeConfig;
 use climate_node::{ClimateNode, ClimateNodeConfig};
 use color_node::{ColorNode, ColorNodeConfig};
 use contact_node::ContactNode;
 use level_node::{LevelNode, LevelNodeConfig};
+use link_node::{LinkNode, LinkNodeConfig};
 use lock_node::LockNodeConfig;
-use maintenance_node::{MaintenanceNode, MaintenanceNodeConfig};
 use motion_node::{MotionNode, MotionNodeConfig};
-#[allow(deprecated)]
-use numeric_sensor_node::NumericSensorNode;
 use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
 use scene_node::SceneNodeConfig;
 use serde::{Deserialize, Serialize};
@@ -69,7 +67,6 @@ pub const SMARTHOME_NS: &str = "hc-smarthome/v2";
 
 // ── Capability type constants ───────────────────────────────────────────────
 
-pub const SMARTHOME_CAP_MAINTENANCE: &str = smarthome_cap!("maintenance");
 pub const SMARTHOME_CAP_SWITCH: &str = smarthome_cap!("switch");
 pub const SMARTHOME_CAP_LEVEL: &str = smarthome_cap!("level");
 pub const SMARTHOME_CAP_CONTACT: &str = smarthome_cap!("contact");
@@ -78,7 +75,6 @@ pub const SMARTHOME_CAP_MOTION: &str = smarthome_cap!("motion");
 pub const SMARTHOME_CAP_BUTTON: &str = smarthome_cap!("button");
 pub const SMARTHOME_CAP_COLOR: &str = smarthome_cap!("color");
 pub const SMARTHOME_CAP_SCENE: &str = smarthome_cap!("scene");
-pub const SMARTHOME_CAP_NUMERIC: &str = smarthome_cap!("numeric");
 pub const SMARTHOME_CAP_VIBRATION: &str = smarthome_cap!("vibration");
 pub const SMARTHOME_CAP_ORIENTATION: &str = smarthome_cap!("orientation");
 pub const SMARTHOME_CAP_WATER_SENSOR: &str = smarthome_cap!("water");
@@ -88,6 +84,8 @@ pub const SMARTHOME_CAP_THERMOSTAT: &str = smarthome_cap!("thermostat");
 pub const SMARTHOME_CAP_POWERMETER: &str = smarthome_cap!("powermeter");
 pub const SMARTHOME_CAP_LOCK: &str = smarthome_cap!("lock");
 pub const SMARTHOME_CAP_VALVE: &str = smarthome_cap!("valve");
+pub const SMARTHOME_CAP_BATTERY: &str = smarthome_cap!("battery");
+pub const SMARTHOME_CAP_LINK: &str = smarthome_cap!("link");
 
 // ── Well-known device class constants ───────────────────────────────────────
 //
@@ -220,14 +218,12 @@ pub trait SetCommandParser {
 pub enum SmarthomeType {
     Switch,
     Level,
-    Maintenance,
     Contact,
     Climate,
     Motion,
     Button,
     Color,
     Scene,
-    Numeric,
     Vibration,
     Orientation,
     WaterSensor,
@@ -237,6 +233,8 @@ pub enum SmarthomeType {
     Powermeter,
     Lock,
     Valve,
+    Battery,
+    Link,
 }
 
 impl SmarthomeType {
@@ -245,14 +243,12 @@ impl SmarthomeType {
         match self {
             SmarthomeType::Switch => SMARTHOME_CAP_SWITCH,
             SmarthomeType::Level => SMARTHOME_CAP_LEVEL,
-            SmarthomeType::Maintenance => SMARTHOME_CAP_MAINTENANCE,
             SmarthomeType::Contact => SMARTHOME_CAP_CONTACT,
             SmarthomeType::Climate => SMARTHOME_CAP_CLIMATE,
             SmarthomeType::Motion => SMARTHOME_CAP_MOTION,
             SmarthomeType::Button => SMARTHOME_CAP_BUTTON,
             SmarthomeType::Color => SMARTHOME_CAP_COLOR,
             SmarthomeType::Scene => SMARTHOME_CAP_SCENE,
-            SmarthomeType::Numeric => SMARTHOME_CAP_NUMERIC,
             SmarthomeType::Vibration => SMARTHOME_CAP_VIBRATION,
             SmarthomeType::Orientation => SMARTHOME_CAP_ORIENTATION,
             SmarthomeType::WaterSensor => SMARTHOME_CAP_WATER_SENSOR,
@@ -262,6 +258,8 @@ impl SmarthomeType {
             SmarthomeType::Powermeter => SMARTHOME_CAP_POWERMETER,
             SmarthomeType::Lock => SMARTHOME_CAP_LOCK,
             SmarthomeType::Valve => SMARTHOME_CAP_VALVE,
+            SmarthomeType::Battery => SMARTHOME_CAP_BATTERY,
+            SmarthomeType::Link => SMARTHOME_CAP_LINK,
         }
     }
 
@@ -270,14 +268,12 @@ impl SmarthomeType {
         match value {
             SMARTHOME_CAP_SWITCH => Some(SmarthomeType::Switch),
             SMARTHOME_CAP_LEVEL => Some(SmarthomeType::Level),
-            SMARTHOME_CAP_MAINTENANCE => Some(SmarthomeType::Maintenance),
             SMARTHOME_CAP_CONTACT => Some(SmarthomeType::Contact),
             SMARTHOME_CAP_CLIMATE => Some(SmarthomeType::Climate),
             SMARTHOME_CAP_MOTION => Some(SmarthomeType::Motion),
             SMARTHOME_CAP_BUTTON => Some(SmarthomeType::Button),
             SMARTHOME_CAP_COLOR => Some(SmarthomeType::Color),
             SMARTHOME_CAP_SCENE => Some(SmarthomeType::Scene),
-            SMARTHOME_CAP_NUMERIC => Some(SmarthomeType::Numeric),
             SMARTHOME_CAP_VIBRATION => Some(SmarthomeType::Vibration),
             SMARTHOME_CAP_ORIENTATION => Some(SmarthomeType::Orientation),
             SMARTHOME_CAP_WATER_SENSOR => Some(SmarthomeType::WaterSensor),
@@ -287,6 +283,8 @@ impl SmarthomeType {
             SMARTHOME_CAP_POWERMETER => Some(SmarthomeType::Powermeter),
             SMARTHOME_CAP_LOCK => Some(SmarthomeType::Lock),
             SMARTHOME_CAP_VALVE => Some(SmarthomeType::Valve),
+            SMARTHOME_CAP_BATTERY => Some(SmarthomeType::Battery),
+            SMARTHOME_CAP_LINK => Some(SmarthomeType::Link),
             _ => None,
         }
     }
@@ -330,12 +328,13 @@ impl<'de> Deserialize<'de> for SmarthomeType {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum SmarthomeProperyConfig {
+    Battery(BatteryNodeConfig),
     Button(ButtonNodeConfig),
     Color(ColorNodeConfig),
     Level(LevelNodeConfig),
+    Link(LinkNodeConfig),
     Lock(LockNodeConfig),
     Scene(SceneNodeConfig),
-    Maintenance(MaintenanceNodeConfig),
     Motion(MotionNodeConfig),
     Shutter(ShutterNodeConfig),
     Switch(SwitchNodeConfig),
@@ -347,17 +346,15 @@ pub enum SmarthomeProperyConfig {
 }
 
 #[derive(Debug)]
-#[allow(deprecated)]
 pub enum SmarthomeNode {
-    MaintenanceNode(MaintenanceNode),
+    BatteryNode(BatteryNode),
+    LinkNode(LinkNode),
     SwitchNode(SwitchNode),
     LevelNode(LevelNode),
     ClimateNode(ClimateNode),
     ContactNode(ContactNode),
     MotionNode(MotionNode),
     ColorNode(ColorNode),
-    #[deprecated(note = "Use dedicated typed capabilities (climate, powermeter) instead")]
-    NumericSensorNode(NumericSensorNode),
     WaterSensor(WaterSensorNode),
     ShutterNode(ShutterNode),
     TiltNode(TiltNode),
@@ -466,9 +463,13 @@ mod config_serde_default_tests {
             serde_json::from_str("{}").expect("vibration config must deserialize");
         assert_eq!(vibration, VibrationNodeConfig::default());
 
-        let maintenance: MaintenanceNodeConfig =
-            serde_json::from_str("{}").expect("maintenance config must deserialize");
-        assert_eq!(maintenance, MaintenanceNodeConfig::default());
+        let battery: BatteryNodeConfig =
+            serde_json::from_str("{}").expect("battery config must deserialize");
+        assert_eq!(battery, BatteryNodeConfig::default());
+
+        let link: LinkNodeConfig =
+            serde_json::from_str("{}").expect("link config must deserialize");
+        assert_eq!(link, LinkNodeConfig::default());
 
         let button: ButtonNodeConfig =
             serde_json::from_str("{}").expect("button config must deserialize");
@@ -520,14 +521,12 @@ mod smarthome_type_serde_tests {
         let types = [
             SmarthomeType::Switch,
             SmarthomeType::Level,
-            SmarthomeType::Maintenance,
             SmarthomeType::Contact,
             SmarthomeType::Climate,
             SmarthomeType::Motion,
             SmarthomeType::Button,
             SmarthomeType::Color,
             SmarthomeType::Scene,
-            SmarthomeType::Numeric,
             SmarthomeType::Vibration,
             SmarthomeType::Orientation,
             SmarthomeType::WaterSensor,
@@ -537,6 +536,8 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Powermeter,
             SmarthomeType::Lock,
             SmarthomeType::Valve,
+            SmarthomeType::Battery,
+            SmarthomeType::Link,
         ];
 
         for ty in types {
@@ -572,9 +573,10 @@ mod tests {
 
     use crate::{
         SetCommandParser,
+        battery_node::{BATTERY_NODE_DEFAULT_ID, BatteryNodeBuilder},
         climate_node::{CLIMATE_NODE_DEFAULT_ID, ClimateNodeBuilder},
         level_node::{LEVEL_NODE_DEFAULT_ID, LevelNodeBuilder},
-        maintenance_node::{MAINTENANCE_NODE_DEFAULT_ID, MaintenanceNodeBuilder},
+        link_node::{LINK_NODE_DEFAULT_ID, LinkNodeBuilder},
         switch_node::{
             SWITCH_NODE_DEFAULT_ID, SwitchNodeActions, SwitchNodeBuilder, SwitchNodeSetEvents,
         },
@@ -711,9 +713,11 @@ mod tests {
             }
         });
 
-        let (maintenance_node, maintenance_node_publisher) =
-            MaintenanceNodeBuilder::new(Default::default())
-                .build_with_publisher(MAINTENANCE_NODE_DEFAULT_ID, &client);
+        let (battery_node, battery_node_publisher) = BatteryNodeBuilder::new(&Default::default())
+            .build_with_publisher(BATTERY_NODE_DEFAULT_ID, &client);
+
+        let (link_node, link_node_publisher) = LinkNodeBuilder::new(&Default::default())
+            .build_with_publisher(LINK_NODE_DEFAULT_ID, &client);
 
         let (switch_node, switch_node_publisher) = SwitchNodeBuilder::new(&Default::default())
             .build_with_publisher(SWITCH_NODE_DEFAULT_ID, &client);
@@ -729,7 +733,8 @@ mod tests {
 
         let desc = DeviceDescriptionBuilder::new()
             .name("hc-smarthome-test")
-            .add_node(MAINTENANCE_NODE_DEFAULT_ID, maintenance_node)
+            .add_node(BATTERY_NODE_DEFAULT_ID, battery_node)
+            .add_node(LINK_NODE_DEFAULT_ID, link_node)
             .add_node(SWITCH_NODE_DEFAULT_ID, switch_node)
             .add_node(LEVEL_NODE_DEFAULT_ID, level_node)
             .add_node(CLIMATE_NODE_DEFAULT_ID, climate_node)
@@ -908,23 +913,12 @@ mod tests {
                             client.subscribe_props_for_id(&id, &desc).unwrap(),
                         )
                         .await;
-                        let _ = publish(
-                            &mqtt_client,
-                            maintenance_node_publisher.low_battery(false).unwrap(),
-                        )
-                        .await;
-                        let _ = publish(
-                            &mqtt_client,
-                            maintenance_node_publisher
-                                .last_update(chrono::Utc::now())
-                                .unwrap(),
-                        )
-                        .await;
-                        let _ = publish(
-                            &mqtt_client,
-                            maintenance_node_publisher.reachable(true).unwrap(),
-                        )
-                        .await;
+                        if let Some(p) = battery_node_publisher.level(100) {
+                            let _ = publish(&mqtt_client, p).await;
+                        }
+                        if let Some(p) = link_node_publisher.last_seen(chrono::Utc::now()) {
+                            let _ = publish(&mqtt_client, p).await;
+                        }
                         let _ = publish(
                             &mqtt_client,
                             switch_node_publisher.state_target(switch_state),
