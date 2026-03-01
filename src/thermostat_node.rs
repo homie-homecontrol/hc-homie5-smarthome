@@ -1,5 +1,5 @@
 use homie5::{
-    HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_MINUTES, HOMIE_UNIT_PERCENT, Homie5DeviceProtocol,
+    HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_PERCENT, HOMIE_UNIT_SECONDS, Homie5DeviceProtocol,
     Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
         BooleanFormat, FloatRange, HomieDeviceDescription, HomieNodeDescription,
@@ -8,7 +8,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_THERMOSTAT;
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_THERMOSTAT, SetCommandParser};
 
 pub const THERMOSTAT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("thermostat");
 pub const THERMOSTAT_NODE_DEFAULT_NAME: &str = "Thermostat";
@@ -117,6 +117,7 @@ pub enum ThermostatNodeSetEvents {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ThermostatNodeConfig {
     pub unit: String,
     pub valve: bool,
@@ -157,7 +158,7 @@ impl ThermostatNodeBuilder {
             NodeDescriptionBuilder::new().name(THERMOSTAT_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_THERMOSTAT);
+        .r#type(SMARTHOME_CAP_THERMOSTAT);
 
         Self { node_builder: db }
     }
@@ -217,7 +218,7 @@ impl ThermostatNodeBuilder {
         )
         .add_property_cond(
             THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
-            config.boost_state,
+            config.boost_time,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                     .name("Seconds remaining for boost")
@@ -226,7 +227,7 @@ impl ThermostatNodeBuilder {
                         max: None,
                         step: None,
                     }))
-                    .unit(HOMIE_UNIT_MINUTES)
+                    .unit(HOMIE_UNIT_SECONDS)
                     .settable(false)
                     .retained(false)
                     .build()
@@ -266,6 +267,112 @@ impl ThermostatNodeBuilder {
                 client.clone(),
             ),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use homie5::device_description::HomiePropertyFormat;
+
+    fn base_disabled_config() -> ThermostatNodeConfig {
+        ThermostatNodeConfig {
+            unit: "F".to_string(),
+            valve: false,
+            windowopen: false,
+            boost_state: false,
+            boost_time: false,
+            mode: false,
+            modes: vec![ThermostatNodeModes::Cool, ThermostatNodeModes::Heat],
+            temp_range: FloatRange {
+                min: Some(10.0),
+                max: Some(30.0),
+                step: Some(1.0),
+            },
+        }
+    }
+
+    #[test]
+    fn set_temperature_respects_unit_and_temp_range_config() {
+        let config = base_disabled_config();
+        let node = ThermostatNodeBuilder::new(&config).build();
+
+        let set_temperature = node
+            .properties
+            .get(&THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID)
+            .expect("set-temperature property must exist");
+
+        assert_eq!(set_temperature.unit.as_deref(), Some("F"));
+        assert_eq!(
+            set_temperature.format,
+            HomiePropertyFormat::FloatRange(FloatRange {
+                min: Some(10.0),
+                max: Some(30.0),
+                step: Some(1.0),
+            })
+        );
+    }
+
+    #[test]
+    fn each_boolean_config_gates_the_expected_optional_property() {
+        let gated_properties = [
+            THERMOSTAT_NODE_VALVE_PROP_ID,
+            THERMOSTAT_NODE_WINDOWOPEN_PROP_ID,
+            THERMOSTAT_NODE_BOOST_STATE_PROP_ID,
+            THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
+            THERMOSTAT_NODE_MODE_PROP_ID,
+        ];
+
+        for expected_property_id in gated_properties.iter() {
+            let mut config = base_disabled_config();
+            if expected_property_id == &THERMOSTAT_NODE_VALVE_PROP_ID {
+                config.valve = true;
+            } else if expected_property_id == &THERMOSTAT_NODE_WINDOWOPEN_PROP_ID {
+                config.windowopen = true;
+            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_STATE_PROP_ID {
+                config.boost_state = true;
+            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_TIME_PROP_ID {
+                config.boost_time = true;
+            } else if expected_property_id == &THERMOSTAT_NODE_MODE_PROP_ID {
+                config.mode = true;
+            } else {
+                unreachable!("unknown thermostat property id");
+            }
+
+            let node = ThermostatNodeBuilder::new(&config).build();
+
+            assert!(
+                node.properties
+                    .contains_key(&THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID),
+                "set-temperature property must always exist"
+            );
+
+            for property_id in gated_properties.iter() {
+                let expected_present = property_id == expected_property_id;
+                assert_eq!(
+                    node.properties.contains_key(property_id),
+                    expected_present,
+                    "property {property_id} presence mismatch"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn mode_property_uses_configured_modes() {
+        let mut config = base_disabled_config();
+        config.mode = true;
+
+        let node = ThermostatNodeBuilder::new(&config).build();
+        let mode_property = node
+            .properties
+            .get(&THERMOSTAT_NODE_MODE_PROP_ID)
+            .expect("mode property must exist when mode config is enabled");
+
+        assert_eq!(
+            mode_property.format,
+            HomiePropertyFormat::Enum(vec!["cool".to_string(), "heat".to_string()])
+        );
     }
 }
 
@@ -358,57 +465,107 @@ impl ThermostatNodePublisher {
             true,
         )
     }
+}
 
-    pub fn match_parse(
+impl SetCommandParser for ThermostatNodePublisher {
+    type Event = ThermostatNodeSetEvents;
+
+    fn parse_set(
         &self,
         property: &PropertyRef,
         desc: &HomieDeviceDescription,
         set_value: &str,
-    ) -> Option<ThermostatNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
+        let property_id = property.prop_id().to_string();
+
         if property.match_with_node(&self.node, &self.set_temperature_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Float(value)) = HomieValue::parse(set_value, prop_desc) {
-                    Some(ThermostatNodeSetEvents::SetTemperature(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Float(value)) => {
+                    ParseOutcome::Parsed(ThermostatNodeSetEvents::SetTemperature(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else if property.match_with_node(&self.node, &self.mode_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Enum(value)) = HomieValue::parse(set_value, prop_desc) {
-                    if let Ok(mode) = value.as_str().try_into() {
-                        Some(ThermostatNodeSetEvents::Mode(mode))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })?
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Enum(value)) => match value.as_str().try_into() {
+                    Ok(mode) => ParseOutcome::Parsed(ThermostatNodeSetEvents::Mode(mode)),
+                    Err(_) => ParseOutcome::Invalid(ParseError::new(
+                        property.prop_id().to_string(),
+                        set_value,
+                        ParseErrorKind::InvalidVariant,
+                    )),
+                },
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else if property.match_with_node(&self.node, &self.boost_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Bool(value)) = HomieValue::parse(set_value, prop_desc) {
-                    Some(ThermostatNodeSetEvents::Boost(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Bool(value)) => {
+                    ParseOutcome::Parsed(ThermostatNodeSetEvents::Boost(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else {
-            None
+            ParseOutcome::NoMatch
         }
     }
 
-    pub fn match_parse_event(
+    fn parse_set_event(
         &self,
         desc: &HomieDeviceDescription,
         event: &Homie5Message,
-    ) -> Option<ThermostatNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
         match event {
             Homie5Message::PropertySet {
                 property,
                 set_value,
-            } => self.match_parse(property, desc, set_value),
-            _ => None,
+            } => self.parse_set(property, desc, set_value),
+            _ => ParseOutcome::Invalid(ParseError::new(
+                self.set_temperature_prop.to_string(),
+                "",
+                ParseErrorKind::UnexpectedMessageType,
+            )),
         }
     }
 }

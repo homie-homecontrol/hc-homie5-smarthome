@@ -1,8 +1,8 @@
-use std::{fmt::Display, str::FromStr};
+use std::str::FromStr;
 
 use homie5::{
-    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
-    HomieValue, NodeRef, PropertyRef,
+    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef,
+    PropertyRef,
     device_description::{
         HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
@@ -10,102 +10,72 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SHUTTER, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_VOLUME, SetCommandParser,
+    mediaplayer_node::ControlState,
+};
 
-pub const SHUTTER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("shutter");
-pub const SHUTTER_NODE_DEFAULT_NAME: &str = "Shutter control";
-pub const SHUTTER_NODE_POSITION_PROP_ID: HomieID = HomieID::new_const("position");
-pub const SHUTTER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+pub const VOLUME_NODE_DEFAULT_ID: HomieID = HomieID::new_const("volume");
+pub const VOLUME_NODE_DEFAULT_NAME: &str = "Volume";
+pub const VOLUME_NODE_LEVEL_PROP_ID: HomieID = HomieID::new_const("level");
+pub const VOLUME_NODE_MUTE_PROP_ID: HomieID = HomieID::new_const("mute");
 
-#[derive(Debug)]
-pub struct ShutterNode {
-    pub publisher: ShutterNodePublisher,
-    pub position: i64,
-    pub position_target: i64,
-}
+const CONTROL_STATE_FORMAT: [&str; 3] = ["on", "off", "disabled"];
 
-#[derive(Debug)]
-pub enum ShutterNodeActions {
-    Up,
-    Down,
-    Stop,
-}
-
-impl Display for ShutterNodeActions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s: &'static str = self.into();
-        write!(f, "{}", s)
-    }
-}
-
-impl From<&ShutterNodeActions> for &'static str {
-    fn from(action: &ShutterNodeActions) -> Self {
-        match action {
-            ShutterNodeActions::Up => "up",
-            ShutterNodeActions::Down => "down",
-            ShutterNodeActions::Stop => "stop",
-        }
-    }
-}
-impl FromStr for ShutterNodeActions {
-    type Err = Homie5ProtocolError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "up" => Ok(ShutterNodeActions::Up),
-            "down" => Ok(ShutterNodeActions::Down),
-            "stop" => Ok(ShutterNodeActions::Stop),
-            _ => Err(Homie5ProtocolError::InvalidPayload),
-        }
-    }
-}
+// ── Node (state) ────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
-pub enum ShutterNodeSetEvents {
-    Position(i64),
-    Action(ShutterNodeActions),
+pub struct VolumeNode {
+    pub publisher: VolumeNodePublisher,
+    pub level: i64,
+    pub level_target: i64,
+    pub mute: Option<ControlState>,
 }
+
+// ── Set events ──────────────────────────────────────────────────────────────
+
+#[derive(Debug)]
+pub enum VolumeNodeSetEvents {
+    Level(i64),
+    Mute(ControlState),
+}
+
+// ── Config ──────────────────────────────────────────────────────────────────
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct ShutterNodeConfig {
-    pub can_stop: bool,
+pub struct VolumeNodeConfig {
+    pub mute: bool,
 }
 
-impl Default for ShutterNodeConfig {
+impl Default for VolumeNodeConfig {
     fn default() -> Self {
-        Self { can_stop: true }
+        Self { mute: true }
     }
 }
 
-pub struct ShutterNodeBuilder {
+// ── Builder ─────────────────────────────────────────────────────────────────
+
+pub struct VolumeNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl ShutterNodeBuilder {
-    pub fn new(config: &ShutterNodeConfig) -> Self {
+impl VolumeNodeBuilder {
+    pub fn new(config: &VolumeNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(SHUTTER_NODE_DEFAULT_NAME),
+            NodeDescriptionBuilder::new().name(VOLUME_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_CAP_SHUTTER);
+        .r#type(SMARTHOME_CAP_VOLUME);
 
         Self { node_builder: db }
     }
 
-    fn build_node(
-        db: NodeDescriptionBuilder,
-        config: &ShutterNodeConfig,
-    ) -> NodeDescriptionBuilder {
-        let mut actions = vec![ShutterNodeActions::Up, ShutterNodeActions::Down];
-
-        if config.can_stop {
-            actions.push(ShutterNodeActions::Stop);
-        }
-
+    fn build_node(db: NodeDescriptionBuilder, config: &VolumeNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            SHUTTER_NODE_POSITION_PROP_ID,
+            VOLUME_NODE_LEVEL_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                .name("Shutter position")
+                .name("Volume level")
                 .format(HomiePropertyFormat::IntegerRange(IntegerRange {
                     min: Some(0),
                     max: Some(100),
@@ -116,17 +86,19 @@ impl ShutterNodeBuilder {
                 .retained(true)
                 .build(),
         )
-        .add_property(
-            SHUTTER_NODE_ACTION_PROP_ID,
+        .add_property_cond(VOLUME_NODE_MUTE_PROP_ID, config.mute, || {
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Control Shutter")
+                .name("Mute")
                 .format(HomiePropertyFormat::Enum(
-                    actions.iter().map(|a| a.to_string()).collect(),
+                    CONTROL_STATE_FORMAT
+                        .iter()
+                        .map(|s| (*s).to_owned())
+                        .collect(),
                 ))
                 .settable(true)
-                .retained(false)
-                .build(),
-        )
+                .retained(true)
+                .build()
+        })
     }
 
     pub fn name<S: Into<String>>(mut self, name: impl Into<Option<S>>) -> Self {
@@ -142,66 +114,67 @@ impl ShutterNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, ShutterNodePublisher) {
-        let did = client.id().clone();
+    ) -> (HomieNodeDescription, VolumeNodePublisher) {
         (
             self.node_builder.build(),
-            ShutterNodePublisher::new(
-                NodeRef::new(client.homie_domain().to_owned(), did, node_id),
+            VolumeNodePublisher::new(
+                NodeRef::new(
+                    client.homie_domain().to_owned(),
+                    client.id().clone(),
+                    node_id,
+                ),
                 client.clone(),
             ),
         )
     }
 }
 
+// ── Publisher ────────────────────────────────────────────────────────────────
+
 #[derive(Debug)]
-pub struct ShutterNodePublisher {
+pub struct VolumeNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    position_prop: HomieID,
-    action_prop: HomieID,
+    level_prop: HomieID,
+    mute_prop: HomieID,
 }
 
-impl ShutterNodePublisher {
+impl VolumeNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            position_prop: SHUTTER_NODE_POSITION_PROP_ID,
-            action_prop: SHUTTER_NODE_ACTION_PROP_ID,
+            level_prop: VOLUME_NODE_LEVEL_PROP_ID,
+            mute_prop: VOLUME_NODE_MUTE_PROP_ID,
         }
     }
 
-    pub fn position(&self, value: i64) -> homie5::client::Publish {
+    pub fn level(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.position_prop,
+            &self.level_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn position_target(&self, value: i64) -> homie5::client::Publish {
+    pub fn level_target(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.position_prop,
+            &self.level_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn action(&self, action: ShutterNodeActions) -> homie5::client::Publish {
-        self.client.publish_value(
-            self.node.node_id(),
-            &self.action_prop,
-            action.to_string(),
-            false,
-        )
+    pub fn mute(&self, value: ControlState) -> homie5::client::Publish {
+        self.client
+            .publish_value(self.node.node_id(), &self.mute_prop, value.as_str(), true)
     }
 }
 
-impl SetCommandParser for ShutterNodePublisher {
-    type Event = ShutterNodeSetEvents;
+impl SetCommandParser for VolumeNodePublisher {
+    type Event = VolumeNodeSetEvents;
 
     fn parse_set(
         &self,
@@ -211,7 +184,7 @@ impl SetCommandParser for ShutterNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.position_prop) {
+        if property.match_with_node(&self.node, &self.level_prop) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -224,7 +197,7 @@ impl SetCommandParser for ShutterNodePublisher {
 
             match parsed {
                 Ok(HomieValue::Integer(value)) => {
-                    ParseOutcome::Parsed(ShutterNodeSetEvents::Position(value))
+                    ParseOutcome::Parsed(VolumeNodeSetEvents::Level(value))
                 }
                 _ => ParseOutcome::Invalid(ParseError::new(
                     property.prop_id().to_string(),
@@ -232,7 +205,7 @@ impl SetCommandParser for ShutterNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.action_prop) {
+        } else if property.match_with_node(&self.node, &self.mute_prop) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -244,8 +217,8 @@ impl SetCommandParser for ShutterNodePublisher {
             };
 
             match parsed {
-                Ok(HomieValue::Enum(value)) => match ShutterNodeActions::from_str(&value) {
-                    Ok(action) => ParseOutcome::Parsed(ShutterNodeSetEvents::Action(action)),
+                Ok(HomieValue::Enum(value)) => match ControlState::from_str(&value) {
+                    Ok(state) => ParseOutcome::Parsed(VolumeNodeSetEvents::Mute(state)),
                     Err(_) => ParseOutcome::Invalid(ParseError::new(
                         property.prop_id().to_string(),
                         set_value,
@@ -274,7 +247,7 @@ impl SetCommandParser for ShutterNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.position_prop.to_string(),
+                self.level_prop.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

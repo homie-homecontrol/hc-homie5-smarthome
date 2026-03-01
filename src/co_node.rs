@@ -6,44 +6,48 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_TILT;
+use crate::SMARTHOME_CAP_CO;
 
-pub const TILT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("tilt");
-pub const TILT_NODE_DEFAULT_NAME: &str = "Tilt sensor";
-pub const TILT_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
+pub const CO_NODE_DEFAULT_ID: HomieID = HomieID::new_const("co");
+pub const CO_NODE_DEFAULT_NAME: &str = "Carbon monoxide detector";
+pub const CO_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
+
+// ── Node (state) ────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
-pub struct TiltNode {
-    pub publisher: TiltNodePublisher,
-    pub state: bool,
+pub struct CoNode {
+    pub publisher: CoNodePublisher,
+    pub detected: bool,
 }
 
-pub struct TiltNodeBuilder {
+// ── Builder ─────────────────────────────────────────────────────────────────
+
+pub struct CoNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl Default for TiltNodeBuilder {
+impl Default for CoNodeBuilder {
     fn default() -> Self {
-        let db = Self::build_node(NodeDescriptionBuilder::new().name(TILT_NODE_DEFAULT_NAME))
-            .r#type(SMARTHOME_CAP_TILT);
+        let db = Self::build_node(NodeDescriptionBuilder::new().name(CO_NODE_DEFAULT_NAME))
+            .r#type(SMARTHOME_CAP_CO);
 
         Self { node_builder: db }
     }
 }
 
-impl TiltNodeBuilder {
+impl CoNodeBuilder {
     pub fn new() -> Self {
         Default::default()
     }
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            TILT_NODE_STATE_PROP_ID,
+            CO_NODE_DETECTED_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
-                .name("Tilted state")
+                .name("CO detected")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "not tilted".to_owned(),
-                    true_val: "tilted".to_owned(),
+                    false_val: "clear".to_owned(),
+                    true_val: "co detected".to_owned(),
                 }))
                 .settable(false)
                 .retained(true)
@@ -64,13 +68,13 @@ impl TiltNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, TiltNodePublisher) {
+    ) -> (HomieNodeDescription, CoNodePublisher) {
         (
             self.node_builder.build(),
-            TiltNodePublisher::new(
+            CoNodePublisher::new(
                 NodeRef::new(
                     client.homie_domain().to_owned(),
-                    client.id().to_owned(),
+                    client.id().clone(),
                     node_id,
                 ),
                 client.clone(),
@@ -79,26 +83,28 @@ impl TiltNodeBuilder {
     }
 }
 
+// ── Publisher ────────────────────────────────────────────────────────────────
+
 #[derive(Debug)]
-pub struct TiltNodePublisher {
+pub struct CoNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
+    detected_prop: HomieID,
 }
 
-impl TiltNodePublisher {
+impl CoNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            state_prop: TILT_NODE_STATE_PROP_ID,
+            detected_prop: CO_NODE_DETECTED_PROP_ID,
         }
     }
 
-    pub fn state(&self, value: bool) -> homie5::client::Publish {
+    pub fn detected(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.state_prop,
+            &self.detected_prop,
             value.to_string(),
             true,
         )

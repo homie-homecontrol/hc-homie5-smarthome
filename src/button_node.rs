@@ -1,20 +1,20 @@
 use std::{fmt::Display, str::FromStr};
 
 use homie5::{
+    Homie5DeviceProtocol, Homie5ProtocolError, HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5ProtocolError, HomieID, NodeRef,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_BUTTON;
+use crate::SMARTHOME_CAP_BUTTON;
 
-pub const BUTTON_NODE_DEFAULT_ID: &str = "button";
+pub const BUTTON_NODE_DEFAULT_ID: HomieID = HomieID::new_const("button");
 pub const BUTTON_NODE_DEFAULT_NAME: &str = "Pushbutton";
 
-pub const BUTTON_NODE_ACTION_PROP_ID: &str = "action";
+pub const BUTTON_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -68,6 +68,7 @@ impl ButtonNodeActions {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ButtonNodeConfig {
     pub actions: Vec<ButtonNodeActions>,
 }
@@ -90,14 +91,14 @@ impl ButtonNodeBuilder {
             NodeDescriptionBuilder::new().name(BUTTON_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_BUTTON);
+        .r#type(SMARTHOME_CAP_BUTTON);
 
         Self { node_builder: db }
     }
 
     fn build_node(db: NodeDescriptionBuilder, config: &ButtonNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            BUTTON_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            BUTTON_NODE_ACTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
                 .name("Button action event")
                 .format(HomiePropertyFormat::Enum(
@@ -150,7 +151,7 @@ impl ButtonNodePublisher {
         Self {
             node,
             client,
-            action_prop: BUTTON_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            action_prop: BUTTON_NODE_ACTION_PROP_ID,
         }
     }
 

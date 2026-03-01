@@ -1,41 +1,42 @@
 use homie5::{
+    Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
         HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_LIGHTSCENE;
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SCENE, SetCommandParser};
 
-pub const LIGHTSCENE_NODE_DEFAULT_ID: &str = "scenes";
-pub const LIGHTSCENE_NODE_DEFAULT_NAME: &str = "Light scenes";
-pub const LIGHTSCENE_NODE_RECALL_PROP_ID: &str = "recall";
+pub const SCENE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("scene");
+pub const SCENE_NODE_DEFAULT_NAME: &str = "Scene recall";
+pub const SCENE_NODE_RECALL_PROP_ID: HomieID = HomieID::new_const("recall");
 
 #[derive(Debug)]
-pub enum LightSceneNodeActions {
+pub enum SceneNodeActions {
     Recall(String),
 }
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize, Deserialize)]
-pub struct LightSceneNodeConfig {
+#[serde(default)]
+pub struct SceneNodeConfig {
     pub scenes: Vec<String>,
     pub settable: bool,
 }
 
-pub struct LightSceneNodeBuilder {
+pub struct SceneNodeBuilder {
     node_builder: NodeDescriptionBuilder,
-    config: LightSceneNodeConfig,
+    config: SceneNodeConfig,
 }
 
-impl LightSceneNodeBuilder {
-    pub fn new(config: &LightSceneNodeConfig) -> Self {
+impl SceneNodeBuilder {
+    pub fn new(config: &SceneNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(LIGHTSCENE_NODE_DEFAULT_NAME),
+            NodeDescriptionBuilder::new().name(SCENE_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_LIGHTSCENE);
+        .r#type(SMARTHOME_CAP_SCENE);
 
         Self {
             node_builder: db,
@@ -43,12 +44,9 @@ impl LightSceneNodeBuilder {
         }
     }
 
-    fn build_node(
-        db: NodeDescriptionBuilder,
-        config: &LightSceneNodeConfig,
-    ) -> NodeDescriptionBuilder {
+    fn build_node(db: NodeDescriptionBuilder, config: &SceneNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            LIGHTSCENE_NODE_RECALL_PROP_ID.try_into().unwrap(),
+            SCENE_NODE_RECALL_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
                 .name("Recall a scene")
                 .format(HomiePropertyFormat::Enum(config.scenes.clone()))
@@ -71,10 +69,10 @@ impl LightSceneNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, LightSceneNodePublisher) {
+    ) -> (HomieNodeDescription, SceneNodePublisher) {
         (
             self.node_builder.build(),
-            LightSceneNodePublisher::new(
+            SceneNodePublisher::new(
                 NodeRef::new(
                     client.homie_domain().to_owned(),
                     client.id().to_owned(),
@@ -88,26 +86,26 @@ impl LightSceneNodeBuilder {
 }
 
 #[derive(Debug)]
-pub struct LightSceneNodePublisher {
+pub struct SceneNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
     recall_prop: HomieID,
-    config: LightSceneNodeConfig,
+    config: SceneNodeConfig,
 }
 
-impl LightSceneNodePublisher {
-    pub fn new(node: NodeRef, config: LightSceneNodeConfig, client: Homie5DeviceProtocol) -> Self {
+impl SceneNodePublisher {
+    pub fn new(node: NodeRef, config: SceneNodeConfig, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             config,
             client,
-            recall_prop: LIGHTSCENE_NODE_RECALL_PROP_ID.try_into().unwrap(),
+            recall_prop: SCENE_NODE_RECALL_PROP_ID,
         }
     }
 
     pub fn recall(
         &self,
-        LightSceneNodeActions::Recall(scene): &LightSceneNodeActions,
+        SceneNodeActions::Recall(scene): &SceneNodeActions,
     ) -> Option<homie5::client::Publish> {
         if self.config.scenes.contains(scene) {
             Some(
@@ -118,38 +116,58 @@ impl LightSceneNodePublisher {
             None
         }
     }
+}
 
-    pub fn match_parse(
+impl SetCommandParser for SceneNodePublisher {
+    type Event = SceneNodeActions;
+
+    fn parse_set(
         &self,
         property: &PropertyRef,
         desc: &HomieDeviceDescription,
         set_value: &str,
-    ) -> Option<LightSceneNodeActions> {
-        println!("returning parsed scene: {}, {:#?}", set_value, property);
+    ) -> ParseOutcome<Self::Event> {
         if property.match_with_node(&self.node, &self.recall_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Enum(value)) = HomieValue::parse(set_value, prop_desc) {
-                    println!("returning parsed scene: {}", value);
-                    Some(LightSceneNodeActions::Recall(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Enum(value)) => {
+                    ParseOutcome::Parsed(SceneNodeActions::Recall(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else {
-            None
+            ParseOutcome::NoMatch
         }
     }
-    pub fn match_parse_event(
+
+    fn parse_set_event(
         &self,
         desc: &HomieDeviceDescription,
         event: &Homie5Message,
-    ) -> Option<LightSceneNodeActions> {
+    ) -> ParseOutcome<Self::Event> {
         match event {
             Homie5Message::PropertySet {
                 property,
                 set_value,
-            } => self.match_parse(property, desc, set_value),
-            _ => None,
+            } => self.parse_set(property, desc, set_value),
+            _ => ParseOutcome::Invalid(ParseError::new(
+                self.recall_prop.to_string(),
+                "",
+                ParseErrorKind::UnexpectedMessageType,
+            )),
         }
     }
 }

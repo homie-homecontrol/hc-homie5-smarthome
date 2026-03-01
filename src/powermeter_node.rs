@@ -8,9 +8,9 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_POWERMETER;
+use crate::SMARTHOME_CAP_POWERMETER;
 
-pub const POWERMETER_NODE_DEFAULT_ID: &str = "powermeter";
+pub const POWERMETER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("powermeter");
 pub const POWERMETER_NODE_DEFAULT_NAME: &str = "Powermeter";
 pub const POWERMETER_NODE_POWER_PROP_ID: HomieID = HomieID::new_const("power");
 pub const POWERMETER_NODE_CURRENT_PROP_ID: HomieID = HomieID::new_const("current");
@@ -29,6 +29,7 @@ pub struct PowermeterNode {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct PowermeterNodeConfig {
     pub current: bool,
     pub voltage: bool,
@@ -56,7 +57,7 @@ impl Default for PowermeterNodeBuilder {
             NodeDescriptionBuilder::new().name(POWERMETER_NODE_DEFAULT_NAME),
             &Default::default(),
         )
-        .r#type(SMARTHOME_TYPE_POWERMETER);
+        .r#type(SMARTHOME_CAP_POWERMETER);
 
         Self { node_builder: db }
     }
@@ -68,7 +69,7 @@ impl PowermeterNodeBuilder {
             NodeDescriptionBuilder::new().name(POWERMETER_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_POWERMETER);
+        .r#type(SMARTHOME_CAP_POWERMETER);
 
         Self { node_builder: db }
     }
@@ -136,7 +137,7 @@ impl PowermeterNodeBuilder {
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
                     .name("Consumption")
-                    .unit("wH") //WATT HOURS
+                    .unit("Wh")
                     .format(HomiePropertyFormat::FloatRange(FloatRange {
                         min: Some(0.0),
                         max: None,

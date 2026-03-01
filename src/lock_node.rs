@@ -1,129 +1,121 @@
-use std::{fmt::Display, str::FromStr};
+use core::fmt;
+use std::str::FromStr;
 
 use homie5::{
-    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
-    HomieValue, NodeRef, PropertyRef,
+    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
+    PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
+        BooleanFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SHUTTER, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_LOCK, SetCommandParser};
 
-pub const SHUTTER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("shutter");
-pub const SHUTTER_NODE_DEFAULT_NAME: &str = "Shutter control";
-pub const SHUTTER_NODE_POSITION_PROP_ID: HomieID = HomieID::new_const("position");
-pub const SHUTTER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+pub const LOCK_NODE_DEFAULT_ID: HomieID = HomieID::new_const("lock");
+pub const LOCK_NODE_DEFAULT_NAME: &str = "Lock control";
+pub const LOCK_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
+pub const LOCK_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug)]
-pub struct ShutterNode {
-    pub publisher: ShutterNodePublisher,
-    pub position: i64,
-    pub position_target: i64,
+pub struct LockNode {
+    pub publisher: LockNodePublisher,
+    pub state: bool,
+    pub state_target: bool,
 }
 
 #[derive(Debug)]
-pub enum ShutterNodeActions {
-    Up,
-    Down,
-    Stop,
+pub enum LockNodeActions {
+    Lock,
+    Unlock,
+    Toggle,
 }
 
-impl Display for ShutterNodeActions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s: &'static str = self.into();
-        write!(f, "{}", s)
+impl fmt::Display for LockNodeActions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
-impl From<&ShutterNodeActions> for &'static str {
-    fn from(action: &ShutterNodeActions) -> Self {
-        match action {
-            ShutterNodeActions::Up => "up",
-            ShutterNodeActions::Down => "down",
-            ShutterNodeActions::Stop => "stop",
+impl LockNodeActions {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LockNodeActions::Lock => "lock",
+            LockNodeActions::Unlock => "unlock",
+            LockNodeActions::Toggle => "toggle",
         }
     }
 }
-impl FromStr for ShutterNodeActions {
+
+impl FromStr for LockNodeActions {
     type Err = Homie5ProtocolError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "up" => Ok(ShutterNodeActions::Up),
-            "down" => Ok(ShutterNodeActions::Down),
-            "stop" => Ok(ShutterNodeActions::Stop),
+            "lock" => Ok(LockNodeActions::Lock),
+            "unlock" => Ok(LockNodeActions::Unlock),
+            "toggle" => Ok(LockNodeActions::Toggle),
             _ => Err(Homie5ProtocolError::InvalidPayload),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum ShutterNodeSetEvents {
-    Position(i64),
-    Action(ShutterNodeActions),
+pub enum LockNodeSetEvents {
+    State(bool),
+    Action(LockNodeActions),
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct ShutterNodeConfig {
-    pub can_stop: bool,
+pub struct LockNodeConfig {
+    pub settable: bool,
 }
 
-impl Default for ShutterNodeConfig {
+impl Default for LockNodeConfig {
     fn default() -> Self {
-        Self { can_stop: true }
+        Self { settable: true }
     }
 }
 
-pub struct ShutterNodeBuilder {
+pub struct LockNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl ShutterNodeBuilder {
-    pub fn new(config: &ShutterNodeConfig) -> Self {
+impl LockNodeBuilder {
+    pub fn new(config: &LockNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(SHUTTER_NODE_DEFAULT_NAME),
+            NodeDescriptionBuilder::new().name(LOCK_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_CAP_SHUTTER);
+        .r#type(SMARTHOME_CAP_LOCK);
 
         Self { node_builder: db }
     }
 
-    fn build_node(
-        db: NodeDescriptionBuilder,
-        config: &ShutterNodeConfig,
-    ) -> NodeDescriptionBuilder {
-        let mut actions = vec![ShutterNodeActions::Up, ShutterNodeActions::Down];
-
-        if config.can_stop {
-            actions.push(ShutterNodeActions::Stop);
-        }
-
+    fn build_node(db: NodeDescriptionBuilder, config: &LockNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            SHUTTER_NODE_POSITION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                .name("Shutter position")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
-                    min: Some(0),
-                    max: Some(100),
-                    step: None,
+            LOCK_NODE_STATE_PROP_ID,
+            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+                .name("Lock state")
+                .format(HomiePropertyFormat::Boolean(BooleanFormat {
+                    false_val: "unlocked".to_owned(),
+                    true_val: "locked".to_owned(),
                 }))
-                .unit(HOMIE_UNIT_PERCENT)
-                .settable(true)
+                .settable(config.settable)
                 .retained(true)
                 .build(),
         )
         .add_property(
-            SHUTTER_NODE_ACTION_PROP_ID,
+            LOCK_NODE_ACTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Control Shutter")
-                .format(HomiePropertyFormat::Enum(
-                    actions.iter().map(|a| a.to_string()).collect(),
-                ))
-                .settable(true)
+                .name("Lock action")
+                .format(HomiePropertyFormat::Enum(vec![
+                    "lock".to_owned(),
+                    "unlock".to_owned(),
+                    "toggle".to_owned(),
+                ]))
+                .settable(config.settable)
                 .retained(false)
                 .build(),
         )
@@ -142,12 +134,15 @@ impl ShutterNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, ShutterNodePublisher) {
-        let did = client.id().clone();
+    ) -> (HomieNodeDescription, LockNodePublisher) {
         (
             self.node_builder.build(),
-            ShutterNodePublisher::new(
-                NodeRef::new(client.homie_domain().to_owned(), did, node_id),
+            LockNodePublisher::new(
+                NodeRef::new(
+                    client.homie_domain().to_owned(),
+                    client.id().clone(),
+                    node_id,
+                ),
                 client.clone(),
             ),
         )
@@ -155,53 +150,53 @@ impl ShutterNodeBuilder {
 }
 
 #[derive(Debug)]
-pub struct ShutterNodePublisher {
+pub struct LockNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    position_prop: HomieID,
+    state_prop: HomieID,
     action_prop: HomieID,
 }
 
-impl ShutterNodePublisher {
+impl LockNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            position_prop: SHUTTER_NODE_POSITION_PROP_ID,
-            action_prop: SHUTTER_NODE_ACTION_PROP_ID,
+            state_prop: LOCK_NODE_STATE_PROP_ID,
+            action_prop: LOCK_NODE_ACTION_PROP_ID,
         }
     }
 
-    pub fn position(&self, value: i64) -> homie5::client::Publish {
+    pub fn state(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.position_prop,
+            &self.state_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn position_target(&self, value: i64) -> homie5::client::Publish {
+    pub fn state_target(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.position_prop,
+            &self.state_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn action(&self, action: ShutterNodeActions) -> homie5::client::Publish {
+    pub fn action(&self, action: &LockNodeActions) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
             &self.action_prop,
-            action.to_string(),
+            action.as_str(),
             false,
         )
     }
 }
 
-impl SetCommandParser for ShutterNodePublisher {
-    type Event = ShutterNodeSetEvents;
+impl SetCommandParser for LockNodePublisher {
+    type Event = LockNodeSetEvents;
 
     fn parse_set(
         &self,
@@ -211,7 +206,7 @@ impl SetCommandParser for ShutterNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.position_prop) {
+        if property.match_with_node(&self.node, &self.state_prop) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -223,8 +218,8 @@ impl SetCommandParser for ShutterNodePublisher {
             };
 
             match parsed {
-                Ok(HomieValue::Integer(value)) => {
-                    ParseOutcome::Parsed(ShutterNodeSetEvents::Position(value))
+                Ok(HomieValue::Bool(value)) => {
+                    ParseOutcome::Parsed(LockNodeSetEvents::State(value))
                 }
                 _ => ParseOutcome::Invalid(ParseError::new(
                     property.prop_id().to_string(),
@@ -244,8 +239,8 @@ impl SetCommandParser for ShutterNodePublisher {
             };
 
             match parsed {
-                Ok(HomieValue::Enum(value)) => match ShutterNodeActions::from_str(&value) {
-                    Ok(action) => ParseOutcome::Parsed(ShutterNodeSetEvents::Action(action)),
+                Ok(HomieValue::Enum(value)) => match LockNodeActions::from_str(&value) {
+                    Ok(action) => ParseOutcome::Parsed(LockNodeSetEvents::Action(action)),
                     Err(_) => ParseOutcome::Invalid(ParseError::new(
                         property.prop_id().to_string(),
                         set_value,
@@ -274,7 +269,7 @@ impl SetCommandParser for ShutterNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.position_prop.to_string(),
+                self.state_prop.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

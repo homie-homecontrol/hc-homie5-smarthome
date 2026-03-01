@@ -1,18 +1,18 @@
 use homie5::{
+    HOMIE_UNIT_DEGREE, Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_DEGREE,
 };
 
-use crate::SMARTHOME_TYPE_ORIENTATION;
+use crate::SMARTHOME_CAP_ORIENTATION;
 
-pub const ORIENTATION_NODE_DEFAULT_ID: &str = "orientation";
+pub const ORIENTATION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("orientation");
 pub const ORIENTATION_NODE_DEFAULT_NAME: &str = "Orientation sensor";
-pub const ORIENTATION_NODE_ORIENT_X_PROP_ID: &str = "orientation-x";
-pub const ORIENTATION_NODE_ORIENT_Y_PROP_ID: &str = "orientation-y";
-pub const ORIENTATION_NODE_ORIENT_Z_PROP_ID: &str = "orientation-z";
-pub const ORIENTATION_NODE_TILT_PROP_ID: &str = "tilt";
+pub const ORIENTATION_NODE_ORIENT_X_PROP_ID: HomieID = HomieID::new_const("orientation-x");
+pub const ORIENTATION_NODE_ORIENT_Y_PROP_ID: HomieID = HomieID::new_const("orientation-y");
+pub const ORIENTATION_NODE_ORIENT_Z_PROP_ID: HomieID = HomieID::new_const("orientation-z");
+pub const ORIENTATION_NODE_TILT_PROP_ID: HomieID = HomieID::new_const("tilt");
 
 #[derive(Debug)]
 pub struct OrientationNode {
@@ -31,7 +31,7 @@ impl Default for OrientationNodeBuilder {
     fn default() -> Self {
         let db =
             Self::build_node(NodeDescriptionBuilder::new().name(ORIENTATION_NODE_DEFAULT_NAME))
-                .r#type(SMARTHOME_TYPE_ORIENTATION);
+                .r#type(SMARTHOME_CAP_ORIENTATION);
 
         Self { node_builder: db }
     }
@@ -44,7 +44,7 @@ impl OrientationNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            ORIENTATION_NODE_ORIENT_X_PROP_ID.try_into().unwrap(),
+            ORIENTATION_NODE_ORIENT_X_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                 .name("Rotation X-Axis")
                 .retained(true)
@@ -53,25 +53,25 @@ impl OrientationNodeBuilder {
                 .build(),
         )
         .add_property(
-            ORIENTATION_NODE_ORIENT_Y_PROP_ID.try_into().unwrap(),
+            ORIENTATION_NODE_ORIENT_Y_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                .name("Rotation Y-Axist")
+                .name("Rotation Y-Axis")
                 .retained(true)
                 .settable(false)
                 .unit(HOMIE_UNIT_DEGREE)
                 .build(),
         )
         .add_property(
-            ORIENTATION_NODE_ORIENT_Z_PROP_ID.try_into().unwrap(),
+            ORIENTATION_NODE_ORIENT_Z_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                .name("Rotation Z-Axist")
+                .name("Rotation Z-Axis")
                 .retained(true)
                 .settable(false)
                 .unit(HOMIE_UNIT_DEGREE)
                 .build(),
         )
         .add_property(
-            ORIENTATION_NODE_TILT_PROP_ID.try_into().unwrap(),
+            ORIENTATION_NODE_TILT_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                 .name("Tilt angle")
                 .retained(true)
@@ -124,10 +124,10 @@ impl OrientationNodePublisher {
         Self {
             node,
             client,
-            orient_x_prop: ORIENTATION_NODE_ORIENT_X_PROP_ID.try_into().unwrap(),
-            orient_y_prop: ORIENTATION_NODE_ORIENT_Y_PROP_ID.try_into().unwrap(),
-            orient_z_prop: ORIENTATION_NODE_ORIENT_Z_PROP_ID.try_into().unwrap(),
-            tilt_prop: ORIENTATION_NODE_TILT_PROP_ID.try_into().unwrap(),
+            orient_x_prop: ORIENTATION_NODE_ORIENT_X_PROP_ID,
+            orient_y_prop: ORIENTATION_NODE_ORIENT_Y_PROP_ID,
+            orient_z_prop: ORIENTATION_NODE_ORIENT_Z_PROP_ID,
+            tilt_prop: ORIENTATION_NODE_TILT_PROP_ID,
         }
     }
 

@@ -1,49 +1,44 @@
 use homie5::{
+    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_LUX,
 };
-use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_MOTION;
+use crate::SMARTHOME_CAP_MOTION;
 
-pub const MOTION_NODE_DEFAULT_ID: &str = "motion";
+pub const MOTION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("motion");
 pub const MOTION_NODE_DEFAULT_NAME: &str = "Motion sensor";
-pub const MOTION_NODE_MOTION_PROP_ID: &str = "motion";
-pub const MOTION_NODE_LUX_PROP_ID: &str = "lux";
+pub const MOTION_NODE_MOTION_PROP_ID: HomieID = HomieID::new_const("motion");
 
 #[derive(Debug)]
 pub struct MotionNode {
     pub publisher: MotionNodePublisher,
     pub motion: bool,
-    pub lux: Option<i64>,
-}
-
-#[derive(Debug, Default, PartialEq, Clone, Serialize, Deserialize)]
-pub struct MotionNodeConfig {
-    pub lux: bool,
 }
 
 pub struct MotionNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl MotionNodeBuilder {
-    pub fn new(config: &MotionNodeConfig) -> Self {
-        let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(MOTION_NODE_DEFAULT_NAME),
-            config,
-        )
-        .r#type(SMARTHOME_TYPE_MOTION);
+impl Default for MotionNodeBuilder {
+    fn default() -> Self {
+        let db = Self::build_node(NodeDescriptionBuilder::new().name(MOTION_NODE_DEFAULT_NAME))
+            .r#type(SMARTHOME_CAP_MOTION);
 
         Self { node_builder: db }
     }
+}
 
-    fn build_node(db: NodeDescriptionBuilder, config: &MotionNodeConfig) -> NodeDescriptionBuilder {
+impl MotionNodeBuilder {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            MOTION_NODE_MOTION_PROP_ID.try_into().unwrap(),
+            MOTION_NODE_MOTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Motion detected")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
@@ -53,18 +48,6 @@ impl MotionNodeBuilder {
                 .retained(true)
                 .settable(false)
                 .build(),
-        )
-        .add_property_cond(
-            MOTION_NODE_LUX_PROP_ID.try_into().unwrap(),
-            config.lux,
-            || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                    .name("Current lightlevel")
-                    .retained(true)
-                    .settable(false)
-                    .unit(HOMIE_UNIT_LUX)
-                    .build()
-            },
         )
     }
 
@@ -101,7 +84,6 @@ pub struct MotionNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
     motion_prop: HomieID,
-    lux_prop: HomieID,
 }
 
 impl MotionNodePublisher {
@@ -109,8 +91,7 @@ impl MotionNodePublisher {
         Self {
             node,
             client,
-            motion_prop: MOTION_NODE_MOTION_PROP_ID.try_into().unwrap(),
-            lux_prop: MOTION_NODE_LUX_PROP_ID.try_into().unwrap(),
+            motion_prop: MOTION_NODE_MOTION_PROP_ID,
         }
     }
 
@@ -121,10 +102,5 @@ impl MotionNodePublisher {
             value.to_string(),
             true,
         )
-    }
-
-    pub fn lux(&self, value: i64) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.lux_prop, value.to_string(), true)
     }
 }

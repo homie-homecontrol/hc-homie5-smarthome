@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::str::FromStr;
 
 use homie5::{
     HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
@@ -10,123 +10,100 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SHUTTER, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_LEVEL, SetCommandParser};
 
-pub const SHUTTER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("shutter");
-pub const SHUTTER_NODE_DEFAULT_NAME: &str = "Shutter control";
-pub const SHUTTER_NODE_POSITION_PROP_ID: HomieID = HomieID::new_const("position");
-pub const SHUTTER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
-
-#[derive(Debug)]
-pub struct ShutterNode {
-    pub publisher: ShutterNodePublisher,
-    pub position: i64,
-    pub position_target: i64,
-}
+pub const LEVEL_NODE_DEFAULT_ID: HomieID = HomieID::new_const("level");
+pub const LEVEL_NODE_DEFAULT_NAME: &str = "Level control";
+pub const LEVEL_NODE_VALUE_PROP_ID: HomieID = HomieID::new_const("value");
+pub const LEVEL_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug)]
-pub enum ShutterNodeActions {
-    Up,
-    Down,
-    Stop,
+pub struct LevelNode {
+    pub publisher: LevelNodePublisher,
+    pub value: i64,
+    pub value_target: i64,
 }
 
-impl Display for ShutterNodeActions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s: &'static str = self.into();
-        write!(f, "{}", s)
-    }
+#[derive(Debug)]
+pub enum LevelNodeActions {
+    StepUp,
+    StepDown,
 }
 
-impl From<&ShutterNodeActions> for &'static str {
-    fn from(action: &ShutterNodeActions) -> Self {
-        match action {
-            ShutterNodeActions::Up => "up",
-            ShutterNodeActions::Down => "down",
-            ShutterNodeActions::Stop => "stop",
-        }
-    }
-}
-impl FromStr for ShutterNodeActions {
+impl FromStr for LevelNodeActions {
     type Err = Homie5ProtocolError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "up" => Ok(ShutterNodeActions::Up),
-            "down" => Ok(ShutterNodeActions::Down),
-            "stop" => Ok(ShutterNodeActions::Stop),
+            "step-up" => Ok(LevelNodeActions::StepUp),
+            "step-down" => Ok(LevelNodeActions::StepDown),
             _ => Err(Homie5ProtocolError::InvalidPayload),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum ShutterNodeSetEvents {
-    Position(i64),
-    Action(ShutterNodeActions),
+pub enum LevelNodeSetEvents {
+    Value(i64),
+    Action(LevelNodeActions),
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct ShutterNodeConfig {
-    pub can_stop: bool,
+pub struct LevelNodeConfig {
+    pub settable: bool,
+    pub step_action: bool,
 }
 
-impl Default for ShutterNodeConfig {
+impl Default for LevelNodeConfig {
     fn default() -> Self {
-        Self { can_stop: true }
+        Self {
+            settable: true,
+            step_action: true,
+        }
     }
 }
 
-pub struct ShutterNodeBuilder {
+pub struct LevelNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl ShutterNodeBuilder {
-    pub fn new(config: &ShutterNodeConfig) -> Self {
+impl LevelNodeBuilder {
+    pub fn new(config: &LevelNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(SHUTTER_NODE_DEFAULT_NAME),
+            NodeDescriptionBuilder::new().name(LEVEL_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_CAP_SHUTTER);
+        .r#type(SMARTHOME_CAP_LEVEL);
 
         Self { node_builder: db }
     }
 
-    fn build_node(
-        db: NodeDescriptionBuilder,
-        config: &ShutterNodeConfig,
-    ) -> NodeDescriptionBuilder {
-        let mut actions = vec![ShutterNodeActions::Up, ShutterNodeActions::Down];
-
-        if config.can_stop {
-            actions.push(ShutterNodeActions::Stop);
-        }
-
+    fn build_node(db: NodeDescriptionBuilder, config: &LevelNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            SHUTTER_NODE_POSITION_PROP_ID,
+            LEVEL_NODE_VALUE_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                .name("Shutter position")
+                .name("Level")
                 .format(HomiePropertyFormat::IntegerRange(IntegerRange {
                     min: Some(0),
                     max: Some(100),
                     step: None,
                 }))
                 .unit(HOMIE_UNIT_PERCENT)
-                .settable(true)
+                .settable(config.settable)
                 .retained(true)
                 .build(),
         )
-        .add_property(
-            SHUTTER_NODE_ACTION_PROP_ID,
+        .add_property_cond(LEVEL_NODE_ACTION_PROP_ID, config.step_action, || {
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Control Shutter")
-                .format(HomiePropertyFormat::Enum(
-                    actions.iter().map(|a| a.to_string()).collect(),
-                ))
-                .settable(true)
+                .name("Step level")
+                .format(HomiePropertyFormat::Enum(vec![
+                    "step-up".to_owned(),
+                    "step-down".to_owned(),
+                ]))
+                .settable(config.settable)
                 .retained(false)
-                .build(),
-        )
+                .build()
+        })
     }
 
     pub fn name<S: Into<String>>(mut self, name: impl Into<Option<S>>) -> Self {
@@ -142,11 +119,11 @@ impl ShutterNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, ShutterNodePublisher) {
+    ) -> (HomieNodeDescription, LevelNodePublisher) {
         let did = client.id().clone();
         (
             self.node_builder.build(),
-            ShutterNodePublisher::new(
+            LevelNodePublisher::new(
                 NodeRef::new(client.homie_domain().to_owned(), did, node_id),
                 client.clone(),
             ),
@@ -155,53 +132,53 @@ impl ShutterNodeBuilder {
 }
 
 #[derive(Debug)]
-pub struct ShutterNodePublisher {
+pub struct LevelNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    position_prop: HomieID,
+    value_prop: HomieID,
     action_prop: HomieID,
 }
 
-impl ShutterNodePublisher {
+impl LevelNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            position_prop: SHUTTER_NODE_POSITION_PROP_ID,
-            action_prop: SHUTTER_NODE_ACTION_PROP_ID,
+            value_prop: LEVEL_NODE_VALUE_PROP_ID,
+            action_prop: LEVEL_NODE_ACTION_PROP_ID,
         }
     }
 
-    pub fn position(&self, value: i64) -> homie5::client::Publish {
+    pub fn value(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.position_prop,
+            &self.value_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn position_target(&self, value: i64) -> homie5::client::Publish {
+    pub fn value_target(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.position_prop,
+            &self.value_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn action(&self, action: ShutterNodeActions) -> homie5::client::Publish {
-        self.client.publish_value(
-            self.node.node_id(),
-            &self.action_prop,
-            action.to_string(),
-            false,
-        )
+    pub fn action(&self, action: LevelNodeActions) -> homie5::client::Publish {
+        let action_str = match action {
+            LevelNodeActions::StepUp => "step-up",
+            LevelNodeActions::StepDown => "step-down",
+        };
+        self.client
+            .publish_value(self.node.node_id(), &self.action_prop, action_str, false)
     }
 }
 
-impl SetCommandParser for ShutterNodePublisher {
-    type Event = ShutterNodeSetEvents;
+impl SetCommandParser for LevelNodePublisher {
+    type Event = LevelNodeSetEvents;
 
     fn parse_set(
         &self,
@@ -211,7 +188,7 @@ impl SetCommandParser for ShutterNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.position_prop) {
+        if property.match_with_node(&self.node, &self.value_prop) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -224,7 +201,7 @@ impl SetCommandParser for ShutterNodePublisher {
 
             match parsed {
                 Ok(HomieValue::Integer(value)) => {
-                    ParseOutcome::Parsed(ShutterNodeSetEvents::Position(value))
+                    ParseOutcome::Parsed(LevelNodeSetEvents::Value(value))
                 }
                 _ => ParseOutcome::Invalid(ParseError::new(
                     property.prop_id().to_string(),
@@ -244,8 +221,8 @@ impl SetCommandParser for ShutterNodePublisher {
             };
 
             match parsed {
-                Ok(HomieValue::Enum(value)) => match ShutterNodeActions::from_str(&value) {
-                    Ok(action) => ParseOutcome::Parsed(ShutterNodeSetEvents::Action(action)),
+                Ok(HomieValue::Enum(value)) => match LevelNodeActions::from_str(&value) {
+                    Ok(action) => ParseOutcome::Parsed(LevelNodeSetEvents::Action(action)),
                     Err(_) => ParseOutcome::Invalid(ParseError::new(
                         property.prop_id().to_string(),
                         set_value,
@@ -274,7 +251,7 @@ impl SetCommandParser for ShutterNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.position_prop.to_string(),
+                self.value_prop.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

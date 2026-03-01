@@ -6,45 +6,48 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_WATER_SENSOR;
+use crate::SMARTHOME_CAP_SMOKE;
 
-pub const WATER_SENSOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("water");
-pub const WATER_SENSOR_NODE_DEFAULT_NAME: &str = "Water sensor";
-pub const WATER_SENSOR_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
+pub const SMOKE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("smoke");
+pub const SMOKE_NODE_DEFAULT_NAME: &str = "Smoke detector";
+pub const SMOKE_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
+
+// ── Node (state) ────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
-pub struct WaterSensorNode {
-    pub publisher: WaterSensorNodePublisher,
+pub struct SmokeNode {
+    pub publisher: SmokeNodePublisher,
     pub detected: bool,
 }
 
-pub struct WaterSensorNodeBuilder {
+// ── Builder ─────────────────────────────────────────────────────────────────
+
+pub struct SmokeNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl Default for WaterSensorNodeBuilder {
+impl Default for SmokeNodeBuilder {
     fn default() -> Self {
-        let db =
-            Self::build_node(NodeDescriptionBuilder::new().name(WATER_SENSOR_NODE_DEFAULT_NAME))
-                .r#type(SMARTHOME_CAP_WATER_SENSOR);
+        let db = Self::build_node(NodeDescriptionBuilder::new().name(SMOKE_NODE_DEFAULT_NAME))
+            .r#type(SMARTHOME_CAP_SMOKE);
 
         Self { node_builder: db }
     }
 }
 
-impl WaterSensorNodeBuilder {
+impl SmokeNodeBuilder {
     pub fn new() -> Self {
         Default::default()
     }
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            WATER_SENSOR_NODE_DETECTED_PROP_ID,
+            SMOKE_NODE_DETECTED_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
-                .name("Water detection")
+                .name("Smoke detected")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "no water".to_owned(),
-                    true_val: "water detected".to_owned(),
+                    false_val: "no smoke".to_owned(),
+                    true_val: "smoke detected".to_owned(),
                 }))
                 .settable(false)
                 .retained(true)
@@ -65,10 +68,10 @@ impl WaterSensorNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, WaterSensorNodePublisher) {
+    ) -> (HomieNodeDescription, SmokeNodePublisher) {
         (
             self.node_builder.build(),
-            WaterSensorNodePublisher::new(
+            SmokeNodePublisher::new(
                 NodeRef::new(
                     client.homie_domain().to_owned(),
                     client.id().clone(),
@@ -80,19 +83,21 @@ impl WaterSensorNodeBuilder {
     }
 }
 
+// ── Publisher ────────────────────────────────────────────────────────────────
+
 #[derive(Debug)]
-pub struct WaterSensorNodePublisher {
+pub struct SmokeNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
     detected_prop: HomieID,
 }
 
-impl WaterSensorNodePublisher {
+impl SmokeNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            detected_prop: WATER_SENSOR_NODE_DETECTED_PROP_ID,
+            detected_prop: SMOKE_NODE_DETECTED_PROP_ID,
         }
     }
 

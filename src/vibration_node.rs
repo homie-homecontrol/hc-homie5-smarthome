@@ -1,18 +1,19 @@
 use homie5::{
+    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_LUX,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_VIBRATION;
+use crate::SMARTHOME_CAP_VIBRATION;
 
-pub const VIBRATION_NODE_DEFAULT_ID: &str = "vibration";
+pub const VIBRATION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("vibration");
 pub const VIBRATION_NODE_DEFAULT_NAME: &str = "Vibration sensor";
-pub const VIBRATION_NODE_VIBRATION_PROP_ID: &str = "vibration";
-pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID: &str = "vibration-strength";
+pub const VIBRATION_NODE_VIBRATION_PROP_ID: HomieID = HomieID::new_const("vibration");
+pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID: HomieID =
+    HomieID::new_const("vibration-strength");
 
 #[derive(Debug)]
 pub struct VibrationNode {
@@ -22,6 +23,7 @@ pub struct VibrationNode {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct VibrationNodeConfig {
     pub vibration_strength: bool,
 }
@@ -44,7 +46,7 @@ impl VibrationNodeBuilder {
             NodeDescriptionBuilder::new().name(VIBRATION_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_VIBRATION);
+        .r#type(SMARTHOME_CAP_VIBRATION);
 
         Self { node_builder: db }
     }
@@ -54,7 +56,7 @@ impl VibrationNodeBuilder {
         config: &VibrationNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            VIBRATION_NODE_VIBRATION_PROP_ID.try_into().unwrap(),
+            VIBRATION_NODE_VIBRATION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Vibration detected")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
@@ -66,16 +68,13 @@ impl VibrationNodeBuilder {
                 .build(),
         )
         .add_property_cond(
-            VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID
-                .try_into()
-                .unwrap(),
+            VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID,
             config.vibration_strength,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                    .name("Current lightlevel")
+                    .name("Vibration strength")
                     .retained(true)
                     .settable(false)
-                    .unit(HOMIE_UNIT_LUX)
                     .build()
             },
         )
@@ -122,10 +121,8 @@ impl VibrationNodePublisher {
         Self {
             node,
             client,
-            vibr_prop: VIBRATION_NODE_VIBRATION_PROP_ID.try_into().unwrap(),
-            vibr_strength: VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID
-                .try_into()
-                .unwrap(),
+            vibr_prop: VIBRATION_NODE_VIBRATION_PROP_ID,
+            vibr_strength: VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID,
         }
     }
 
