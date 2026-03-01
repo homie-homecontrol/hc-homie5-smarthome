@@ -1,9 +1,15 @@
+pub mod air_quality_node;
+pub mod alarm_node;
 pub mod alerts;
 pub mod battery_node;
 pub mod button_node;
+pub mod camera_node;
 pub mod climate_node;
+pub mod co_node;
 pub mod color_node;
 pub mod contact_node;
+pub mod daylight_node;
+pub mod illuminance_node;
 pub mod level_node;
 pub mod link_node;
 pub mod lock_node;
@@ -14,9 +20,12 @@ pub mod orientation_node;
 pub mod powermeter_node;
 pub mod scene_node;
 pub mod shutter_node;
+pub mod smoke_node;
 pub mod switch_node;
+pub mod text_node;
 pub mod thermostat_node;
 pub mod tilt_node;
+pub mod timer_node;
 pub mod valve_node;
 pub mod vibration_node;
 pub mod volume_node;
@@ -24,25 +33,34 @@ pub mod water_sensor_node;
 
 use std::{fmt, str::FromStr};
 
+use air_quality_node::{AirQualityNode, AirQualityNodeConfig};
+use alarm_node::{AlarmNode, AlarmNodeConfig};
 use battery_node::{BatteryNode, BatteryNodeConfig};
 use button_node::ButtonNodeConfig;
+use camera_node::{CameraNode, CameraNodeConfig};
 use climate_node::{ClimateNode, ClimateNodeConfig};
+use co_node::CoNode;
 use color_node::{ColorNode, ColorNodeConfig};
 use contact_node::ContactNode;
+use daylight_node::{DaylightNode, DaylightNodeConfig};
+use illuminance_node::IlluminanceNode;
 use level_node::{LevelNode, LevelNodeConfig};
 use link_node::{LinkNode, LinkNodeConfig};
 use lock_node::{LockNode, LockNodeConfig};
 use media_info_node::{MediaInfoNode, MediaInfoNodeConfig};
 use mediaplayer_node::{MediaplayerNode, MediaplayerNodeConfig};
-use motion_node::{MotionNode, MotionNodeConfig};
+use motion_node::MotionNode;
 use orientation_node::OrientationNode;
 use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
 use scene_node::SceneNodeConfig;
 use serde::{Deserialize, Serialize};
 use shutter_node::{ShutterNode, ShutterNodeConfig};
+use smoke_node::SmokeNode;
 use switch_node::{SwitchNode, SwitchNodeConfig};
+use text_node::TextNode;
 use thermostat_node::{ThermostatNode, ThermostatNodeConfig};
 use tilt_node::TiltNode;
+use timer_node::{TimerNode, TimerNodeConfig};
 use valve_node::{ValveNode, ValveNodeConfig};
 use vibration_node::{VibrationNode, VibrationNodeConfig};
 use volume_node::{VolumeNode, VolumeNodeConfig};
@@ -96,6 +114,15 @@ pub const SMARTHOME_CAP_LINK: &str = smarthome_cap!("link");
 pub const SMARTHOME_CAP_MEDIAPLAYER: &str = smarthome_cap!("mediaplayer");
 pub const SMARTHOME_CAP_MEDIA_INFO: &str = smarthome_cap!("media-info");
 pub const SMARTHOME_CAP_VOLUME: &str = smarthome_cap!("volume");
+pub const SMARTHOME_CAP_SMOKE: &str = smarthome_cap!("smoke");
+pub const SMARTHOME_CAP_CO: &str = smarthome_cap!("co");
+pub const SMARTHOME_CAP_ALARM: &str = smarthome_cap!("alarm");
+pub const SMARTHOME_CAP_ILLUMINANCE: &str = smarthome_cap!("illuminance");
+pub const SMARTHOME_CAP_DAYLIGHT: &str = smarthome_cap!("daylight");
+pub const SMARTHOME_CAP_AIR_QUALITY: &str = smarthome_cap!("air-quality");
+pub const SMARTHOME_CAP_CAMERA: &str = smarthome_cap!("camera");
+pub const SMARTHOME_CAP_TIMER: &str = smarthome_cap!("timer");
+pub const SMARTHOME_CAP_TEXT: &str = smarthome_cap!("text");
 
 // ── Well-known device class constants ───────────────────────────────────────
 //
@@ -119,6 +146,13 @@ pub const DEVICE_CLASS_BUTTON: &str = smarthome_dc!("button");
 pub const DEVICE_CLASS_SIREN: &str = smarthome_dc!("siren");
 pub const DEVICE_CLASS_POWERMETER: &str = smarthome_dc!("powermeter");
 pub const DEVICE_CLASS_MEDIAPLAYER: &str = smarthome_dc!("mediaplayer");
+pub const DEVICE_CLASS_SMOKE_SENSOR: &str = smarthome_dc!("smoke-sensor");
+pub const DEVICE_CLASS_SPEAKER: &str = smarthome_dc!("speaker");
+pub const DEVICE_CLASS_GARAGE_DOOR: &str = smarthome_dc!("garage-door");
+pub const DEVICE_CLASS_DOORBELL: &str = smarthome_dc!("doorbell");
+pub const DEVICE_CLASS_VIBRATION_SENSOR: &str = smarthome_dc!("vibration-sensor");
+pub const DEVICE_CLASS_TILT_SENSOR: &str = smarthome_dc!("tilt-sensor");
+pub const DEVICE_CLASS_CAMERA: &str = smarthome_dc!("camera");
 
 // ── Parse infrastructure ────────────────────────────────────────────────────
 
@@ -249,6 +283,15 @@ pub enum SmarthomeType {
     Mediaplayer,
     MediaInfo,
     Volume,
+    Smoke,
+    Co,
+    Alarm,
+    Illuminance,
+    Daylight,
+    AirQuality,
+    Camera,
+    Timer,
+    Text,
 }
 
 impl SmarthomeType {
@@ -277,6 +320,15 @@ impl SmarthomeType {
             SmarthomeType::Mediaplayer => SMARTHOME_CAP_MEDIAPLAYER,
             SmarthomeType::MediaInfo => SMARTHOME_CAP_MEDIA_INFO,
             SmarthomeType::Volume => SMARTHOME_CAP_VOLUME,
+            SmarthomeType::Smoke => SMARTHOME_CAP_SMOKE,
+            SmarthomeType::Co => SMARTHOME_CAP_CO,
+            SmarthomeType::Alarm => SMARTHOME_CAP_ALARM,
+            SmarthomeType::Illuminance => SMARTHOME_CAP_ILLUMINANCE,
+            SmarthomeType::Daylight => SMARTHOME_CAP_DAYLIGHT,
+            SmarthomeType::AirQuality => SMARTHOME_CAP_AIR_QUALITY,
+            SmarthomeType::Camera => SMARTHOME_CAP_CAMERA,
+            SmarthomeType::Timer => SMARTHOME_CAP_TIMER,
+            SmarthomeType::Text => SMARTHOME_CAP_TEXT,
         }
     }
 
@@ -305,6 +357,15 @@ impl SmarthomeType {
             SMARTHOME_CAP_MEDIAPLAYER => Some(SmarthomeType::Mediaplayer),
             SMARTHOME_CAP_MEDIA_INFO => Some(SmarthomeType::MediaInfo),
             SMARTHOME_CAP_VOLUME => Some(SmarthomeType::Volume),
+            SMARTHOME_CAP_SMOKE => Some(SmarthomeType::Smoke),
+            SMARTHOME_CAP_CO => Some(SmarthomeType::Co),
+            SMARTHOME_CAP_ALARM => Some(SmarthomeType::Alarm),
+            SMARTHOME_CAP_ILLUMINANCE => Some(SmarthomeType::Illuminance),
+            SMARTHOME_CAP_DAYLIGHT => Some(SmarthomeType::Daylight),
+            SMARTHOME_CAP_AIR_QUALITY => Some(SmarthomeType::AirQuality),
+            SMARTHOME_CAP_CAMERA => Some(SmarthomeType::Camera),
+            SMARTHOME_CAP_TIMER => Some(SmarthomeType::Timer),
+            SMARTHOME_CAP_TEXT => Some(SmarthomeType::Text),
             _ => None,
         }
     }
@@ -348,48 +409,61 @@ impl<'de> Deserialize<'de> for SmarthomeType {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum SmarthomeProperyConfig {
+    AirQuality(AirQualityNodeConfig),
+    Alarm(AlarmNodeConfig),
     Battery(BatteryNodeConfig),
     Button(ButtonNodeConfig),
+    Camera(CameraNodeConfig),
+    Climate(ClimateNodeConfig),
     Color(ColorNodeConfig),
+    Daylight(DaylightNodeConfig),
     Level(LevelNodeConfig),
     Link(LinkNodeConfig),
     Lock(LockNodeConfig),
     MediaInfo(MediaInfoNodeConfig),
     Mediaplayer(MediaplayerNodeConfig),
+    Powermeter(PowermeterNodeConfig),
     Scene(SceneNodeConfig),
-    Motion(MotionNodeConfig),
     Shutter(ShutterNodeConfig),
     Switch(SwitchNodeConfig),
     Thermostat(ThermostatNodeConfig),
+    Timer(TimerNodeConfig),
     Valve(ValveNodeConfig),
     Vibration(VibrationNodeConfig),
     Volume(VolumeNodeConfig),
-    Climate(ClimateNodeConfig),
-    Powermeter(PowermeterNodeConfig),
 }
 
 #[derive(Debug)]
 pub enum SmarthomeNode {
+    AirQualityNode(AirQualityNode),
+    AlarmNode(AlarmNode),
     BatteryNode(BatteryNode),
-    LinkNode(LinkNode),
-    SwitchNode(SwitchNode),
-    LevelNode(LevelNode),
+    CameraNode(CameraNode),
     ClimateNode(ClimateNode),
-    ContactNode(ContactNode),
-    MotionNode(MotionNode),
+    CoNode(CoNode),
     ColorNode(ColorNode),
-    WaterSensor(WaterSensorNode),
-    ShutterNode(ShutterNode),
-    TiltNode(TiltNode),
-    Powermeter(PowermeterNode),
+    ContactNode(ContactNode),
+    DaylightNode(DaylightNode),
+    IlluminanceNode(IlluminanceNode),
+    LevelNode(LevelNode),
+    LinkNode(LinkNode),
     LockNode(LockNode),
-    ValveNode(ValveNode),
-    ThermostatNode(ThermostatNode),
-    MediaplayerNode(MediaplayerNode),
     MediaInfoNode(MediaInfoNode),
-    VolumeNode(VolumeNode),
+    MediaplayerNode(MediaplayerNode),
+    MotionNode(MotionNode),
     OrientationNode(OrientationNode),
+    Powermeter(PowermeterNode),
+    ShutterNode(ShutterNode),
+    SmokeNode(SmokeNode),
+    SwitchNode(SwitchNode),
+    TextNode(TextNode),
+    ThermostatNode(ThermostatNode),
+    TiltNode(TiltNode),
+    TimerNode(TimerNode),
+    ValveNode(ValveNode),
     VibrationNode(VibrationNode),
+    VolumeNode(VolumeNode),
+    WaterSensor(WaterSensorNode),
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -486,10 +560,6 @@ mod config_serde_default_tests {
             serde_json::from_str("{}").expect("climate config must deserialize");
         assert_eq!(climate, ClimateNodeConfig::default());
 
-        let motion: MotionNodeConfig =
-            serde_json::from_str("{}").expect("motion config must deserialize");
-        assert_eq!(motion, MotionNodeConfig::default());
-
         let vibration: VibrationNodeConfig =
             serde_json::from_str("{}").expect("vibration config must deserialize");
         assert_eq!(vibration, VibrationNodeConfig::default());
@@ -529,6 +599,26 @@ mod config_serde_default_tests {
         let volume: VolumeNodeConfig =
             serde_json::from_str("{}").expect("volume config must deserialize");
         assert_eq!(volume, VolumeNodeConfig::default());
+
+        let alarm: AlarmNodeConfig =
+            serde_json::from_str("{}").expect("alarm config must deserialize");
+        assert_eq!(alarm, AlarmNodeConfig::default());
+
+        let daylight: DaylightNodeConfig =
+            serde_json::from_str("{}").expect("daylight config must deserialize");
+        assert_eq!(daylight, DaylightNodeConfig::default());
+
+        let air_quality: AirQualityNodeConfig =
+            serde_json::from_str("{}").expect("air-quality config must deserialize");
+        assert_eq!(air_quality, AirQualityNodeConfig::default());
+
+        let camera: CameraNodeConfig =
+            serde_json::from_str("{}").expect("camera config must deserialize");
+        assert_eq!(camera, CameraNodeConfig::default());
+
+        let timer: TimerNodeConfig =
+            serde_json::from_str("{}").expect("timer config must deserialize");
+        assert_eq!(timer, TimerNodeConfig::default());
     }
 
     #[test]
@@ -584,6 +674,15 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Mediaplayer,
             SmarthomeType::MediaInfo,
             SmarthomeType::Volume,
+            SmarthomeType::Smoke,
+            SmarthomeType::Co,
+            SmarthomeType::Alarm,
+            SmarthomeType::Illuminance,
+            SmarthomeType::Daylight,
+            SmarthomeType::AirQuality,
+            SmarthomeType::Camera,
+            SmarthomeType::Timer,
+            SmarthomeType::Text,
         ];
 
         for ty in types {

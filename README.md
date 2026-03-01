@@ -67,22 +67,31 @@ document are to be interpreted as described in
 | Scene       | `scene`       | `hc-smarthome/v2/cap/scene`       | Actuator       | Recall named scenes                           |
 | Shutter     | `shutter`     | `hc-smarthome/v2/cap/shutter`     | Actuator       | Blind/shutter position and direction control  |
 | Thermostat  | `thermostat`  | `hc-smarthome/v2/cap/thermostat`  | Actuator       | Heating/cooling setpoint and mode control     |
-| Lock        | `lock`        | `hc-smarthome/v2/cap/lock`        | Actuator       | Lock/unlock control                           |
-| Valve       | `valve`       | `hc-smarthome/v2/cap/valve`       | Actuator       | Binary valve open/close control               |
-| Climate     | `climate`     | `hc-smarthome/v2/cap/climate`     | Sensor         | Temperature, humidity, pressure sensing       |
-| Motion      | `motion`      | `hc-smarthome/v2/cap/motion`      | Sensor         | Motion detection with optional light level    |
-| Vibration   | `vibration`   | `hc-smarthome/v2/cap/vibration`   | Sensor         | Vibration detection with optional strength    |
-| Contact     | `contact`     | `hc-smarthome/v2/cap/contact`     | Sensor         | Open/close contact sensing                    |
-| Water       | `water`       | `hc-smarthome/v2/cap/water`       | Sensor         | Water leak detection                          |
-| Tilt        | `tilt`        | `hc-smarthome/v2/cap/tilt`        | Sensor         | Binary tilt detection                         |
-| Orientation | `orientation` | `hc-smarthome/v2/cap/orientation` | Sensor         | 3-axis orientation and tilt angle             |
-| Button      | `button`      | `hc-smarthome/v2/cap/button`      | Infrastructure | Physical button press events                  |
-| Powermeter  | `powermeter`  | `hc-smarthome/v2/cap/powermeter`  | Infrastructure | Electrical power metering                     |
-| Mediaplayer | `mediaplayer` | `hc-smarthome/v2/cap/mediaplayer` | Media          | Playback transport control and modes          |
-| Media Info  | `media-info`  | `hc-smarthome/v2/cap/media-info`  | Media          | Now-playing metadata and progress             |
-| Volume      | `volume`      | `hc-smarthome/v2/cap/volume`      | Media          | Audio volume level and mute control           |
-| Battery     | `battery`     | `hc-smarthome/v2/cap/battery`     | Infrastructure | Battery level and voltage readings            |
-| Link        | `link`        | `hc-smarthome/v2/cap/link`        | Infrastructure | Signal strength, link quality, last-seen      |
+| Lock        | `lock`         | `hc-smarthome/v2/cap/lock`         | Actuator       | Lock/unlock control                           |
+| Valve       | `valve`        | `hc-smarthome/v2/cap/valve`        | Actuator       | Binary valve open/close control               |
+| Alarm       | `alarm`        | `hc-smarthome/v2/cap/alarm`        | Actuator       | Siren/alarm on/off, sound, duration           |
+| Climate     | `climate`      | `hc-smarthome/v2/cap/climate`      | Sensor         | Temperature, humidity, pressure sensing       |
+| Motion      | `motion`       | `hc-smarthome/v2/cap/motion`       | Sensor         | Binary motion detection                       |
+| Illuminance | `illuminance`  | `hc-smarthome/v2/cap/illuminance`  | Sensor         | Ambient light level (lux)                     |
+| Vibration   | `vibration`    | `hc-smarthome/v2/cap/vibration`    | Sensor         | Vibration detection with optional strength    |
+| Contact     | `contact`      | `hc-smarthome/v2/cap/contact`      | Sensor         | Open/close contact sensing                    |
+| Water       | `water`        | `hc-smarthome/v2/cap/water`        | Sensor         | Water leak detection                          |
+| Smoke       | `smoke`        | `hc-smarthome/v2/cap/smoke`        | Sensor         | Smoke/fire detection                          |
+| CO          | `co`           | `hc-smarthome/v2/cap/co`           | Sensor         | Carbon monoxide detection                     |
+| Tilt        | `tilt`         | `hc-smarthome/v2/cap/tilt`         | Sensor         | Binary tilt detection                         |
+| Orientation | `orientation`  | `hc-smarthome/v2/cap/orientation`  | Sensor         | 3-axis orientation and tilt angle             |
+| Daylight    | `daylight`     | `hc-smarthome/v2/cap/daylight`     | Sensor         | Daylight/dark state, sunrise/sunset, phase    |
+| Air Quality | `air-quality`  | `hc-smarthome/v2/cap/air-quality`  | Sensor         | CO₂, VOC, PM2.5, PM10, AQI                   |
+| Button      | `button`       | `hc-smarthome/v2/cap/button`       | Infrastructure | Physical button press events                  |
+| Powermeter  | `powermeter`   | `hc-smarthome/v2/cap/powermeter`   | Infrastructure | Electrical power metering                     |
+| Camera      | `camera`       | `hc-smarthome/v2/cap/camera`       | Infrastructure | Video stream, snapshots, PTZ, detection       |
+| Timer       | `timer`        | `hc-smarthome/v2/cap/timer`        | Infrastructure | Countdown timer with state/action control     |
+| Text        | `text`         | `hc-smarthome/v2/cap/text`         | Infrastructure | Generic settable text content                 |
+| Mediaplayer | `mediaplayer`  | `hc-smarthome/v2/cap/mediaplayer`  | Media          | Playback transport control and modes          |
+| Media Info  | `media-info`   | `hc-smarthome/v2/cap/media-info`   | Media          | Now-playing metadata and progress             |
+| Volume      | `volume`       | `hc-smarthome/v2/cap/volume`       | Media          | Audio volume level and mute control           |
+| Battery     | `battery`      | `hc-smarthome/v2/cap/battery`      | Infrastructure | Battery level and voltage readings            |
+| Link        | `link`         | `hc-smarthome/v2/cap/link`         | Infrastructure | Signal strength, link quality, last-seen      |
 
 ---
 
@@ -105,9 +114,16 @@ document are to be interpreted as described in
 | Fan            | `hc-smarthome/v2/dc/fan`            | `switch`     | `level`                                | Ceiling or standing fan          |
 | Valve          | `hc-smarthome/v2/dc/valve`          | `valve`      | --                                     | Water or gas shutoff valve       |
 | Button         | `hc-smarthome/v2/dc/button`         | `button`     | --                                     | Physical push-button or remote   |
-| Siren          | `hc-smarthome/v2/dc/siren`          | `switch`     | --                                     | Alarm siren                      |
+| Siren          | `hc-smarthome/v2/dc/siren`          | `alarm`      | --                                     | Alarm siren                      |
 | Powermeter     | `hc-smarthome/v2/dc/powermeter`     | `powermeter` | --                                     | Standalone power meter or clamp  |
-| Mediaplayer    | `hc-smarthome/v2/dc/mediaplayer`    | `mediaplayer`| `media-info`, `volume`                 | Media player, smart speaker, TV  |
+| Mediaplayer    | `hc-smarthome/v2/dc/mediaplayer`    | `mediaplayer`| `media-info`, `volume`                 | Media player or TV               |
+| Smoke Sensor   | `hc-smarthome/v2/dc/smoke-sensor`   | `smoke`      | --                                     | Smoke/fire detector              |
+| Speaker        | `hc-smarthome/v2/dc/speaker`        | `volume`     | `mediaplayer`, `media-info`            | Smart speaker                    |
+| Garage Door    | `hc-smarthome/v2/dc/garage-door`    | `switch`     | `contact`                              | Garage door opener               |
+| Doorbell       | `hc-smarthome/v2/dc/doorbell`       | `button`     | `camera`                               | Doorbell                         |
+| Vibration Sensor | `hc-smarthome/v2/dc/vibration-sensor` | `vibration` | --                                  | Vibration sensor                 |
+| Tilt Sensor    | `hc-smarthome/v2/dc/tilt-sensor`    | `tilt`       | --                                     | Tilt sensor                      |
+| Camera         | `hc-smarthome/v2/dc/camera`         | `camera`     | --                                     | IP camera                        |
 
 Any device class MAY additionally expose `battery` and/or `link` capability
 nodes. These are optional for all device classes and provide device health
@@ -280,6 +296,21 @@ Binary valve open/close control for water or gas shutoff valves.
 
 ---
 
+#### Alarm
+
+**ID:** `alarm` | **Type:** `hc-smarthome/v2/cap/alarm`
+
+Siren/alarm output control. Turn alarms on/off, optionally select a sound
+and set an auto-stop duration.
+
+| Property       | ID         | Datatype | Unit | Format                | Settable | Retained | Optional | Description                        |
+| -------------- | ---------- | -------- | ---- | --------------------- | -------- | -------- | -------- | ---------------------------------- |
+| Alarm state    | `state`    | Boolean  | --   | --                    | yes      | yes      | no       | Alarm active (true) or off (false) |
+| Alarm sound    | `sound`    | Enum     | --   | Configured sounds     | yes      | yes      | yes      | Selected alarm sound/mode          |
+| Alarm duration | `duration` | Integer  | `s`  | `0:`                  | yes      | yes      | yes      | Auto-stop after N seconds          |
+
+---
+
 ### Sensor Capabilities
 
 #### Climate
@@ -301,12 +332,81 @@ All properties are optional. Read-only.
 
 **ID:** `motion` | **Type:** `hc-smarthome/v2/cap/motion`
 
-Motion detection with optional ambient light level. Read-only.
+Binary motion/occupancy detection. Read-only. For ambient light level
+readings, use a separate `illuminance` capability node.
 
-| Property            | ID       | Datatype | Unit | Format                                 | Settable | Retained | Optional | Description           |
-| ------------------- | -------- | -------- | ---- | -------------------------------------- | -------- | -------- | -------- | --------------------- |
-| Motion detected     | `motion` | Boolean  | --   | `false="no-motion"`, `true="motion"`   | no       | yes      | no       | Motion detected       |
-| Current light level | `lux`    | Integer  | `lx` | --                                     | no       | yes      | yes      | Ambient light level   |
+| Property        | ID       | Datatype | Unit | Format                                 | Settable | Retained | Optional | Description     |
+| --------------- | -------- | -------- | ---- | -------------------------------------- | -------- | -------- | -------- | --------------- |
+| Motion detected | `motion` | Boolean  | --   | `false="no-motion"`, `true="motion"`   | no       | yes      | no       | Motion detected |
+
+---
+
+#### Illuminance
+
+**ID:** `illuminance` | **Type:** `hc-smarthome/v2/cap/illuminance`
+
+Ambient light level sensor. Read-only.
+
+| Property    | ID            | Datatype | Unit | Format | Settable | Retained | Optional | Description         |
+| ----------- | ------------- | -------- | ---- | ------ | -------- | -------- | -------- | ------------------- |
+| Illuminance | `illuminance` | Integer  | `lx` | --     | no       | yes      | no       | Ambient light level |
+
+---
+
+#### Smoke
+
+**ID:** `smoke` | **Type:** `hc-smarthome/v2/cap/smoke`
+
+Smoke/fire detection. Read-only.
+
+| Property       | ID         | Datatype | Unit | Format                                       | Settable | Retained | Optional | Description    |
+| -------------- | ---------- | -------- | ---- | -------------------------------------------- | -------- | -------- | -------- | -------------- |
+| Smoke detected | `detected` | Boolean  | --   | `false="no smoke"`, `true="smoke detected"`  | no       | yes      | no       | Smoke detected |
+
+---
+
+#### CO
+
+**ID:** `co` | **Type:** `hc-smarthome/v2/cap/co`
+
+Carbon monoxide detection. Read-only.
+
+| Property    | ID         | Datatype | Unit | Format                                | Settable | Retained | Optional | Description        |
+| ----------- | ---------- | -------- | ---- | ------------------------------------- | -------- | -------- | -------- | ------------------ |
+| CO detected | `detected` | Boolean  | --   | `false="clear"`, `true="co detected"` | no       | yes      | no       | CO detected        |
+
+---
+
+#### Daylight
+
+**ID:** `daylight` | **Type:** `hc-smarthome/v2/cap/daylight`
+
+Daylight/dark state, sunrise and sunset times, and optional coarse daylight
+phase. Read-only.
+
+| Property        | ID        | Datatype | Unit | Format                                          | Settable | Retained | Optional | Description            |
+| --------------- | --------- | -------- | ---- | ----------------------------------------------- | -------- | -------- | -------- | ---------------------- |
+| Daylight        | `daylight` | Boolean | --   | `false="night"`, `true="day"`                   | no       | yes      | no       | Is it daylight         |
+| Dark            | `dark`     | Boolean | --   | `false="light"`, `true="dark"`                  | no       | yes      | no       | Is it dark             |
+| Sunrise         | `sunrise`  | Datetime| --   | --                                              | no       | yes      | no       | Today's sunrise time   |
+| Sunset          | `sunset`   | Datetime| --   | --                                              | no       | yes      | no       | Today's sunset time    |
+| Daylight phase  | `phase`    | Enum    | --   | `night,dawn,morning,day,evening,dusk`           | no       | yes      | yes      | Coarse daylight phase  |
+
+---
+
+#### Air Quality
+
+**ID:** `air-quality` | **Type:** `hc-smarthome/v2/cap/air-quality`
+
+Air quality sensor readings. All properties are optional. Read-only.
+
+| Property          | ID     | Datatype | Unit    | Format  | Settable | Retained | Optional | Description                  |
+| ----------------- | ------ | -------- | ------- | ------- | -------- | -------- | -------- | ---------------------------- |
+| CO₂               | `co2`  | Integer  | `ppm`   | `0:`    | no       | yes      | yes      | Carbon dioxide concentration |
+| VOC               | `voc`  | Integer  | `ppb`   | `0:`    | no       | yes      | yes      | Volatile organic compounds   |
+| PM2.5             | `pm25` | Integer  | `µg/m³` | `0:`    | no       | yes      | yes      | Fine particulate matter      |
+| PM10              | `pm10` | Integer  | `µg/m³` | `0:`    | no       | yes      | yes      | Coarse particulate matter    |
+| Air quality index | `aqi`  | Integer  | --      | `0:500` | no       | yes      | yes      | Air quality index            |
 
 ---
 
@@ -405,6 +505,63 @@ Electrical power metering. Read-only.
 | Voltage     | `voltage`     | Float    | `V`  | `0.0:` | no       | yes      | yes      | Voltage                  |
 | Frequency   | `frequency`   | Float    | `Hz` | `0.0:` | no       | yes      | yes      | AC frequency             |
 | Consumption | `consumption` | Float    | `Wh` | `0.0:` | no       | yes      | yes      | Total energy consumption |
+
+---
+
+#### Camera
+
+**ID:** `camera` | **Type:** `hc-smarthome/v2/cap/camera`
+
+Camera capability providing a video stream URL with optional snapshot,
+recording control, motion/object detection, and PTZ (pan-tilt-zoom) control.
+
+| Property        | ID                | Datatype | Unit | Format                                      | Settable | Retained | Optional | Description                        |
+| --------------- | ----------------- | -------- | ---- | ------------------------------------------- | -------- | -------- | -------- | ---------------------------------- |
+| Stream URL      | `stream-url`      | String   | --   | --                                          | no       | yes      | no       | Video stream URL                   |
+| Snapshot URL    | `snapshot-url`    | String   | --   | --                                          | no       | yes      | yes      | Still frame URL                    |
+| Recording       | `recording`       | Boolean  | --   | `false="stopped"`, `true="recording"`       | yes      | yes      | yes      | Recording active                   |
+| Motion detected | `motion-detected` | Boolean  | --   | `false="no motion"`, `true="motion detected"` | no    | yes      | yes      | Video motion detection             |
+| Object detected | `object-detected` | String   | --   | --                                          | no       | yes      | yes      | Last detected object class         |
+| Pan angle       | `pan`             | Float    | `°`  | `-180.0:180.0`                              | yes      | yes      | yes      | Pan angle (-180 to 180 degrees)    |
+| Tilt angle      | `tilt`            | Float    | `°`  | `-90.0:90.0`                                | yes      | yes      | yes      | Tilt angle (-90 to 90 degrees)     |
+| Zoom level      | `zoom`            | Float    | --   | `1.0:{zoom_max}`                            | yes      | yes      | yes      | Zoom level (1.0 = no zoom)        |
+
+---
+
+#### Timer
+
+**ID:** `timer` | **Type:** `hc-smarthome/v2/cap/timer`
+
+Countdown timer with state/action control. Multiple timers are modeled as
+multiple nodes of this capability type on the same device.
+
+| Property     | ID             | Datatype | Unit | Format                                 | Settable | Retained | Optional | Description                           |
+| ------------ | -------------- | -------- | ---- | -------------------------------------- | -------- | -------- | -------- | ------------------------------------- |
+| Timer state  | `state`        | Enum     | --   | `running,paused,fired,cancelled`       | no       | yes      | no       | Current timer state                   |
+| Timer action | `action`       | Enum     | --   | `start,pause,resume,cancel`            | yes      | no       | no       | Control command                       |
+| Duration     | `duration`     | Integer  | `s`  | `0:`                                   | yes      | yes      | no       | Total timer duration in seconds       |
+| Label        | `label`        | String   | --   | --                                     | yes      | yes      | yes      | User-visible timer name               |
+| Remaining    | `remaining`    | Integer  | `s`  | `0:`                                   | no       | yes      | yes      | Seconds remaining (convenience)       |
+| Trigger time | `trigger-time` | Datetime | --   | --                                     | no       | yes      | yes      | Absolute time when the timer fires    |
+| Created      | `created`      | Datetime | --   | --                                     | no       | yes      | yes      | When the timer was created            |
+
+`remaining` is derivable from `duration` + `created` and is optional as a
+convenience for consumers that don't want to compute it. Publishers SHOULD
+NOT update it every second; low-frequency updates (e.g. every 10-30 seconds)
+are sufficient.
+
+---
+
+#### Text
+
+**ID:** `text` | **Type:** `hc-smarthome/v2/cap/text`
+
+Generic settable text content. Used for display devices (e-ink, LED matrix),
+TTS endpoints, notification sinks, or arbitrary status messages.
+
+| Property     | ID     | Datatype | Unit | Format | Settable | Retained | Optional | Description          |
+| ------------ | ------ | -------- | ---- | ------ | -------- | -------- | -------- | -------------------- |
+| Text content | `text` | String   | --   | --     | yes      | yes      | no       | Current text content |
 
 ---
 
@@ -562,16 +719,24 @@ All config structs implement `Default` and `Deserialize` with
 | Thermostat  | `ThermostatNodeConfig`  | `unit`, `valve`, `windowopen`, `boost_state`, `boost_time`, `mode`, `modes`, `temp_range` |
 | Lock        | `LockNodeConfig`        | `settable`                                               |
 | Valve       | `ValveNodeConfig`       | `settable`                                               |
+| Alarm       | `AlarmNodeConfig`       | `sound`, `sounds`, `duration`                            |
 | Climate     | `ClimateNodeConfig`     | `temperature`, `humidity`, `pressure`, `temp_unit`       |
-| Motion      | `MotionNodeConfig`      | `lux`                                                    |
 | Vibration   | `VibrationNodeConfig`   | `vibration_strength`                                     |
+| Daylight    | `DaylightNodeConfig`    | `phase`                                                  |
+| Air Quality | `AirQualityNodeConfig`  | `co2`, `voc`, `pm25`, `pm10`, `aqi`                     |
 | Button      | `ButtonNodeConfig`      | `actions`                                                |
 | Powermeter  | `PowermeterNodeConfig`  | `current`, `voltage`, `frequency`, `consumption`         |
+| Camera      | `CameraNodeConfig`      | `snapshot`, `recording`, `motion_detected`, `object_detected`, `pan`, `tilt`, `zoom`, `zoom_max` |
+| Timer       | `TimerNodeConfig`       | `label`, `remaining`, `trigger_time`, `created`          |
 | Mediaplayer | `MediaplayerNodeConfig` | `next`, `previous`, `forward`, `rewind`, `stop`, `shuffle`, `repeat` |
 | Media Info  | `MediaInfoNodeConfig`   | `subtitle`, `description`, `artwork`, `progress`, `length`, `seekable`, `metadata` |
 | Volume      | `VolumeNodeConfig`      | `mute`                                                   |
 | Battery     | `BatteryNodeConfig`     | `level`, `voltage`                                       |
 | Link        | `LinkNodeConfig`        | `signal`, `quality`, `last_seen`                         |
+
+Capabilities **without** configuration (no optional properties): `motion`,
+`contact`, `water`, `tilt`, `orientation`, `illuminance`, `smoke`, `co`,
+`text`.
 
 ## Code Examples
 

@@ -6,47 +6,51 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_MOTION;
+use crate::SMARTHOME_CAP_CO;
 
-pub const MOTION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("motion");
-pub const MOTION_NODE_DEFAULT_NAME: &str = "Motion sensor";
-pub const MOTION_NODE_MOTION_PROP_ID: HomieID = HomieID::new_const("motion");
+pub const CO_NODE_DEFAULT_ID: HomieID = HomieID::new_const("co");
+pub const CO_NODE_DEFAULT_NAME: &str = "Carbon monoxide detector";
+pub const CO_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
+
+// ── Node (state) ────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
-pub struct MotionNode {
-    pub publisher: MotionNodePublisher,
-    pub motion: bool,
+pub struct CoNode {
+    pub publisher: CoNodePublisher,
+    pub detected: bool,
 }
 
-pub struct MotionNodeBuilder {
+// ── Builder ─────────────────────────────────────────────────────────────────
+
+pub struct CoNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl Default for MotionNodeBuilder {
+impl Default for CoNodeBuilder {
     fn default() -> Self {
-        let db = Self::build_node(NodeDescriptionBuilder::new().name(MOTION_NODE_DEFAULT_NAME))
-            .r#type(SMARTHOME_CAP_MOTION);
+        let db = Self::build_node(NodeDescriptionBuilder::new().name(CO_NODE_DEFAULT_NAME))
+            .r#type(SMARTHOME_CAP_CO);
 
         Self { node_builder: db }
     }
 }
 
-impl MotionNodeBuilder {
+impl CoNodeBuilder {
     pub fn new() -> Self {
         Default::default()
     }
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            MOTION_NODE_MOTION_PROP_ID,
+            CO_NODE_DETECTED_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
-                .name("Motion detected")
+                .name("CO detected")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "no-motion".to_owned(),
-                    true_val: "motion".to_owned(),
+                    false_val: "clear".to_owned(),
+                    true_val: "co detected".to_owned(),
                 }))
-                .retained(true)
                 .settable(false)
+                .retained(true)
                 .build(),
         )
     }
@@ -64,10 +68,10 @@ impl MotionNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, MotionNodePublisher) {
+    ) -> (HomieNodeDescription, CoNodePublisher) {
         (
             self.node_builder.build(),
-            MotionNodePublisher::new(
+            CoNodePublisher::new(
                 NodeRef::new(
                     client.homie_domain().to_owned(),
                     client.id().clone(),
@@ -79,26 +83,28 @@ impl MotionNodeBuilder {
     }
 }
 
+// ── Publisher ────────────────────────────────────────────────────────────────
+
 #[derive(Debug)]
-pub struct MotionNodePublisher {
+pub struct CoNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    motion_prop: HomieID,
+    detected_prop: HomieID,
 }
 
-impl MotionNodePublisher {
+impl CoNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            motion_prop: MOTION_NODE_MOTION_PROP_ID,
+            detected_prop: CO_NODE_DETECTED_PROP_ID,
         }
     }
 
-    pub fn motion(&self, value: bool) -> homie5::client::Publish {
+    pub fn detected(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.motion_prop,
+            &self.detected_prop,
             value.to_string(),
             true,
         )
