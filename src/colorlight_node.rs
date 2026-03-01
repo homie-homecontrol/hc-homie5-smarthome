@@ -1,14 +1,16 @@
 use homie5::{
-    Homie5DeviceProtocol, Homie5Message, HomieColorValue, HomieID, HomieValue, NodeRef,
-    PropertyRef,
     device_description::{
         ColorFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
         IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
+    Homie5DeviceProtocol, Homie5Message, HomieColorValue, HomieID, HomieValue, NodeRef,
+    PropertyRef,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_COLORLIGHT;
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_COLORLIGHT,
+};
 
 pub const COLORLIGHT_NODE_DEFAULT_ID: &str = "colorlight";
 pub const COLORLIGHT_NODE_DEFAULT_NAME: &str = "Colorlight control";
@@ -165,44 +167,81 @@ impl ColorlightNodePublisher {
             true,
         )
     }
-    pub fn match_parse(
+}
+
+impl SetCommandParser for ColorlightNodePublisher {
+    type Event = ColorlightNodeSetEvents;
+
+    fn parse_set(
         &self,
         property: &PropertyRef,
         desc: &HomieDeviceDescription,
         set_value: &str,
-    ) -> Option<ColorlightNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
+        let property_id = property.prop_id().to_string();
+
         if property.match_with_node(&self.node, &self.color_prop_id) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Color(value)) = HomieValue::parse(set_value, prop_desc) {
-                    Some(ColorlightNodeSetEvents::Color(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Color(value)) => {
+                    ParseOutcome::Parsed(ColorlightNodeSetEvents::Color(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else if property.match_with_node(&self.node, &self.color_temp_prop_id) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Integer(value)) = HomieValue::parse(set_value, prop_desc) {
-                    Some(ColorlightNodeSetEvents::ColorTemperature(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Integer(value)) => {
+                    ParseOutcome::Parsed(ColorlightNodeSetEvents::ColorTemperature(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else {
-            None
+            ParseOutcome::NoMatch
         }
     }
 
-    pub fn match_parse_event(
+    fn parse_set_event(
         &self,
         desc: &HomieDeviceDescription,
         event: &Homie5Message,
-    ) -> Option<ColorlightNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
         match event {
             Homie5Message::PropertySet {
                 property,
                 set_value,
-            } => self.match_parse(property, desc, set_value),
-            _ => None,
+            } => self.parse_set(property, desc, set_value),
+            _ => ParseOutcome::Invalid(ParseError::new(
+                self.color_prop_id.to_string(),
+                "",
+                ParseErrorKind::UnexpectedMessageType,
+            )),
         }
     }
 }

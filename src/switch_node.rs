@@ -1,16 +1,16 @@
 use core::fmt;
 
 use homie5::{
-    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
-    PropertyRef,
     device_description::{
         BooleanFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
+    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
+    PropertyRef,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_SWITCH;
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_SWITCH};
 
 pub const SWITCH_NODE_DEFAULT_ID: &str = "switch";
 pub const SWITCH_NODE_DEFAULT_NAME: &str = "On/Off switch";
@@ -176,52 +176,90 @@ impl SwitchNodePublisher {
             false,
         )
     }
+}
 
-    pub fn match_parse(
+impl SetCommandParser for SwitchNodePublisher {
+    type Event = SwitchNodeSetEvents;
+
+    fn parse_set(
         &self,
         property: &PropertyRef,
         desc: &HomieDeviceDescription,
         set_value: &str,
-    ) -> Option<SwitchNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
+        let property_id = property.prop_id().to_string();
+
         if property.match_with_device(
             self.client.device_ref(),
             self.node.node_id(),
             &self.state_prop,
         ) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Bool(value)) = HomieValue::parse(set_value, prop_desc) {
-                    Some(SwitchNodeSetEvents::State(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Bool(value)) => {
+                    ParseOutcome::Parsed(SwitchNodeSetEvents::State(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else if property.match_with_node(&self.node, &self.action_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Enum(value)) = HomieValue::parse(set_value, prop_desc) {
-                    if let Ok(value) = value.try_into() {
-                        Some(SwitchNodeSetEvents::Action(value))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })?
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Enum(value)) => match value.try_into() {
+                    Ok(value) => ParseOutcome::Parsed(SwitchNodeSetEvents::Action(value)),
+                    Err(_) => ParseOutcome::Invalid(ParseError::new(
+                        property.prop_id().to_string(),
+                        set_value,
+                        ParseErrorKind::InvalidVariant,
+                    )),
+                },
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else {
-            None
+            ParseOutcome::NoMatch
         }
     }
-    pub fn match_parse_event(
+
+    fn parse_set_event(
         &self,
         desc: &HomieDeviceDescription,
         event: &Homie5Message,
-    ) -> Option<SwitchNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
         match event {
             Homie5Message::PropertySet {
                 property,
                 set_value,
-            } => self.match_parse(property, desc, set_value),
-            _ => None,
+            } => self.parse_set(property, desc, set_value),
+            _ => ParseOutcome::Invalid(ParseError::new(
+                self.state_prop.to_string(),
+                "",
+                ParseErrorKind::UnexpectedMessageType,
+            )),
         }
     }
 }

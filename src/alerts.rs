@@ -40,8 +40,7 @@ pub const HC_ALERT_COMM_ERROR: &str = "hc-comm-error";
 // ── Enum ────────────────────────────────────────────────────────────────────
 
 /// Typed representation of the well-known homecontrol alert IDs.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum SmarthomeAlert {
     BatteryLow,
     BatteryCritical,
@@ -99,6 +98,26 @@ impl fmt::Display for SmarthomeAlert {
     }
 }
 
+impl Serialize for SmarthomeAlert {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for SmarthomeAlert {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = <&str>::deserialize(deserializer)?;
+        SmarthomeAlert::from_id(value)
+            .ok_or_else(|| serde::de::Error::custom(format!("invalid smarthome alert: {value}")))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -125,5 +144,32 @@ mod tests {
     fn test_unknown_returns_none() {
         assert_eq!(SmarthomeAlert::from_id("custom-alert"), None);
         assert_eq!(SmarthomeAlert::from_id("battery-low"), None); // missing hc- prefix
+    }
+
+    #[test]
+    fn test_serde_roundtrip_canonical_constants() {
+        for alert in [
+            SmarthomeAlert::BatteryLow,
+            SmarthomeAlert::BatteryCritical,
+            SmarthomeAlert::Unreachable,
+            SmarthomeAlert::UpdateOverdue,
+            SmarthomeAlert::ConfigError,
+            SmarthomeAlert::SensorFault,
+            SmarthomeAlert::Tamper,
+            SmarthomeAlert::CommError,
+        ] {
+            let json = serde_json::to_string(&alert).expect("serialize alert");
+            assert_eq!(json, format!("\"{}\"", alert.as_str()));
+
+            let parsed: SmarthomeAlert = serde_json::from_str(&json).expect("deserialize alert");
+            assert_eq!(parsed, alert);
+        }
+    }
+
+    #[test]
+    fn test_serde_rejects_non_canonical_short_names() {
+        let err = serde_json::from_str::<SmarthomeAlert>("\"battery-low\"")
+            .expect_err("must reject short alert name");
+        assert!(err.to_string().contains("invalid smarthome alert"));
     }
 }

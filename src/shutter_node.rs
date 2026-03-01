@@ -1,16 +1,16 @@
 use std::{fmt::Display, str::FromStr};
 
 use homie5::{
-    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
-    HomieValue, NodeRef, PropertyRef,
     device_description::{
         HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
+    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
+    PropertyRef, HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_SHUTTER;
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_SHUTTER};
 
 pub const SHUTTER_NODE_DEFAULT_ID: &str = "shutter";
 pub const SHUTTER_NODE_DEFAULT_NAME: &str = "Shutter control";
@@ -197,49 +197,86 @@ impl ShutterNodePublisher {
             false,
         )
     }
+}
 
-    pub fn match_parse(
+impl SetCommandParser for ShutterNodePublisher {
+    type Event = ShutterNodeSetEvents;
+
+    fn parse_set(
         &self,
         property: &PropertyRef,
         desc: &HomieDeviceDescription,
         set_value: &str,
-    ) -> Option<ShutterNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
+        let property_id = property.prop_id().to_string();
+
         if property.match_with_node(&self.node, &self.position_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Integer(value)) = HomieValue::parse(set_value, prop_desc) {
-                    Some(ShutterNodeSetEvents::Position(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Integer(value)) => {
+                    ParseOutcome::Parsed(ShutterNodeSetEvents::Position(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else if property.match_with_node(&self.node, &self.action_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Enum(value)) = HomieValue::parse(set_value, prop_desc) {
-                    if let Ok(value) = ShutterNodeActions::from_str(&value) {
-                        Some(ShutterNodeSetEvents::Action(value))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })?
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Enum(value)) => match ShutterNodeActions::from_str(&value) {
+                    Ok(action) => ParseOutcome::Parsed(ShutterNodeSetEvents::Action(action)),
+                    Err(_) => ParseOutcome::Invalid(ParseError::new(
+                        property.prop_id().to_string(),
+                        set_value,
+                        ParseErrorKind::InvalidVariant,
+                    )),
+                },
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else {
-            None
+            ParseOutcome::NoMatch
         }
     }
 
-    pub fn match_parse_event(
+    fn parse_set_event(
         &self,
         desc: &HomieDeviceDescription,
         event: &Homie5Message,
-    ) -> Option<ShutterNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
         match event {
             Homie5Message::PropertySet {
                 property,
                 set_value,
-            } => self.match_parse(property, desc, set_value),
-            _ => None,
+            } => self.parse_set(property, desc, set_value),
+            _ => ParseOutcome::Invalid(ParseError::new(
+                self.position_prop.to_string(),
+                "",
+                ParseErrorKind::UnexpectedMessageType,
+            )),
         }
     }
 }

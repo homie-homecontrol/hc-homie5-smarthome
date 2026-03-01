@@ -1,16 +1,16 @@
 use std::str::FromStr;
 
 use homie5::{
-    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
-    HomieValue, NodeRef, PropertyRef,
     device_description::{
         HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
+    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
+    PropertyRef, HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_DIMMER;
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_DIMMER};
 
 pub const DIMMER_NODE_DEFAULT_ID: &str = "dimmer";
 pub const DIMMER_NODE_DEFAULT_NAME: &str = "Brightness control";
@@ -171,49 +171,86 @@ impl DimmerNodePublisher {
         self.client
             .publish_value(self.node.node_id(), &self.action_prop, action_str, false)
     }
+}
 
-    pub fn match_parse(
+impl SetCommandParser for DimmerNodePublisher {
+    type Event = DimmerNodeSetEvents;
+
+    fn parse_set(
         &self,
         property: &PropertyRef,
         desc: &HomieDeviceDescription,
         set_value: &str,
-    ) -> Option<DimmerNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
+        let property_id = property.prop_id().to_string();
+
         if property.match_with_node(&self.node, &self.brightness_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Integer(value)) = HomieValue::parse(set_value, prop_desc) {
-                    Some(DimmerNodeSetEvents::Brightness(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Integer(value)) => {
+                    ParseOutcome::Parsed(DimmerNodeSetEvents::Brightness(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else if property.match_with_node(&self.node, &self.action_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Enum(value)) = HomieValue::parse(set_value, prop_desc) {
-                    if let Ok(value) = DimmerNodeActions::from_str(&value) {
-                        Some(DimmerNodeSetEvents::Action(value))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })?
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property_id,
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Enum(value)) => match DimmerNodeActions::from_str(&value) {
+                    Ok(action) => ParseOutcome::Parsed(DimmerNodeSetEvents::Action(action)),
+                    Err(_) => ParseOutcome::Invalid(ParseError::new(
+                        property.prop_id().to_string(),
+                        set_value,
+                        ParseErrorKind::InvalidVariant,
+                    )),
+                },
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else {
-            None
+            ParseOutcome::NoMatch
         }
     }
 
-    pub fn match_parse_event(
+    fn parse_set_event(
         &self,
         desc: &HomieDeviceDescription,
         event: &Homie5Message,
-    ) -> Option<DimmerNodeSetEvents> {
+    ) -> ParseOutcome<Self::Event> {
         match event {
             Homie5Message::PropertySet {
                 property,
                 set_value,
-            } => self.match_parse(property, desc, set_value),
-            _ => None,
+            } => self.parse_set(property, desc, set_value),
+            _ => ParseOutcome::Invalid(ParseError::new(
+                self.brightness_prop.to_string(),
+                "",
+                ParseErrorKind::UnexpectedMessageType,
+            )),
         }
     }
 }

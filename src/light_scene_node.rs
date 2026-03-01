@@ -1,13 +1,15 @@
 use homie5::{
-    Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
         HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
+    Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_LIGHTSCENE;
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_LIGHTSCENE,
+};
 
 pub const LIGHTSCENE_NODE_DEFAULT_ID: &str = "scenes";
 pub const LIGHTSCENE_NODE_DEFAULT_NAME: &str = "Light scenes";
@@ -118,38 +120,58 @@ impl LightSceneNodePublisher {
             None
         }
     }
+}
 
-    pub fn match_parse(
+impl SetCommandParser for LightSceneNodePublisher {
+    type Event = LightSceneNodeActions;
+
+    fn parse_set(
         &self,
         property: &PropertyRef,
         desc: &HomieDeviceDescription,
         set_value: &str,
-    ) -> Option<LightSceneNodeActions> {
-        println!("returning parsed scene: {}, {:#?}", set_value, property);
+    ) -> ParseOutcome<Self::Event> {
         if property.match_with_node(&self.node, &self.recall_prop) {
-            desc.with_property(property, |prop_desc| {
-                if let Ok(HomieValue::Enum(value)) = HomieValue::parse(set_value, prop_desc) {
-                    println!("returning parsed scene: {}", value);
-                    Some(LightSceneNodeActions::Recall(value))
-                } else {
-                    None
+            let Some(parsed) = desc.with_property(property, |prop_desc| {
+                HomieValue::parse(set_value, prop_desc)
+            }) else {
+                return ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::MissingPropertyDescription,
+                ));
+            };
+
+            match parsed {
+                Ok(HomieValue::Enum(value)) => {
+                    ParseOutcome::Parsed(LightSceneNodeActions::Recall(value))
                 }
-            })?
+                _ => ParseOutcome::Invalid(ParseError::new(
+                    property.prop_id().to_string(),
+                    set_value,
+                    ParseErrorKind::InvalidHomieValue,
+                )),
+            }
         } else {
-            None
+            ParseOutcome::NoMatch
         }
     }
-    pub fn match_parse_event(
+
+    fn parse_set_event(
         &self,
         desc: &HomieDeviceDescription,
         event: &Homie5Message,
-    ) -> Option<LightSceneNodeActions> {
+    ) -> ParseOutcome<Self::Event> {
         match event {
             Homie5Message::PropertySet {
                 property,
                 set_value,
-            } => self.match_parse(property, desc, set_value),
-            _ => None,
+            } => self.parse_set(property, desc, set_value),
+            _ => ParseOutcome::Invalid(ParseError::new(
+                self.recall_prop.to_string(),
+                "",
+                ParseErrorKind::UnexpectedMessageType,
+            )),
         }
     }
 }

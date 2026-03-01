@@ -72,9 +72,153 @@ pub const SMARTHOME_TYPE_TILT: &str = create_smarthome_type!("tilt");
 pub const SMARTHOME_TYPE_THERMOSTAT: &str = create_smarthome_type!("thermostat");
 pub const SMARTHOME_TYPE_POWERMETER: &str = create_smarthome_type!("powermeter");
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseErrorKind {
+    UnexpectedMessageType,
+    MissingPropertyDescription,
+    InvalidHomieValue,
+    InvalidVariant,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseError {
+    pub property_id: String,
+    pub payload: String,
+    pub kind: ParseErrorKind,
+}
+
+impl ParseError {
+    pub fn new(property_id: impl Into<String>, payload: impl Into<String>, kind: ParseErrorKind) -> Self {
+        Self {
+            property_id: property_id.into(),
+            payload: payload.into(),
+            kind,
+        }
+    }
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "set command parse error ({:?}) for property '{}' and payload '{}'",
+            self.kind, self.property_id, self.payload
+        )
+    }
+}
+
+impl std::error::Error for ParseError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseOutcome<T> {
+    NoMatch,
+    Parsed(T),
+    Invalid(ParseError),
+}
+
+impl<T> ParseOutcome<T> {
+    pub fn ok(self) -> Option<T> {
+        match self {
+            ParseOutcome::Parsed(value) => Some(value),
+            ParseOutcome::NoMatch | ParseOutcome::Invalid(_) => None,
+        }
+    }
+
+    pub fn into_result(self) -> Result<Option<T>, ParseError> {
+        match self {
+            ParseOutcome::NoMatch => Ok(None),
+            ParseOutcome::Parsed(value) => Ok(Some(value)),
+            ParseOutcome::Invalid(err) => Err(err),
+        }
+    }
+}
+
+impl<T> From<ParseOutcome<T>> for Option<T> {
+    fn from(value: ParseOutcome<T>) -> Self {
+        value.ok()
+    }
+}
+
+impl<T> From<ParseOutcome<T>> for Result<Option<T>, ParseError> {
+    fn from(value: ParseOutcome<T>) -> Self {
+        value.into_result()
+    }
+}
+
+impl<T> From<T> for ParseOutcome<T> {
+    fn from(value: T) -> Self {
+        ParseOutcome::Parsed(value)
+    }
+}
+
+pub trait SetCommandParser {
+    type Event;
+
+    fn parse_set(
+        &self,
+        property: &homie5::PropertyRef,
+        desc: &homie5::device_description::HomieDeviceDescription,
+        set_value: &str,
+    ) -> ParseOutcome<Self::Event>;
+
+    fn parse_set_event(
+        &self,
+        desc: &homie5::device_description::HomieDeviceDescription,
+        event: &homie5::Homie5Message,
+    ) -> ParseOutcome<Self::Event>;
+}
+
+#[cfg(test)]
+mod parse_outcome_tests {
+    use super::*;
+
+    #[test]
+    fn parse_outcome_ok_returns_only_parsed_value() {
+        assert_eq!(ParseOutcome::Parsed(42).ok(), Some(42));
+        assert_eq!(ParseOutcome::<i32>::NoMatch.ok(), None);
+        assert_eq!(
+            ParseOutcome::<i32>::Invalid(ParseError::new("x", "y", ParseErrorKind::InvalidHomieValue)).ok(),
+            None
+        );
+    }
+
+    #[test]
+    fn parse_outcome_into_result_preserves_invalid_error() {
+        let no_match = ParseOutcome::<i32>::NoMatch.into_result().expect("no match should be ok");
+        assert_eq!(no_match, None);
+
+        let parsed = ParseOutcome::Parsed(7).into_result().expect("parsed should be ok");
+        assert_eq!(parsed, Some(7));
+
+        let err = ParseOutcome::<i32>::Invalid(ParseError::new(
+            "state",
+            "not-bool",
+            ParseErrorKind::InvalidHomieValue,
+        ))
+        .into_result()
+        .expect_err("invalid should return error");
+        assert_eq!(err.kind, ParseErrorKind::InvalidHomieValue);
+        assert_eq!(err.property_id, "state");
+    }
+
+    #[test]
+    fn parse_outcome_from_impls_work() {
+        let parsed: ParseOutcome<i32> = 5.into();
+        assert_eq!(parsed, ParseOutcome::Parsed(5));
+
+        let no_match_option: Option<i32> = ParseOutcome::NoMatch.into();
+        assert_eq!(no_match_option, None);
+
+        let parsed_option: Option<i32> = ParseOutcome::Parsed(11).into();
+        assert_eq!(parsed_option, Some(11));
+
+        let parsed_result: Result<Option<i32>, ParseError> = ParseOutcome::Parsed(12).into();
+        assert_eq!(parsed_result.expect("parsed should map to ok"), Some(12));
+    }
+}
+
 /// SmarthomeType enum representing various smart home device types.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")] // Ensures consistent lowercase naming in serialization/deserialization
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SmarthomeType {
     Switch,
     Dimmer,
@@ -160,6 +304,68 @@ impl fmt::Display for SmarthomeType {
     }
 }
 
+impl Serialize for SmarthomeType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for SmarthomeType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = <&str>::deserialize(deserializer)?;
+        SmarthomeType::from_constant(value)
+            .ok_or_else(|| serde::de::Error::custom(format!("invalid smarthome type: {value}")))
+    }
+}
+
+#[cfg(test)]
+mod smarthome_type_serde_tests {
+    use super::*;
+
+    #[test]
+    fn serializes_and_deserializes_canonical_constants() {
+        let types = [
+            SmarthomeType::Switch,
+            SmarthomeType::Dimmer,
+            SmarthomeType::Maintenance,
+            SmarthomeType::Contact,
+            SmarthomeType::Weather,
+            SmarthomeType::Motion,
+            SmarthomeType::Button,
+            SmarthomeType::ColorLight,
+            SmarthomeType::LightScene,
+            SmarthomeType::Numeric,
+            SmarthomeType::Vibration,
+            SmarthomeType::Orientation,
+            SmarthomeType::WaterSensor,
+            SmarthomeType::Shutter,
+            SmarthomeType::Tilt,
+            SmarthomeType::Thermostat,
+            SmarthomeType::Powermeter,
+        ];
+
+        for ty in types {
+            let json = serde_json::to_string(&ty).expect("serialize smarthome type");
+            assert_eq!(json, format!("\"{}\"", ty.as_str()));
+
+            let parsed: SmarthomeType = serde_json::from_str(&json).expect("deserialize smarthome type");
+            assert_eq!(parsed, ty);
+        }
+    }
+
+    #[test]
+    fn rejects_non_canonical_short_names() {
+        let err = serde_json::from_str::<SmarthomeType>("\"switch\"").expect_err("must reject short name");
+        assert!(err.to_string().contains("invalid smarthome type"));
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum SmarthomeProperyConfig {
     Button(ButtonNodeConfig),
@@ -211,6 +417,7 @@ mod tests {
         switch_node::{
             SWITCH_NODE_DEFAULT_ID, SwitchNodeActions, SwitchNodeBuilder, SwitchNodeSetEvents,
         },
+        SetCommandParser,
         weather_node::{WEATHER_NODE_DEFAULT_ID, WeatherNodeBuilder},
     };
     #[allow(clippy::large_enum_variant)]
@@ -391,7 +598,7 @@ mod tests {
                     } = event
                     {
                         if let Some(switch_node_event) =
-                            switch_node_publisher.match_parse_event(&desc, event)
+                            switch_node_publisher.parse_set_event(&desc, event).ok()
                         {
                             println!("SwitchNode: {:#?}", switch_node_event);
                             match switch_node_event {
@@ -432,7 +639,7 @@ mod tests {
                             }
                         }
                         if let Some(switch_node_event) =
-                            switch_node_publisher2.match_parse_event(&desc, event)
+                            switch_node_publisher2.parse_set_event(&desc, event).ok()
                         {
                             println!("SwitchNode2: {:#?}", switch_node_event);
                             match switch_node_event {
@@ -475,7 +682,7 @@ mod tests {
                             }
                         }
                         if let Some(dimmer_node_event) =
-                            dimmer_node_publisher.match_parse_event(&desc, event)
+                            dimmer_node_publisher.parse_set_event(&desc, event).ok()
                         {
                             println!("DimmerNode: {:#?}", dimmer_node_event);
                             match dimmer_node_event {
