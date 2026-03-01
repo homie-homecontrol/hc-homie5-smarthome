@@ -8,9 +8,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_THERMOSTAT, SetCommandParser,
-};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_THERMOSTAT, SetCommandParser};
 
 pub const THERMOSTAT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("thermostat");
 pub const THERMOSTAT_NODE_DEFAULT_NAME: &str = "Thermostat";

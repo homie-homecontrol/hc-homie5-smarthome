@@ -1,3 +1,10 @@
+//! **Deprecated.** This module will be removed in a future version.
+//!
+//! Use dedicated typed capabilities instead:
+//! - Temperature, humidity, pressure: [`climate_node`](crate::climate_node)
+//! - Power, current, voltage, frequency, energy: [`powermeter_node`](crate::powermeter_node)
+//! - Other numeric readings: define a typed extension via [`smarthome_ext!`]
+
 use std::f64;
 
 use homie5::{
@@ -16,6 +23,7 @@ pub const NUMERIC_NODE_DEFAULT_ID: HomieID = HomieID::new_const("numeric");
 pub const NUMERIC_NODE_DEFAULT_NAME: &str = "Numeric Sensor";
 pub const NUMERIC_NODE_VALUE_PROP_ID: HomieID = HomieID::new_const("value");
 
+#[deprecated(note = "Use dedicated typed capabilities (climate, powermeter) instead")]
 pub enum NumericSensorType {
     Generic,
     Temperature,
@@ -74,12 +82,14 @@ impl NumericSensorType {
     }
 }
 
+#[deprecated(note = "Use dedicated typed capabilities (climate, powermeter) instead")]
 #[derive(Debug)]
 pub struct NumericSensorNode {
     pub publisher: NumericSensorNodePublisher,
     pub value: f64,
 }
 
+#[deprecated(note = "Use dedicated typed capabilities (climate, powermeter) instead")]
 pub struct NumericSensorNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
@@ -217,6 +227,7 @@ impl NumericSensorNodeBuilder {
     }
 }
 
+#[deprecated(note = "Use dedicated typed capabilities (climate, powermeter) instead")]
 #[derive(Debug)]
 pub struct NumericSensorNodePublisher {
     client: Homie5DeviceProtocol,

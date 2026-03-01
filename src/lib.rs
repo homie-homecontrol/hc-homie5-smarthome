@@ -7,6 +7,7 @@ pub mod level_node;
 pub mod lock_node;
 pub mod maintenance_node;
 pub mod motion_node;
+#[allow(deprecated)]
 pub mod numeric_sensor_node;
 pub mod orientation_node;
 pub mod powermeter_node;
@@ -29,6 +30,7 @@ use level_node::{LevelNode, LevelNodeConfig};
 use lock_node::LockNodeConfig;
 use maintenance_node::{MaintenanceNode, MaintenanceNodeConfig};
 use motion_node::{MotionNode, MotionNodeConfig};
+#[allow(deprecated)]
 use numeric_sensor_node::NumericSensorNode;
 use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
 use scene_node::SceneNodeConfig;
@@ -345,6 +347,7 @@ pub enum SmarthomeProperyConfig {
 }
 
 #[derive(Debug)]
+#[allow(deprecated)]
 pub enum SmarthomeNode {
     MaintenanceNode(MaintenanceNode),
     SwitchNode(SwitchNode),
@@ -353,6 +356,7 @@ pub enum SmarthomeNode {
     ContactNode(ContactNode),
     MotionNode(MotionNode),
     ColorNode(ColorNode),
+    #[deprecated(note = "Use dedicated typed capabilities (climate, powermeter) instead")]
     NumericSensorNode(NumericSensorNode),
     WaterSensor(WaterSensorNode),
     ShutterNode(ShutterNode),
