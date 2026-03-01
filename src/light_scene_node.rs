@@ -11,9 +11,9 @@ use crate::{
     ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_LIGHTSCENE,
 };
 
-pub const LIGHTSCENE_NODE_DEFAULT_ID: &str = "scenes";
+pub const LIGHTSCENE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("scenes");
 pub const LIGHTSCENE_NODE_DEFAULT_NAME: &str = "Light scenes";
-pub const LIGHTSCENE_NODE_RECALL_PROP_ID: &str = "recall";
+pub const LIGHTSCENE_NODE_RECALL_PROP_ID: HomieID = HomieID::new_const("recall");
 
 #[derive(Debug)]
 pub enum LightSceneNodeActions {
@@ -51,7 +51,7 @@ impl LightSceneNodeBuilder {
         config: &LightSceneNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            LIGHTSCENE_NODE_RECALL_PROP_ID.try_into().unwrap(),
+            LIGHTSCENE_NODE_RECALL_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
                 .name("Recall a scene")
                 .format(HomiePropertyFormat::Enum(config.scenes.clone()))
@@ -104,7 +104,7 @@ impl LightSceneNodePublisher {
             node,
             config,
             client,
-            recall_prop: LIGHTSCENE_NODE_RECALL_PROP_ID.try_into().unwrap(),
+            recall_prop: LIGHTSCENE_NODE_RECALL_PROP_ID,
         }
     }
 

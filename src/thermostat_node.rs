@@ -4,7 +4,7 @@ use homie5::{
         HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
-    PropertyRef, HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_MINUTES, HOMIE_UNIT_PERCENT,
+    PropertyRef, HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_PERCENT, HOMIE_UNIT_SECONDS,
 };
 use serde::{Deserialize, Serialize};
 
@@ -229,7 +229,7 @@ impl ThermostatNodeBuilder {
                         max: None,
                         step: None,
                     }))
-                    .unit(HOMIE_UNIT_MINUTES)
+                    .unit(HOMIE_UNIT_SECONDS)
                     .settable(false)
                     .retained(false)
                     .build()

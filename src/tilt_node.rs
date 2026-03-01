@@ -8,9 +8,9 @@ use homie5::{
 
 use crate::SMARTHOME_TYPE_TILT;
 
-pub const TILT_NODE_DEFAULT_ID: &str = "tilt";
+pub const TILT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("tilt");
 pub const TILT_NODE_DEFAULT_NAME: &str = "Tilt sensor";
-pub const TILT_NODE_STATE_PROP_ID: &str = "state";
+pub const TILT_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
 
 #[derive(Debug)]
 pub struct TiltNode {
@@ -38,7 +38,7 @@ impl TiltNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            TILT_NODE_STATE_PROP_ID.try_into().unwrap(),
+            TILT_NODE_STATE_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Tilted state")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
@@ -91,7 +91,7 @@ impl TiltNodePublisher {
         Self {
             node,
             client,
-            state_prop: TILT_NODE_STATE_PROP_ID.try_into().unwrap(),
+            state_prop: TILT_NODE_STATE_PROP_ID,
         }
     }
 

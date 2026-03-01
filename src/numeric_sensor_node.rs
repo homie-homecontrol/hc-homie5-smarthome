@@ -12,9 +12,9 @@ use homie5::{
 
 use crate::SMARTHOME_TYPE_NUMERIC;
 
-pub const NUMERIC_NODE_DEFAULT_ID: &str = "numeric";
+pub const NUMERIC_NODE_DEFAULT_ID: HomieID = HomieID::new_const("numeric");
 pub const NUMERIC_NODE_DEFAULT_NAME: &str = "Numeric Sensor";
-pub const NUMERIC_NODE_VALUE_PROP_ID: &str = "value";
+pub const NUMERIC_NODE_VALUE_PROP_ID: HomieID = HomieID::new_const("value");
 
 pub enum NumericSensorType {
     Generic,
@@ -109,7 +109,7 @@ impl NumericSensorNodeBuilder {
         db: NodeDescriptionBuilder,
         sensor_type: &NumericSensorType,
     ) -> NodeDescriptionBuilder {
-        let prop_id = NUMERIC_NODE_VALUE_PROP_ID.try_into().unwrap();
+        let prop_id = NUMERIC_NODE_VALUE_PROP_ID;
         let prop_name = format!("Sensor value ({})", sensor_type.as_str());
         let mut propbuilder = PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
             .name(prop_name)
@@ -229,7 +229,7 @@ impl NumericSensorNodePublisher {
         Self {
             node,
             client,
-            value_prop: NUMERIC_NODE_VALUE_PROP_ID.try_into().unwrap(),
+            value_prop: NUMERIC_NODE_VALUE_PROP_ID,
         }
     }
 

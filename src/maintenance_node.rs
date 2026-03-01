@@ -2,20 +2,21 @@ use chrono::prelude::*;
 
 use homie5::{
     device_description::{
-        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieNodeDescription, HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef,
+    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::SMARTHOME_TYPE_MAINTENANCE;
 
-pub const MAINTENANCE_NODE_DEFAULT_ID: &str = "maintenance";
+pub const MAINTENANCE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("maintenance");
 pub const MAINTENANCE_NODE_DEFAULT_NAME: &str = "Maintenance information";
-pub const MAINTENANCE_NODE_LOW_BATTERY_PROP_ID: &str = "low-battery";
-pub const MAINTENANCE_NODE_BATTERY_LEVEL_PROP_ID: &str = "battery-level";
-pub const MAINTENANCE_NODE_LAST_UPDATE_PROP_ID: &str = "last-update";
-pub const MAINTENANCE_NODE_REACHABLE_PROP_ID: &str = "reachable";
+pub const MAINTENANCE_NODE_LOW_BATTERY_PROP_ID: HomieID = HomieID::new_const("low-battery");
+pub const MAINTENANCE_NODE_BATTERY_LEVEL_PROP_ID: HomieID = HomieID::new_const("battery-level");
+pub const MAINTENANCE_NODE_LAST_UPDATE_PROP_ID: HomieID = HomieID::new_const("last-update");
+pub const MAINTENANCE_NODE_REACHABLE_PROP_ID: HomieID = HomieID::new_const("reachable");
 
 #[derive(Debug)]
 pub struct MaintenanceNode {
@@ -70,7 +71,7 @@ impl MaintenanceNodeBuilder {
         config: &MaintenanceNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property_cond(
-            MAINTENANCE_NODE_LOW_BATTERY_PROP_ID.try_into().unwrap(),
+            MAINTENANCE_NODE_LOW_BATTERY_PROP_ID,
             config.low_battery,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
@@ -81,18 +82,24 @@ impl MaintenanceNodeBuilder {
             },
         )
         .add_property_cond(
-            MAINTENANCE_NODE_BATTERY_LEVEL_PROP_ID.try_into().unwrap(),
+            MAINTENANCE_NODE_BATTERY_LEVEL_PROP_ID,
             config.battery_level,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                     .name("Battery level")
+                    .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                        min: Some(0),
+                        max: Some(100),
+                        step: None,
+                    }))
+                    .unit(HOMIE_UNIT_PERCENT)
                     .settable(false)
                     .retained(true)
                     .build()
             },
         )
         .add_property_cond(
-            MAINTENANCE_NODE_LAST_UPDATE_PROP_ID.try_into().unwrap(),
+            MAINTENANCE_NODE_LAST_UPDATE_PROP_ID,
             config.last_update,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Datetime)
@@ -103,7 +110,7 @@ impl MaintenanceNodeBuilder {
             },
         )
         .add_property_cond(
-            MAINTENANCE_NODE_REACHABLE_PROP_ID.try_into().unwrap(),
+            MAINTENANCE_NODE_REACHABLE_PROP_ID,
             config.reachable,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
@@ -161,10 +168,10 @@ impl MaintenanceNodePublisher {
             node,
             client,
             config,
-            low_battery_prop: MAINTENANCE_NODE_LOW_BATTERY_PROP_ID.try_into().unwrap(),
-            battery_level_prop: MAINTENANCE_NODE_BATTERY_LEVEL_PROP_ID.try_into().unwrap(),
-            last_update_prop: MAINTENANCE_NODE_LAST_UPDATE_PROP_ID.try_into().unwrap(),
-            reachable_prop: MAINTENANCE_NODE_REACHABLE_PROP_ID.try_into().unwrap(),
+            low_battery_prop: MAINTENANCE_NODE_LOW_BATTERY_PROP_ID,
+            battery_level_prop: MAINTENANCE_NODE_BATTERY_LEVEL_PROP_ID,
+            last_update_prop: MAINTENANCE_NODE_LAST_UPDATE_PROP_ID,
+            reachable_prop: MAINTENANCE_NODE_REACHABLE_PROP_ID,
         }
     }
 

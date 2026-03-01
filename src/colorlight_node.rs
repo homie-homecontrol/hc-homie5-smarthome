@@ -12,10 +12,10 @@ use crate::{
     ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_COLORLIGHT,
 };
 
-pub const COLORLIGHT_NODE_DEFAULT_ID: &str = "colorlight";
+pub const COLORLIGHT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("colorlight");
 pub const COLORLIGHT_NODE_DEFAULT_NAME: &str = "Colorlight control";
-pub const COLORLIGHT_NODE_COLOR_PROP_ID: &str = "color";
-pub const COLORLIGHT_NODE_COLOR_TEMP_PROP_ID: &str = "color-temperature";
+pub const COLORLIGHT_NODE_COLOR_PROP_ID: HomieID = HomieID::new_const("color");
+pub const COLORLIGHT_NODE_COLOR_TEMP_PROP_ID: HomieID = HomieID::new_const("color-temperature");
 
 #[derive(Debug)]
 pub struct ColorlightNode {
@@ -59,7 +59,7 @@ pub struct ColorlightNodeBuilder {
 impl ColorlightNodeBuilder {
     pub fn new(config: &ColorlightNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(COLORLIGHT_NODE_DEFAULT_ID),
+            NodeDescriptionBuilder::new().name(COLORLIGHT_NODE_DEFAULT_NAME),
             config,
         )
         .r#type(SMARTHOME_TYPE_COLORLIGHT);
@@ -72,7 +72,7 @@ impl ColorlightNodeBuilder {
         config: &ColorlightNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            COLORLIGHT_NODE_COLOR_PROP_ID.try_into().unwrap(),
+            COLORLIGHT_NODE_COLOR_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Color)
                 .name("Color")
                 .format(HomiePropertyFormat::Color(config.color_formats.clone()))
@@ -81,7 +81,7 @@ impl ColorlightNodeBuilder {
                 .build(),
         )
         .add_property(
-            COLORLIGHT_NODE_COLOR_TEMP_PROP_ID.try_into().unwrap(),
+            COLORLIGHT_NODE_COLOR_TEMP_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                 .name("Color temperature")
                 .format(HomiePropertyFormat::IntegerRange(IntegerRange {
@@ -136,8 +136,8 @@ impl ColorlightNodePublisher {
         Self {
             node,
             client,
-            color_prop_id: COLORLIGHT_NODE_COLOR_PROP_ID.try_into().unwrap(),
-            color_temp_prop_id: COLORLIGHT_NODE_COLOR_TEMP_PROP_ID.try_into().unwrap(),
+            color_prop_id: COLORLIGHT_NODE_COLOR_PROP_ID,
+            color_temp_prop_id: COLORLIGHT_NODE_COLOR_TEMP_PROP_ID,
         }
     }
 

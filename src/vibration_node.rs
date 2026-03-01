@@ -3,16 +3,16 @@ use homie5::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_LUX,
+    Homie5DeviceProtocol, HomieID, NodeRef,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::SMARTHOME_TYPE_VIBRATION;
 
-pub const VIBRATION_NODE_DEFAULT_ID: &str = "vibration";
+pub const VIBRATION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("vibration");
 pub const VIBRATION_NODE_DEFAULT_NAME: &str = "Vibration sensor";
-pub const VIBRATION_NODE_VIBRATION_PROP_ID: &str = "vibration";
-pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID: &str = "vibration-strength";
+pub const VIBRATION_NODE_VIBRATION_PROP_ID: HomieID = HomieID::new_const("vibration");
+pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID: HomieID = HomieID::new_const("vibration-strength");
 
 #[derive(Debug)]
 pub struct VibrationNode {
@@ -55,7 +55,7 @@ impl VibrationNodeBuilder {
         config: &VibrationNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            VIBRATION_NODE_VIBRATION_PROP_ID.try_into().unwrap(),
+            VIBRATION_NODE_VIBRATION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Vibration detected")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
@@ -73,10 +73,9 @@ impl VibrationNodeBuilder {
             config.vibration_strength,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                    .name("Current lightlevel")
+                    .name("Vibration strength")
                     .retained(true)
                     .settable(false)
-                    .unit(HOMIE_UNIT_LUX)
                     .build()
             },
         )
@@ -123,7 +122,7 @@ impl VibrationNodePublisher {
         Self {
             node,
             client,
-            vibr_prop: VIBRATION_NODE_VIBRATION_PROP_ID.try_into().unwrap(),
+            vibr_prop: VIBRATION_NODE_VIBRATION_PROP_ID,
             vibr_strength: VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID
                 .try_into()
                 .unwrap(),

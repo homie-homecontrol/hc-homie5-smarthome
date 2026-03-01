@@ -622,29 +622,29 @@ mod tests {
 
         let (maintenance_node, maintenance_node_publisher) =
             MaintenanceNodeBuilder::new(Default::default())
-                .build_with_publisher(MAINTENANCE_NODE_DEFAULT_ID.try_into().unwrap(), &client);
+                .build_with_publisher(MAINTENANCE_NODE_DEFAULT_ID, &client);
 
         let (switch_node, switch_node_publisher) = SwitchNodeBuilder::new(&Default::default())
-            .build_with_publisher(SWITCH_NODE_DEFAULT_ID.try_into().unwrap(), &client);
+            .build_with_publisher(SWITCH_NODE_DEFAULT_ID, &client);
 
         let (switch_node2, switch_node_publisher2) = SwitchNodeBuilder::new(&Default::default())
             .build_with_publisher("switch2".try_into().unwrap(), &client);
 
         let (dimmer_node, dimmer_node_publisher) = DimmerNodeBuilder::new(&Default::default())
-            .build_with_publisher(DIMMER_NODE_DEFAULT_ID.try_into().unwrap(), &client);
+            .build_with_publisher(DIMMER_NODE_DEFAULT_ID, &client);
 
         let (weather_node, weather_node_publisher) = WeatherNodeBuilder::new(&Default::default())
-            .build_with_publisher(WEATHER_NODE_DEFAULT_ID.try_into().unwrap(), &client);
+            .build_with_publisher(WEATHER_NODE_DEFAULT_ID, &client);
 
         let desc = DeviceDescriptionBuilder::new()
             .name("hc-smarthome-test")
             .add_node(
-                MAINTENANCE_NODE_DEFAULT_ID.try_into().unwrap(),
+                MAINTENANCE_NODE_DEFAULT_ID,
                 maintenance_node,
             )
-            .add_node(SWITCH_NODE_DEFAULT_ID.try_into().unwrap(), switch_node)
-            .add_node(DIMMER_NODE_DEFAULT_ID.try_into().unwrap(), dimmer_node)
-            .add_node(WEATHER_NODE_DEFAULT_ID.try_into().unwrap(), weather_node)
+            .add_node(SWITCH_NODE_DEFAULT_ID, switch_node)
+            .add_node(DIMMER_NODE_DEFAULT_ID, dimmer_node)
+            .add_node(WEATHER_NODE_DEFAULT_ID, weather_node)
             .add_node("switch2".try_into().unwrap(), switch_node2)
             .build();
 

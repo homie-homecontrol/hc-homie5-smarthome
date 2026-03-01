@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::SMARTHOME_TYPE_POWERMETER;
 
-pub const POWERMETER_NODE_DEFAULT_ID: &str = "powermeter";
+pub const POWERMETER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("powermeter");
 pub const POWERMETER_NODE_DEFAULT_NAME: &str = "Powermeter";
 pub const POWERMETER_NODE_POWER_PROP_ID: HomieID = HomieID::new_const("power");
 pub const POWERMETER_NODE_CURRENT_PROP_ID: HomieID = HomieID::new_const("current");
@@ -137,7 +137,7 @@ impl PowermeterNodeBuilder {
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
                     .name("Consumption")
-                    .unit("wH") //WATT HOURS
+                    .unit("Wh")
                     .format(HomiePropertyFormat::FloatRange(FloatRange {
                         min: Some(0.0),
                         max: None,

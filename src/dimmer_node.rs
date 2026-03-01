@@ -12,10 +12,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_DIMMER};
 
-pub const DIMMER_NODE_DEFAULT_ID: &str = "dimmer";
+pub const DIMMER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("dimmer");
 pub const DIMMER_NODE_DEFAULT_NAME: &str = "Brightness control";
-pub const DIMMER_NODE_BRIGHTNESS_PROP_ID: &str = "brightness";
-pub const DIMMER_NODE_ACTION_PROP_ID: &str = "action";
+pub const DIMMER_NODE_BRIGHTNESS_PROP_ID: HomieID = HomieID::new_const("brightness");
+pub const DIMMER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug)]
 pub struct DimmerNode {
@@ -76,7 +76,7 @@ impl DimmerNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &DimmerNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            DIMMER_NODE_BRIGHTNESS_PROP_ID.try_into().unwrap(),
+            DIMMER_NODE_BRIGHTNESS_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                 .name("Brightness Level")
                 .format(HomiePropertyFormat::IntegerRange(IntegerRange {
@@ -90,7 +90,7 @@ impl DimmerNodeBuilder {
                 .build(),
         )
         .add_property(
-            DIMMER_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            DIMMER_NODE_ACTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
                 .name("Change Brightness")
                 .format(HomiePropertyFormat::Enum(vec![
@@ -141,8 +141,8 @@ impl DimmerNodePublisher {
         Self {
             node,
             client,
-            brightness_prop: DIMMER_NODE_BRIGHTNESS_PROP_ID.try_into().unwrap(),
-            action_prop: DIMMER_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            brightness_prop: DIMMER_NODE_BRIGHTNESS_PROP_ID,
+            action_prop: DIMMER_NODE_ACTION_PROP_ID,
         }
     }
 

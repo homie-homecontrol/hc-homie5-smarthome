@@ -9,10 +9,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::SMARTHOME_TYPE_MOTION;
 
-pub const MOTION_NODE_DEFAULT_ID: &str = "motion";
+pub const MOTION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("motion");
 pub const MOTION_NODE_DEFAULT_NAME: &str = "Motion sensor";
-pub const MOTION_NODE_MOTION_PROP_ID: &str = "motion";
-pub const MOTION_NODE_LUX_PROP_ID: &str = "lux";
+pub const MOTION_NODE_MOTION_PROP_ID: HomieID = HomieID::new_const("motion");
+pub const MOTION_NODE_LUX_PROP_ID: HomieID = HomieID::new_const("lux");
 
 #[derive(Debug)]
 pub struct MotionNode {
@@ -44,7 +44,7 @@ impl MotionNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &MotionNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            MOTION_NODE_MOTION_PROP_ID.try_into().unwrap(),
+            MOTION_NODE_MOTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Motion detected")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
@@ -56,11 +56,11 @@ impl MotionNodeBuilder {
                 .build(),
         )
         .add_property_cond(
-            MOTION_NODE_LUX_PROP_ID.try_into().unwrap(),
+            MOTION_NODE_LUX_PROP_ID,
             config.lux,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                    .name("Current lightlevel")
+                    .name("Current light level")
                     .retained(true)
                     .settable(false)
                     .unit(HOMIE_UNIT_LUX)
@@ -110,8 +110,8 @@ impl MotionNodePublisher {
         Self {
             node,
             client,
-            motion_prop: MOTION_NODE_MOTION_PROP_ID.try_into().unwrap(),
-            lux_prop: MOTION_NODE_LUX_PROP_ID.try_into().unwrap(),
+            motion_prop: MOTION_NODE_MOTION_PROP_ID,
+            lux_prop: MOTION_NODE_LUX_PROP_ID,
         }
     }
 

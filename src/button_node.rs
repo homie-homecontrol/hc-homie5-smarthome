@@ -11,10 +11,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::SMARTHOME_TYPE_BUTTON;
 
-pub const BUTTON_NODE_DEFAULT_ID: &str = "button";
+pub const BUTTON_NODE_DEFAULT_ID: HomieID = HomieID::new_const("button");
 pub const BUTTON_NODE_DEFAULT_NAME: &str = "Pushbutton";
 
-pub const BUTTON_NODE_ACTION_PROP_ID: &str = "action";
+pub const BUTTON_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -98,7 +98,7 @@ impl ButtonNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &ButtonNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            BUTTON_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            BUTTON_NODE_ACTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
                 .name("Button action event")
                 .format(HomiePropertyFormat::Enum(
@@ -151,7 +151,7 @@ impl ButtonNodePublisher {
         Self {
             node,
             client,
-            action_prop: BUTTON_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            action_prop: BUTTON_NODE_ACTION_PROP_ID,
         }
     }
 

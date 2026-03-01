@@ -1,16 +1,16 @@
 use homie5::{
-    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
+    Homie5DeviceProtocol, HomieID, NodeRef,
 };
 
 use crate::SMARTHOME_TYPE_WATER_SENSOR;
 
-pub const WATER_SENSOR_NODE_DEFAULT_ID: &str = "water";
-pub const WATER_SENSOR_NODE_DEFAULT_NAME: &str = "Open/Close water";
-pub const WATER_SENSOR_NODE_DETECTED_PROP_ID: &str = "detected";
+pub const WATER_SENSOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("water");
+pub const WATER_SENSOR_NODE_DEFAULT_NAME: &str = "Water sensor";
+pub const WATER_SENSOR_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
 
 #[derive(Debug)]
 pub struct WaterSensorNode {
@@ -39,7 +39,7 @@ impl WaterSensorNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            WATER_SENSOR_NODE_DETECTED_PROP_ID.try_into().unwrap(),
+            WATER_SENSOR_NODE_DETECTED_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("Water detection")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
@@ -92,7 +92,7 @@ impl WaterSensorNodePublisher {
         Self {
             node,
             client,
-            detected_prop: WATER_SENSOR_NODE_DETECTED_PROP_ID.try_into().unwrap(),
+            detected_prop: WATER_SENSOR_NODE_DETECTED_PROP_ID,
         }
     }
 

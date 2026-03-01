@@ -12,10 +12,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_SHUTTER};
 
-pub const SHUTTER_NODE_DEFAULT_ID: &str = "shutter";
+pub const SHUTTER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("shutter");
 pub const SHUTTER_NODE_DEFAULT_NAME: &str = "Shutter control";
-pub const SHUTTER_NODE_POSITION_PROP_ID: &str = "position";
-pub const SHUTTER_NODE_ACTION_PROP_ID: &str = "action";
+pub const SHUTTER_NODE_POSITION_PROP_ID: HomieID = HomieID::new_const("position");
+pub const SHUTTER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug)]
 pub struct ShutterNode {
@@ -103,7 +103,7 @@ impl ShutterNodeBuilder {
         }
 
         db.add_property(
-            SHUTTER_NODE_POSITION_PROP_ID.try_into().unwrap(),
+            SHUTTER_NODE_POSITION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                 .name("Shutter position")
                 .format(HomiePropertyFormat::IntegerRange(IntegerRange {
@@ -117,7 +117,7 @@ impl ShutterNodeBuilder {
                 .build(),
         )
         .add_property(
-            SHUTTER_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            SHUTTER_NODE_ACTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
                 .name("Control Shutter")
                 .format(HomiePropertyFormat::Enum(
@@ -167,8 +167,8 @@ impl ShutterNodePublisher {
         Self {
             node,
             client,
-            position_prop: SHUTTER_NODE_POSITION_PROP_ID.try_into().unwrap(),
-            action_prop: SHUTTER_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            position_prop: SHUTTER_NODE_POSITION_PROP_ID,
+            action_prop: SHUTTER_NODE_ACTION_PROP_ID,
         }
     }
 

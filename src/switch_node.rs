@@ -12,10 +12,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_SWITCH};
 
-pub const SWITCH_NODE_DEFAULT_ID: &str = "switch";
+pub const SWITCH_NODE_DEFAULT_ID: HomieID = HomieID::new_const("switch");
 pub const SWITCH_NODE_DEFAULT_NAME: &str = "On/Off switch";
-pub const SWITCH_NODE_STATE_PROP_ID: &str = "state";
-pub const SWITCH_NODE_ACTION_PROP_ID: &str = "action";
+pub const SWITCH_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
+pub const SWITCH_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug)]
 pub struct SwitchNode {
@@ -83,7 +83,7 @@ impl SwitchNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &SwitchNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            SWITCH_NODE_STATE_PROP_ID.try_into().unwrap(),
+            SWITCH_NODE_STATE_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
                 .name("On/Off state")
                 .format(HomiePropertyFormat::Boolean(BooleanFormat {
@@ -95,7 +95,7 @@ impl SwitchNodeBuilder {
                 .build(),
         )
         .add_property(
-            SWITCH_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            SWITCH_NODE_ACTION_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
                 .name("Change state")
                 .format(HomiePropertyFormat::Enum(vec!["toggle".to_owned()]))
@@ -146,8 +146,8 @@ impl SwitchNodePublisher {
         Self {
             node,
             client,
-            state_prop: SWITCH_NODE_STATE_PROP_ID.try_into().unwrap(),
-            action_prop: SWITCH_NODE_ACTION_PROP_ID.try_into().unwrap(),
+            state_prop: SWITCH_NODE_STATE_PROP_ID,
+            action_prop: SWITCH_NODE_ACTION_PROP_ID,
         }
     }
 

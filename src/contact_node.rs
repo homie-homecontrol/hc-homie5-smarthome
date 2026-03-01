@@ -8,7 +8,7 @@ use homie5::{
 
 use crate::SMARTHOME_TYPE_CONTACT;
 
-pub const CONTACT_NODE_DEFAULT_ID: &str = "contact";
+pub const CONTACT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("contact");
 pub const CONTACT_NODE_DEFAULT_NAME: &str = "Open/Close contact";
 pub const CONTACT_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
 

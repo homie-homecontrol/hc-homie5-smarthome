@@ -9,11 +9,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::SMARTHOME_TYPE_WEATHER;
 
-pub const WEATHER_NODE_DEFAULT_ID: &str = "weather";
-pub const WEATHER_NODE_DEFAULT_NAME: &str = "Weather clima sensor";
-pub const WEATHER_NODE_TEMP_PROP_ID: &str = "temperature";
-pub const WEATHER_NODE_HUM_PROP_ID: &str = "humidity";
-pub const WEATHER_NODE_PRES_PROP_ID: &str = "pressure";
+pub const WEATHER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("weather");
+pub const WEATHER_NODE_DEFAULT_NAME: &str = "Weather climate sensor";
+pub const WEATHER_NODE_TEMP_PROP_ID: HomieID = HomieID::new_const("temperature");
+pub const WEATHER_NODE_HUM_PROP_ID: HomieID = HomieID::new_const("humidity");
+pub const WEATHER_NODE_PRES_PROP_ID: HomieID = HomieID::new_const("pressure");
 
 #[derive(Debug)]
 pub struct WeatherNode {
@@ -63,7 +63,7 @@ impl WeatherNodeBuilder {
         config: &WeatherNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property_cond(
-            WEATHER_NODE_TEMP_PROP_ID.try_into().unwrap(),
+            WEATHER_NODE_TEMP_PROP_ID,
             config.temperature,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
@@ -75,7 +75,7 @@ impl WeatherNodeBuilder {
             },
         )
         .add_property_cond(
-            WEATHER_NODE_HUM_PROP_ID.try_into().unwrap(),
+            WEATHER_NODE_HUM_PROP_ID,
             config.humidity,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
@@ -87,7 +87,7 @@ impl WeatherNodeBuilder {
             },
         )
         .add_property_cond(
-            WEATHER_NODE_PRES_PROP_ID.try_into().unwrap(),
+            WEATHER_NODE_PRES_PROP_ID,
             config.pressure,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
@@ -142,9 +142,9 @@ impl WeatherNodePublisher {
         Self {
             node,
             client,
-            temp_prop: WEATHER_NODE_TEMP_PROP_ID.try_into().unwrap(),
-            hum_prop: WEATHER_NODE_HUM_PROP_ID.try_into().unwrap(),
-            pres_prop: WEATHER_NODE_PRES_PROP_ID.try_into().unwrap(),
+            temp_prop: WEATHER_NODE_TEMP_PROP_ID,
+            hum_prop: WEATHER_NODE_HUM_PROP_ID,
+            pres_prop: WEATHER_NODE_PRES_PROP_ID,
         }
     }
 
