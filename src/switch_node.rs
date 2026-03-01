@@ -10,7 +10,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_SWITCH, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SWITCH, SetCommandParser};
 
 pub const SWITCH_NODE_DEFAULT_ID: HomieID = HomieID::new_const("switch");
 pub const SWITCH_NODE_DEFAULT_NAME: &str = "On/Off switch";
@@ -76,7 +76,7 @@ impl SwitchNodeBuilder {
             NodeDescriptionBuilder::new().name(SWITCH_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_SWITCH);
+        .r#type(SMARTHOME_CAP_SWITCH);
 
         Self { node_builder: db }
     }

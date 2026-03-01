@@ -7,7 +7,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_VALVE, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_VALVE, SetCommandParser};
 
 pub const VALVE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("valve");
 pub const VALVE_NODE_DEFAULT_NAME: &str = "Valve control";
@@ -47,7 +47,7 @@ impl ValveNodeBuilder {
             NodeDescriptionBuilder::new().name(VALVE_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_VALVE);
+        .r#type(SMARTHOME_CAP_VALVE);
 
         Self { node_builder: db }
     }

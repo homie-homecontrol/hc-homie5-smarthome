@@ -9,7 +9,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_MAINTENANCE;
+use crate::SMARTHOME_CAP_MAINTENANCE;
 
 pub const MAINTENANCE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("maintenance");
 pub const MAINTENANCE_NODE_DEFAULT_NAME: &str = "Maintenance information";
@@ -58,7 +58,7 @@ impl MaintenanceNodeBuilder {
             NodeDescriptionBuilder::new().name(MAINTENANCE_NODE_DEFAULT_NAME),
             &config,
         )
-        .r#type(SMARTHOME_TYPE_MAINTENANCE);
+        .r#type(SMARTHOME_CAP_MAINTENANCE);
 
         Self {
             node_builder: db,

@@ -10,7 +10,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_SHUTTER, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SHUTTER, SetCommandParser};
 
 pub const SHUTTER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("shutter");
 pub const SHUTTER_NODE_DEFAULT_NAME: &str = "Shutter control";
@@ -87,7 +87,7 @@ impl ShutterNodeBuilder {
             NodeDescriptionBuilder::new().name(SHUTTER_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_SHUTTER);
+        .r#type(SMARTHOME_CAP_SHUTTER);
 
         Self { node_builder: db }
     }

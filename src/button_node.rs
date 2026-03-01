@@ -9,7 +9,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_BUTTON;
+use crate::SMARTHOME_CAP_BUTTON;
 
 pub const BUTTON_NODE_DEFAULT_ID: HomieID = HomieID::new_const("button");
 pub const BUTTON_NODE_DEFAULT_NAME: &str = "Pushbutton";
@@ -91,7 +91,7 @@ impl ButtonNodeBuilder {
             NodeDescriptionBuilder::new().name(BUTTON_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_BUTTON);
+        .r#type(SMARTHOME_CAP_BUTTON);
 
         Self { node_builder: db }
     }

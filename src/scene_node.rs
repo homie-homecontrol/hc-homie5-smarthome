@@ -7,7 +7,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_SCENE, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SCENE, SetCommandParser};
 
 pub const SCENE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("scene");
 pub const SCENE_NODE_DEFAULT_NAME: &str = "Scene recall";
@@ -36,7 +36,7 @@ impl SceneNodeBuilder {
             NodeDescriptionBuilder::new().name(SCENE_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_SCENE);
+        .r#type(SMARTHOME_CAP_SCENE);
 
         Self {
             node_builder: db,

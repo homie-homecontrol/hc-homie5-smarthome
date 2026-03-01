@@ -6,7 +6,7 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_TYPE_TILT;
+use crate::SMARTHOME_CAP_TILT;
 
 pub const TILT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("tilt");
 pub const TILT_NODE_DEFAULT_NAME: &str = "Tilt sensor";
@@ -25,7 +25,7 @@ pub struct TiltNodeBuilder {
 impl Default for TiltNodeBuilder {
     fn default() -> Self {
         let db = Self::build_node(NodeDescriptionBuilder::new().name(TILT_NODE_DEFAULT_NAME))
-            .r#type(SMARTHOME_TYPE_TILT);
+            .r#type(SMARTHOME_CAP_TILT);
 
         Self { node_builder: db }
     }

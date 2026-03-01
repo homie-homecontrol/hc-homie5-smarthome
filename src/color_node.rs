@@ -8,7 +8,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_COLOR, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_COLOR, SetCommandParser};
 
 pub const COLOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("color");
 pub const COLOR_NODE_DEFAULT_NAME: &str = "Color control";
@@ -60,7 +60,7 @@ impl ColorNodeBuilder {
             NodeDescriptionBuilder::new().name(COLOR_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_COLOR);
+        .r#type(SMARTHOME_CAP_COLOR);
 
         Self { node_builder: db }
     }

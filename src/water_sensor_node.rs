@@ -6,7 +6,7 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_TYPE_WATER_SENSOR;
+use crate::SMARTHOME_CAP_WATER_SENSOR;
 
 pub const WATER_SENSOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("water");
 pub const WATER_SENSOR_NODE_DEFAULT_NAME: &str = "Water sensor";
@@ -26,7 +26,7 @@ impl Default for WaterSensorNodeBuilder {
     fn default() -> Self {
         let db =
             Self::build_node(NodeDescriptionBuilder::new().name(WATER_SENSOR_NODE_DEFAULT_NAME))
-                .r#type(SMARTHOME_TYPE_WATER_SENSOR);
+                .r#type(SMARTHOME_CAP_WATER_SENSOR);
 
         Self { node_builder: db }
     }

@@ -7,7 +7,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_MOTION;
+use crate::SMARTHOME_CAP_MOTION;
 
 pub const MOTION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("motion");
 pub const MOTION_NODE_DEFAULT_NAME: &str = "Motion sensor";
@@ -37,7 +37,7 @@ impl MotionNodeBuilder {
             NodeDescriptionBuilder::new().name(MOTION_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_MOTION);
+        .r#type(SMARTHOME_CAP_MOTION);
 
         Self { node_builder: db }
     }

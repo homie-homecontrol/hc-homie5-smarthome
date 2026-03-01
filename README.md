@@ -4,7 +4,9 @@ A Rust library of typed smart home capability node definitions for the [Homie 5 
 Each node represents a **reusable capability** (e.g., on/off control, brightness level, color) that can be composed into devices.
 Nodes provide a builder for generating Homie device descriptions, a publisher for emitting state updates, and (where applicable) a `SetCommandParser` for parsing incoming `/set` commands into typed events.
 
-All capability types are namespaced under `homie-homecontrol/v2/type=<name>`.
+All capability types are namespaced under `hc-smarthome/v2/cap/<name>`.
+Device classes use `hc-smarthome/v2/dc/<name>`.
+Extension capabilities use `hc-smarthome/v2/ext/<name>`.
 
 ## Architecture: Node = Capability
 
@@ -38,7 +40,7 @@ This library follows a **capability composition** model rather than a device-typ
 
 ### Switch
 
-**Default ID:** `switch` | **Type:** `homie-homecontrol/v2/type=switch` | **Config:** `SwitchNodeConfig`
+**Default ID:** `switch` | **Type:** `hc-smarthome/v2/cap/switch` | **Config:** `SwitchNodeConfig`
 
 On/Off control with a toggle action. Used for binary actuators like lights, relays, or power outlets.
 
@@ -53,7 +55,7 @@ Config: `settable: bool` (default `true`).
 
 ### Level
 
-**Default ID:** `level` | **Type:** `homie-homecontrol/v2/type=level` | **Config:** `LevelNodeConfig`
+**Default ID:** `level` | **Type:** `hc-smarthome/v2/cap/level` | **Config:** `LevelNodeConfig`
 
 Level control (0-100%) with optional step actions. Used for brightness, fan speed, volume, or any percentage-based control.
 
@@ -68,7 +70,7 @@ Config: `settable: bool` (default `true`), `step_action: bool` (default `true`).
 
 ### Color
 
-**Default ID:** `color` | **Type:** `homie-homecontrol/v2/type=color` | **Config:** `ColorNodeConfig`
+**Default ID:** `color` | **Type:** `hc-smarthome/v2/cap/color` | **Config:** `ColorNodeConfig`
 
 Color control supporting color values (RGB/HSV/XYZ) and color temperature in mireds.
 
@@ -83,7 +85,7 @@ Config: `settable: bool` (default `true`), `color_formats: Vec<ColorFormat>` (de
 
 ### Scene
 
-**Default ID:** `scene` | **Type:** `homie-homecontrol/v2/type=scene` | **Config:** `SceneNodeConfig`
+**Default ID:** `scene` | **Type:** `hc-smarthome/v2/cap/scene` | **Config:** `SceneNodeConfig`
 
 Recall predefined scenes by name. Scenes are not limited to lights -- they can control any combination of capabilities.
 
@@ -97,7 +99,7 @@ Config: `scenes: Vec<String>` (default `[]`), `settable: bool` (default `false`)
 
 ### Shutter
 
-**Default ID:** `shutter` | **Type:** `homie-homecontrol/v2/type=shutter` | **Config:** `ShutterNodeConfig`
+**Default ID:** `shutter` | **Type:** `hc-smarthome/v2/cap/shutter` | **Config:** `ShutterNodeConfig`
 
 Window shutter/blind position control with directional actions. The `stop` action is included when `can_stop` is enabled.
 
@@ -112,7 +114,7 @@ Config: `can_stop: bool` (default `true`).
 
 ### Thermostat
 
-**Default ID:** `thermostat` | **Type:** `homie-homecontrol/v2/type=thermostat` | **Config:** `ThermostatNodeConfig`
+**Default ID:** `thermostat` | **Type:** `hc-smarthome/v2/cap/thermostat` | **Config:** `ThermostatNodeConfig`
 
 Heating/cooling setpoint and mode control. Note: measured ambient temperature belongs on a separate `climate` capability node, not here.
 
@@ -131,7 +133,7 @@ All possible mode values: `off`, `auto`, `manual`, `party`, `boost`, `cool`, `he
 
 ### Lock
 
-**Default ID:** `lock` | **Type:** `homie-homecontrol/v2/type=lock` | **Config:** `LockNodeConfig`
+**Default ID:** `lock` | **Type:** `hc-smarthome/v2/cap/lock` | **Config:** `LockNodeConfig`
 
 Lock/unlock control for door locks, safes, or other locking mechanisms.
 
@@ -146,7 +148,7 @@ Config: `settable: bool` (default `true`).
 
 ### Valve
 
-**Default ID:** `valve` | **Type:** `homie-homecontrol/v2/type=valve` | **Config:** `ValveNodeConfig`
+**Default ID:** `valve` | **Type:** `hc-smarthome/v2/cap/valve` | **Config:** `ValveNodeConfig`
 
 Binary valve open/close control for water or gas shutoff valves.
 
@@ -162,7 +164,7 @@ Config: `settable: bool` (default `true`).
 
 ### Climate
 
-**Default ID:** `climate` | **Type:** `homie-homecontrol/v2/type=climate` | **Config:** `ClimateNodeConfig`
+**Default ID:** `climate` | **Type:** `hc-smarthome/v2/cap/climate` | **Config:** `ClimateNodeConfig`
 
 Climate conditions sensing: temperature, humidity, and atmospheric pressure. All properties are individually config-gated. Read-only.
 
@@ -176,7 +178,7 @@ Climate conditions sensing: temperature, humidity, and atmospheric pressure. All
 
 ### Motion
 
-**Default ID:** `motion` | **Type:** `homie-homecontrol/v2/type=motion` | **Config:** `MotionNodeConfig`
+**Default ID:** `motion` | **Type:** `hc-smarthome/v2/cap/motion` | **Config:** `MotionNodeConfig`
 
 Motion detection with optional ambient light level. Read-only.
 
@@ -189,7 +191,7 @@ Motion detection with optional ambient light level. Read-only.
 
 ### Vibration
 
-**Default ID:** `vibration` | **Type:** `homie-homecontrol/v2/type=vibration` | **Config:** `VibrationNodeConfig`
+**Default ID:** `vibration` | **Type:** `hc-smarthome/v2/cap/vibration` | **Config:** `VibrationNodeConfig`
 
 Vibration detection with optional strength measurement. Read-only.
 
@@ -202,7 +204,7 @@ Vibration detection with optional strength measurement. Read-only.
 
 ### Contact
 
-**Default ID:** `contact` | **Type:** `homie-homecontrol/v2/type=contact` | **No config**
+**Default ID:** `contact` | **Type:** `hc-smarthome/v2/cap/contact` | **No config**
 
 Binary open/close contact sensor (door sensors, window sensors). Read-only.
 
@@ -214,7 +216,7 @@ Binary open/close contact sensor (door sensors, window sensors). Read-only.
 
 ### Water Sensor
 
-**Default ID:** `water` | **Type:** `homie-homecontrol/v2/type=water` | **No config**
+**Default ID:** `water` | **Type:** `hc-smarthome/v2/cap/water` | **No config**
 
 Water leak/flood detection. Read-only.
 
@@ -226,7 +228,7 @@ Water leak/flood detection. Read-only.
 
 ### Tilt
 
-**Default ID:** `tilt` | **Type:** `homie-homecontrol/v2/type=tilt` | **No config**
+**Default ID:** `tilt` | **Type:** `hc-smarthome/v2/cap/tilt` | **No config**
 
 Binary tilt detection. Read-only.
 
@@ -238,7 +240,7 @@ Binary tilt detection. Read-only.
 
 ### Orientation
 
-**Default ID:** `orientation` | **Type:** `homie-homecontrol/v2/type=orientation` | **No config**
+**Default ID:** `orientation` | **Type:** `hc-smarthome/v2/cap/orientation` | **No config**
 
 3-axis orientation sensor reporting rotation angles and tilt. Read-only.
 
@@ -255,7 +257,7 @@ Binary tilt detection. Read-only.
 
 ### Maintenance
 
-**Default ID:** `maintenance` | **Type:** `homie-homecontrol/v2/type=maintenance` | **Config:** `MaintenanceNodeConfig`
+**Default ID:** `maintenance` | **Type:** `hc-smarthome/v2/cap/maintenance` | **Config:** `MaintenanceNodeConfig`
 
 Device health and battery status. All properties are config-gated. Read-only.
 
@@ -270,7 +272,7 @@ Device health and battery status. All properties are config-gated. Read-only.
 
 ### Button
 
-**Default ID:** `button` | **Type:** `homie-homecontrol/v2/type=button` | **Config:** `ButtonNodeConfig`
+**Default ID:** `button` | **Type:** `hc-smarthome/v2/cap/button` | **Config:** `ButtonNodeConfig`
 
 Physical push-button reporting press events. Output-only (not retained, not settable).
 
@@ -284,7 +286,7 @@ All possible action values: `press`, `long-press`, `double-press`, `release`, `l
 
 ### Powermeter
 
-**Default ID:** `powermeter` | **Type:** `homie-homecontrol/v2/type=powermeter` | **Config:** `PowermeterNodeConfig`
+**Default ID:** `powermeter` | **Type:** `hc-smarthome/v2/cap/powermeter` | **Config:** `PowermeterNodeConfig`
 
 Electrical power metering. Read-only.
 

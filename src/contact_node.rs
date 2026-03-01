@@ -6,7 +6,7 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_TYPE_CONTACT;
+use crate::SMARTHOME_CAP_CONTACT;
 
 pub const CONTACT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("contact");
 pub const CONTACT_NODE_DEFAULT_NAME: &str = "Open/Close contact";
@@ -25,7 +25,7 @@ pub struct ContactNodeBuilder {
 impl Default for ContactNodeBuilder {
     fn default() -> Self {
         let db = Self::build_node(NodeDescriptionBuilder::new().name(CONTACT_NODE_DEFAULT_NAME))
-            .r#type(SMARTHOME_TYPE_CONTACT);
+            .r#type(SMARTHOME_CAP_CONTACT);
 
         Self { node_builder: db }
     }

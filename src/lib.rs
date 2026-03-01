@@ -41,44 +41,51 @@ use valve_node::ValveNodeConfig;
 use vibration_node::VibrationNodeConfig;
 use water_sensor_node::WaterSensorNode;
 
-/// Helper macro to generate static smarthome type strings
-macro_rules! create_smarthome_type {
-    ($type:expr) => {
-        concat!("homie-homecontrol/v2/type=", $type)
+/// Helper macro to generate capability type strings (`hc-smarthome/v2/cap/<name>`)
+macro_rules! smarthome_cap {
+    ($name:expr) => {
+        concat!("hc-smarthome/v2/cap/", $name)
     };
 }
 
-/// Helper macro to generate static smarthome type strings for extensions
+/// Helper macro to generate device class strings (`hc-smarthome/v2/dc/<name>`)
+macro_rules! smarthome_dc {
+    ($name:expr) => {
+        concat!("hc-smarthome/v2/dc/", $name)
+    };
+}
+
+/// Helper macro to generate extension capability strings (`hc-smarthome/v2/ext/<name>`)
 #[macro_export]
-macro_rules! create_smarthome_type_extension {
-    ($type:expr) => {
-        concat!("homie-homecontrol/v2/extension/type=", $type)
+macro_rules! smarthome_ext {
+    ($name:expr) => {
+        concat!("hc-smarthome/v2/ext/", $name)
     };
 }
 
-pub const SMARTHOME_NS_V2: &str = "homie-homecontrol/v2";
+pub const SMARTHOME_NS: &str = "hc-smarthome/v2";
 
 // ── Capability type constants ───────────────────────────────────────────────
 
-pub const SMARTHOME_TYPE_MAINTENANCE: &str = create_smarthome_type!("maintenance");
-pub const SMARTHOME_TYPE_SWITCH: &str = create_smarthome_type!("switch");
-pub const SMARTHOME_TYPE_LEVEL: &str = create_smarthome_type!("level");
-pub const SMARTHOME_TYPE_CONTACT: &str = create_smarthome_type!("contact");
-pub const SMARTHOME_TYPE_CLIMATE: &str = create_smarthome_type!("climate");
-pub const SMARTHOME_TYPE_MOTION: &str = create_smarthome_type!("motion");
-pub const SMARTHOME_TYPE_BUTTON: &str = create_smarthome_type!("button");
-pub const SMARTHOME_TYPE_COLOR: &str = create_smarthome_type!("color");
-pub const SMARTHOME_TYPE_SCENE: &str = create_smarthome_type!("scene");
-pub const SMARTHOME_TYPE_NUMERIC: &str = create_smarthome_type!("numeric");
-pub const SMARTHOME_TYPE_VIBRATION: &str = create_smarthome_type!("vibration");
-pub const SMARTHOME_TYPE_ORIENTATION: &str = create_smarthome_type!("orientation");
-pub const SMARTHOME_TYPE_WATER_SENSOR: &str = create_smarthome_type!("water");
-pub const SMARTHOME_TYPE_SHUTTER: &str = create_smarthome_type!("shutter");
-pub const SMARTHOME_TYPE_TILT: &str = create_smarthome_type!("tilt");
-pub const SMARTHOME_TYPE_THERMOSTAT: &str = create_smarthome_type!("thermostat");
-pub const SMARTHOME_TYPE_POWERMETER: &str = create_smarthome_type!("powermeter");
-pub const SMARTHOME_TYPE_LOCK: &str = create_smarthome_type!("lock");
-pub const SMARTHOME_TYPE_VALVE: &str = create_smarthome_type!("valve");
+pub const SMARTHOME_CAP_MAINTENANCE: &str = smarthome_cap!("maintenance");
+pub const SMARTHOME_CAP_SWITCH: &str = smarthome_cap!("switch");
+pub const SMARTHOME_CAP_LEVEL: &str = smarthome_cap!("level");
+pub const SMARTHOME_CAP_CONTACT: &str = smarthome_cap!("contact");
+pub const SMARTHOME_CAP_CLIMATE: &str = smarthome_cap!("climate");
+pub const SMARTHOME_CAP_MOTION: &str = smarthome_cap!("motion");
+pub const SMARTHOME_CAP_BUTTON: &str = smarthome_cap!("button");
+pub const SMARTHOME_CAP_COLOR: &str = smarthome_cap!("color");
+pub const SMARTHOME_CAP_SCENE: &str = smarthome_cap!("scene");
+pub const SMARTHOME_CAP_NUMERIC: &str = smarthome_cap!("numeric");
+pub const SMARTHOME_CAP_VIBRATION: &str = smarthome_cap!("vibration");
+pub const SMARTHOME_CAP_ORIENTATION: &str = smarthome_cap!("orientation");
+pub const SMARTHOME_CAP_WATER_SENSOR: &str = smarthome_cap!("water");
+pub const SMARTHOME_CAP_SHUTTER: &str = smarthome_cap!("shutter");
+pub const SMARTHOME_CAP_TILT: &str = smarthome_cap!("tilt");
+pub const SMARTHOME_CAP_THERMOSTAT: &str = smarthome_cap!("thermostat");
+pub const SMARTHOME_CAP_POWERMETER: &str = smarthome_cap!("powermeter");
+pub const SMARTHOME_CAP_LOCK: &str = smarthome_cap!("lock");
+pub const SMARTHOME_CAP_VALVE: &str = smarthome_cap!("valve");
 
 // ── Well-known device class constants ───────────────────────────────────────
 //
@@ -86,21 +93,21 @@ pub const SMARTHOME_TYPE_VALVE: &str = create_smarthome_type!("valve");
 // descriptions.  They classify what the *physical device* is, independent
 // of which capability nodes it exposes.
 
-pub const DEVICE_CLASS_LIGHT: &str = "homie-homecontrol/v2/device-class=light";
-pub const DEVICE_CLASS_OUTLET: &str = "homie-homecontrol/v2/device-class=outlet";
-pub const DEVICE_CLASS_THERMOSTAT: &str = "homie-homecontrol/v2/device-class=thermostat";
-pub const DEVICE_CLASS_RADIATOR_VALVE: &str = "homie-homecontrol/v2/device-class=radiator-valve";
-pub const DEVICE_CLASS_CLIMATE_SENSOR: &str = "homie-homecontrol/v2/device-class=climate-sensor";
-pub const DEVICE_CLASS_MOTION_SENSOR: &str = "homie-homecontrol/v2/device-class=motion-sensor";
-pub const DEVICE_CLASS_CONTACT_SENSOR: &str = "homie-homecontrol/v2/device-class=contact-sensor";
-pub const DEVICE_CLASS_WATER_SENSOR: &str = "homie-homecontrol/v2/device-class=water-sensor";
-pub const DEVICE_CLASS_LOCK: &str = "homie-homecontrol/v2/device-class=lock";
-pub const DEVICE_CLASS_SHUTTER: &str = "homie-homecontrol/v2/device-class=shutter";
-pub const DEVICE_CLASS_FAN: &str = "homie-homecontrol/v2/device-class=fan";
-pub const DEVICE_CLASS_VALVE: &str = "homie-homecontrol/v2/device-class=valve";
-pub const DEVICE_CLASS_BUTTON: &str = "homie-homecontrol/v2/device-class=button";
-pub const DEVICE_CLASS_SIREN: &str = "homie-homecontrol/v2/device-class=siren";
-pub const DEVICE_CLASS_POWERMETER: &str = "homie-homecontrol/v2/device-class=powermeter";
+pub const DEVICE_CLASS_LIGHT: &str = smarthome_dc!("light");
+pub const DEVICE_CLASS_OUTLET: &str = smarthome_dc!("outlet");
+pub const DEVICE_CLASS_THERMOSTAT: &str = smarthome_dc!("thermostat");
+pub const DEVICE_CLASS_RADIATOR_VALVE: &str = smarthome_dc!("radiator-valve");
+pub const DEVICE_CLASS_CLIMATE_SENSOR: &str = smarthome_dc!("climate-sensor");
+pub const DEVICE_CLASS_MOTION_SENSOR: &str = smarthome_dc!("motion-sensor");
+pub const DEVICE_CLASS_CONTACT_SENSOR: &str = smarthome_dc!("contact-sensor");
+pub const DEVICE_CLASS_WATER_SENSOR: &str = smarthome_dc!("water-sensor");
+pub const DEVICE_CLASS_LOCK: &str = smarthome_dc!("lock");
+pub const DEVICE_CLASS_SHUTTER: &str = smarthome_dc!("shutter");
+pub const DEVICE_CLASS_FAN: &str = smarthome_dc!("fan");
+pub const DEVICE_CLASS_VALVE: &str = smarthome_dc!("valve");
+pub const DEVICE_CLASS_BUTTON: &str = smarthome_dc!("button");
+pub const DEVICE_CLASS_SIREN: &str = smarthome_dc!("siren");
+pub const DEVICE_CLASS_POWERMETER: &str = smarthome_dc!("powermeter");
 
 // ── Parse infrastructure ────────────────────────────────────────────────────
 
@@ -234,50 +241,50 @@ impl SmarthomeType {
     /// Convert the enum variant into its corresponding string representation.
     pub const fn as_str(&self) -> &'static str {
         match self {
-            SmarthomeType::Switch => SMARTHOME_TYPE_SWITCH,
-            SmarthomeType::Level => SMARTHOME_TYPE_LEVEL,
-            SmarthomeType::Maintenance => SMARTHOME_TYPE_MAINTENANCE,
-            SmarthomeType::Contact => SMARTHOME_TYPE_CONTACT,
-            SmarthomeType::Climate => SMARTHOME_TYPE_CLIMATE,
-            SmarthomeType::Motion => SMARTHOME_TYPE_MOTION,
-            SmarthomeType::Button => SMARTHOME_TYPE_BUTTON,
-            SmarthomeType::Color => SMARTHOME_TYPE_COLOR,
-            SmarthomeType::Scene => SMARTHOME_TYPE_SCENE,
-            SmarthomeType::Numeric => SMARTHOME_TYPE_NUMERIC,
-            SmarthomeType::Vibration => SMARTHOME_TYPE_VIBRATION,
-            SmarthomeType::Orientation => SMARTHOME_TYPE_ORIENTATION,
-            SmarthomeType::WaterSensor => SMARTHOME_TYPE_WATER_SENSOR,
-            SmarthomeType::Shutter => SMARTHOME_TYPE_SHUTTER,
-            SmarthomeType::Tilt => SMARTHOME_TYPE_TILT,
-            SmarthomeType::Thermostat => SMARTHOME_TYPE_THERMOSTAT,
-            SmarthomeType::Powermeter => SMARTHOME_TYPE_POWERMETER,
-            SmarthomeType::Lock => SMARTHOME_TYPE_LOCK,
-            SmarthomeType::Valve => SMARTHOME_TYPE_VALVE,
+            SmarthomeType::Switch => SMARTHOME_CAP_SWITCH,
+            SmarthomeType::Level => SMARTHOME_CAP_LEVEL,
+            SmarthomeType::Maintenance => SMARTHOME_CAP_MAINTENANCE,
+            SmarthomeType::Contact => SMARTHOME_CAP_CONTACT,
+            SmarthomeType::Climate => SMARTHOME_CAP_CLIMATE,
+            SmarthomeType::Motion => SMARTHOME_CAP_MOTION,
+            SmarthomeType::Button => SMARTHOME_CAP_BUTTON,
+            SmarthomeType::Color => SMARTHOME_CAP_COLOR,
+            SmarthomeType::Scene => SMARTHOME_CAP_SCENE,
+            SmarthomeType::Numeric => SMARTHOME_CAP_NUMERIC,
+            SmarthomeType::Vibration => SMARTHOME_CAP_VIBRATION,
+            SmarthomeType::Orientation => SMARTHOME_CAP_ORIENTATION,
+            SmarthomeType::WaterSensor => SMARTHOME_CAP_WATER_SENSOR,
+            SmarthomeType::Shutter => SMARTHOME_CAP_SHUTTER,
+            SmarthomeType::Tilt => SMARTHOME_CAP_TILT,
+            SmarthomeType::Thermostat => SMARTHOME_CAP_THERMOSTAT,
+            SmarthomeType::Powermeter => SMARTHOME_CAP_POWERMETER,
+            SmarthomeType::Lock => SMARTHOME_CAP_LOCK,
+            SmarthomeType::Valve => SMARTHOME_CAP_VALVE,
         }
     }
 
     /// Create a SmarthomeType from a string containing a constant value.
     pub fn from_constant(value: &str) -> Option<Self> {
         match value {
-            SMARTHOME_TYPE_SWITCH => Some(SmarthomeType::Switch),
-            SMARTHOME_TYPE_LEVEL => Some(SmarthomeType::Level),
-            SMARTHOME_TYPE_MAINTENANCE => Some(SmarthomeType::Maintenance),
-            SMARTHOME_TYPE_CONTACT => Some(SmarthomeType::Contact),
-            SMARTHOME_TYPE_CLIMATE => Some(SmarthomeType::Climate),
-            SMARTHOME_TYPE_MOTION => Some(SmarthomeType::Motion),
-            SMARTHOME_TYPE_BUTTON => Some(SmarthomeType::Button),
-            SMARTHOME_TYPE_COLOR => Some(SmarthomeType::Color),
-            SMARTHOME_TYPE_SCENE => Some(SmarthomeType::Scene),
-            SMARTHOME_TYPE_NUMERIC => Some(SmarthomeType::Numeric),
-            SMARTHOME_TYPE_VIBRATION => Some(SmarthomeType::Vibration),
-            SMARTHOME_TYPE_ORIENTATION => Some(SmarthomeType::Orientation),
-            SMARTHOME_TYPE_WATER_SENSOR => Some(SmarthomeType::WaterSensor),
-            SMARTHOME_TYPE_SHUTTER => Some(SmarthomeType::Shutter),
-            SMARTHOME_TYPE_TILT => Some(SmarthomeType::Tilt),
-            SMARTHOME_TYPE_THERMOSTAT => Some(SmarthomeType::Thermostat),
-            SMARTHOME_TYPE_POWERMETER => Some(SmarthomeType::Powermeter),
-            SMARTHOME_TYPE_LOCK => Some(SmarthomeType::Lock),
-            SMARTHOME_TYPE_VALVE => Some(SmarthomeType::Valve),
+            SMARTHOME_CAP_SWITCH => Some(SmarthomeType::Switch),
+            SMARTHOME_CAP_LEVEL => Some(SmarthomeType::Level),
+            SMARTHOME_CAP_MAINTENANCE => Some(SmarthomeType::Maintenance),
+            SMARTHOME_CAP_CONTACT => Some(SmarthomeType::Contact),
+            SMARTHOME_CAP_CLIMATE => Some(SmarthomeType::Climate),
+            SMARTHOME_CAP_MOTION => Some(SmarthomeType::Motion),
+            SMARTHOME_CAP_BUTTON => Some(SmarthomeType::Button),
+            SMARTHOME_CAP_COLOR => Some(SmarthomeType::Color),
+            SMARTHOME_CAP_SCENE => Some(SmarthomeType::Scene),
+            SMARTHOME_CAP_NUMERIC => Some(SmarthomeType::Numeric),
+            SMARTHOME_CAP_VIBRATION => Some(SmarthomeType::Vibration),
+            SMARTHOME_CAP_ORIENTATION => Some(SmarthomeType::Orientation),
+            SMARTHOME_CAP_WATER_SENSOR => Some(SmarthomeType::WaterSensor),
+            SMARTHOME_CAP_SHUTTER => Some(SmarthomeType::Shutter),
+            SMARTHOME_CAP_TILT => Some(SmarthomeType::Tilt),
+            SMARTHOME_CAP_THERMOSTAT => Some(SmarthomeType::Thermostat),
+            SMARTHOME_CAP_POWERMETER => Some(SmarthomeType::Powermeter),
+            SMARTHOME_CAP_LOCK => Some(SmarthomeType::Lock),
+            SMARTHOME_CAP_VALVE => Some(SmarthomeType::Valve),
             _ => None,
         }
     }

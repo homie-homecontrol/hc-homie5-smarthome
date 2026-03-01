@@ -8,7 +8,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_POWERMETER;
+use crate::SMARTHOME_CAP_POWERMETER;
 
 pub const POWERMETER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("powermeter");
 pub const POWERMETER_NODE_DEFAULT_NAME: &str = "Powermeter";
@@ -57,7 +57,7 @@ impl Default for PowermeterNodeBuilder {
             NodeDescriptionBuilder::new().name(POWERMETER_NODE_DEFAULT_NAME),
             &Default::default(),
         )
-        .r#type(SMARTHOME_TYPE_POWERMETER);
+        .r#type(SMARTHOME_CAP_POWERMETER);
 
         Self { node_builder: db }
     }
@@ -69,7 +69,7 @@ impl PowermeterNodeBuilder {
             NodeDescriptionBuilder::new().name(POWERMETER_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_POWERMETER);
+        .r#type(SMARTHOME_CAP_POWERMETER);
 
         Self { node_builder: db }
     }

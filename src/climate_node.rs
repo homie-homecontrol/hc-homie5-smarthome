@@ -7,7 +7,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_CLIMATE;
+use crate::SMARTHOME_CAP_CLIMATE;
 
 pub const CLIMATE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("climate");
 pub const CLIMATE_NODE_DEFAULT_NAME: &str = "Climate sensor";
@@ -53,7 +53,7 @@ impl ClimateNodeBuilder {
             NodeDescriptionBuilder::new().name(CLIMATE_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_CLIMATE);
+        .r#type(SMARTHOME_CAP_CLIMATE);
 
         Self { node_builder: db }
     }

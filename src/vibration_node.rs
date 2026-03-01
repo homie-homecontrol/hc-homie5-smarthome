@@ -7,7 +7,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_VIBRATION;
+use crate::SMARTHOME_CAP_VIBRATION;
 
 pub const VIBRATION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("vibration");
 pub const VIBRATION_NODE_DEFAULT_NAME: &str = "Vibration sensor";
@@ -46,7 +46,7 @@ impl VibrationNodeBuilder {
             NodeDescriptionBuilder::new().name(VIBRATION_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_VIBRATION);
+        .r#type(SMARTHOME_CAP_VIBRATION);
 
         Self { node_builder: db }
     }

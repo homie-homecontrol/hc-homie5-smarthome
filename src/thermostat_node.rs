@@ -9,7 +9,7 @@ use homie5::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_THERMOSTAT, SetCommandParser,
+    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_THERMOSTAT, SetCommandParser,
 };
 
 pub const THERMOSTAT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("thermostat");
@@ -160,7 +160,7 @@ impl ThermostatNodeBuilder {
             NodeDescriptionBuilder::new().name(THERMOSTAT_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_THERMOSTAT);
+        .r#type(SMARTHOME_CAP_THERMOSTAT);
 
         Self { node_builder: db }
     }

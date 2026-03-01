@@ -10,7 +10,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_LEVEL, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_LEVEL, SetCommandParser};
 
 pub const LEVEL_NODE_DEFAULT_ID: HomieID = HomieID::new_const("level");
 pub const LEVEL_NODE_DEFAULT_NAME: &str = "Level control";
@@ -73,7 +73,7 @@ impl LevelNodeBuilder {
             NodeDescriptionBuilder::new().name(LEVEL_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_LEVEL);
+        .r#type(SMARTHOME_CAP_LEVEL);
 
         Self { node_builder: db }
     }

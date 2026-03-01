@@ -11,7 +11,7 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_LOCK, SetCommandParser};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_LOCK, SetCommandParser};
 
 pub const LOCK_NODE_DEFAULT_ID: HomieID = HomieID::new_const("lock");
 pub const LOCK_NODE_DEFAULT_NAME: &str = "Lock control";
@@ -88,7 +88,7 @@ impl LockNodeBuilder {
             NodeDescriptionBuilder::new().name(LOCK_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_LOCK);
+        .r#type(SMARTHOME_CAP_LOCK);
 
         Self { node_builder: db }
     }

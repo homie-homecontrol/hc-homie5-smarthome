@@ -10,7 +10,7 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_TYPE_NUMERIC;
+use crate::SMARTHOME_CAP_NUMERIC;
 
 pub const NUMERIC_NODE_DEFAULT_ID: HomieID = HomieID::new_const("numeric");
 pub const NUMERIC_NODE_DEFAULT_NAME: &str = "Numeric Sensor";
@@ -62,7 +62,7 @@ impl NumericSensorType {
     }
 
     pub fn make_smarthome_type(&self) -> String {
-        format!("{}-{}", SMARTHOME_TYPE_NUMERIC, self.as_str())
+        format!("{}-{}", SMARTHOME_CAP_NUMERIC, self.as_str())
     }
 
     pub fn default_node_name(&self) -> &'static str {
