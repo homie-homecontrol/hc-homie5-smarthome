@@ -1,9 +1,9 @@
 use homie5::{
+    HOMIE_UNIT_LUX, Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_LUX,
 };
 use serde::{Deserialize, Serialize};
 
@@ -55,18 +55,14 @@ impl MotionNodeBuilder {
                 .settable(false)
                 .build(),
         )
-        .add_property_cond(
-            MOTION_NODE_LUX_PROP_ID,
-            config.lux,
-            || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                    .name("Current light level")
-                    .retained(true)
-                    .settable(false)
-                    .unit(HOMIE_UNIT_LUX)
-                    .build()
-            },
-        )
+        .add_property_cond(MOTION_NODE_LUX_PROP_ID, config.lux, || {
+            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+                .name("Current light level")
+                .retained(true)
+                .settable(false)
+                .unit(HOMIE_UNIT_LUX)
+                .build()
+        })
     }
 
     pub fn name<S: Into<String>>(mut self, name: impl Into<Option<S>>) -> Self {

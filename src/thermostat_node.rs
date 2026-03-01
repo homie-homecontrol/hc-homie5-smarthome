@@ -1,15 +1,15 @@
 use homie5::{
+    HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_PERCENT, HOMIE_UNIT_SECONDS, Homie5DeviceProtocol,
+    Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
         BooleanFormat, FloatRange, HomieDeviceDescription, HomieNodeDescription,
         HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
-    PropertyRef, HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_PERCENT, HOMIE_UNIT_SECONDS,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_THERMOSTAT,
+    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_THERMOSTAT, SetCommandParser,
 };
 
 pub const THERMOSTAT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("thermostat");

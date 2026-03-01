@@ -1,23 +1,23 @@
 use homie5::{
+    HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_KILOPASCAL, HOMIE_UNIT_PERCENT, Homie5DeviceProtocol,
+    HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_KILOPASCAL,
-    HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_TYPE_WEATHER;
+use crate::SMARTHOME_TYPE_CLIMATE;
 
-pub const WEATHER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("weather");
-pub const WEATHER_NODE_DEFAULT_NAME: &str = "Weather climate sensor";
-pub const WEATHER_NODE_TEMP_PROP_ID: HomieID = HomieID::new_const("temperature");
-pub const WEATHER_NODE_HUM_PROP_ID: HomieID = HomieID::new_const("humidity");
-pub const WEATHER_NODE_PRES_PROP_ID: HomieID = HomieID::new_const("pressure");
+pub const CLIMATE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("climate");
+pub const CLIMATE_NODE_DEFAULT_NAME: &str = "Climate sensor";
+pub const CLIMATE_NODE_TEMP_PROP_ID: HomieID = HomieID::new_const("temperature");
+pub const CLIMATE_NODE_HUM_PROP_ID: HomieID = HomieID::new_const("humidity");
+pub const CLIMATE_NODE_PRES_PROP_ID: HomieID = HomieID::new_const("pressure");
 
 #[derive(Debug)]
-pub struct WeatherNode {
-    pub publisher: WeatherNodePublisher,
+pub struct ClimateNode {
+    pub publisher: ClimateNodePublisher,
     pub temperature: Option<f64>,
     pub humidity: Option<i64>,
     pub pressure: Option<f64>,
@@ -25,14 +25,14 @@ pub struct WeatherNode {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct WeatherNodeConfig {
+pub struct ClimateNodeConfig {
     pub temperature: bool,
     pub humidity: bool,
     pub pressure: bool,
     pub temp_unit: String,
 }
 
-impl Default for WeatherNodeConfig {
+impl Default for ClimateNodeConfig {
     fn default() -> Self {
         Self {
             temperature: true,
@@ -43,61 +43,49 @@ impl Default for WeatherNodeConfig {
     }
 }
 
-pub struct WeatherNodeBuilder {
+pub struct ClimateNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl WeatherNodeBuilder {
-    pub fn new(config: &WeatherNodeConfig) -> Self {
+impl ClimateNodeBuilder {
+    pub fn new(config: &ClimateNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(WEATHER_NODE_DEFAULT_NAME),
+            NodeDescriptionBuilder::new().name(CLIMATE_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_WEATHER);
+        .r#type(SMARTHOME_TYPE_CLIMATE);
 
         Self { node_builder: db }
     }
 
     fn build_node(
         db: NodeDescriptionBuilder,
-        config: &WeatherNodeConfig,
+        config: &ClimateNodeConfig,
     ) -> NodeDescriptionBuilder {
-        db.add_property_cond(
-            WEATHER_NODE_TEMP_PROP_ID,
-            config.temperature,
-            || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
-                    .name("Current temperature")
-                    .retained(true)
-                    .settable(false)
-                    .unit(config.temp_unit.to_owned())
-                    .build()
-            },
-        )
-        .add_property_cond(
-            WEATHER_NODE_HUM_PROP_ID,
-            config.humidity,
-            || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                    .name("Current humidity")
-                    .retained(true)
-                    .settable(false)
-                    .unit(HOMIE_UNIT_PERCENT)
-                    .build()
-            },
-        )
-        .add_property_cond(
-            WEATHER_NODE_PRES_PROP_ID,
-            config.pressure,
-            || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
-                    .name("Current pressure")
-                    .retained(true)
-                    .settable(false)
-                    .unit(HOMIE_UNIT_KILOPASCAL)
-                    .build()
-            },
-        )
+        db.add_property_cond(CLIMATE_NODE_TEMP_PROP_ID, config.temperature, || {
+            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+                .name("Current temperature")
+                .retained(true)
+                .settable(false)
+                .unit(config.temp_unit.to_owned())
+                .build()
+        })
+        .add_property_cond(CLIMATE_NODE_HUM_PROP_ID, config.humidity, || {
+            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+                .name("Current humidity")
+                .retained(true)
+                .settable(false)
+                .unit(HOMIE_UNIT_PERCENT)
+                .build()
+        })
+        .add_property_cond(CLIMATE_NODE_PRES_PROP_ID, config.pressure, || {
+            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+                .name("Current pressure")
+                .retained(true)
+                .settable(false)
+                .unit(HOMIE_UNIT_KILOPASCAL)
+                .build()
+        })
     }
 
     pub fn name<S: Into<String>>(mut self, name: impl Into<Option<S>>) -> Self {
@@ -113,10 +101,10 @@ impl WeatherNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, WeatherNodePublisher) {
+    ) -> (HomieNodeDescription, ClimateNodePublisher) {
         (
             self.node_builder.build(),
-            WeatherNodePublisher::new(
+            ClimateNodePublisher::new(
                 NodeRef::new(
                     client.homie_domain().to_owned(),
                     client.id().clone(),
@@ -129,7 +117,7 @@ impl WeatherNodeBuilder {
 }
 
 #[derive(Debug)]
-pub struct WeatherNodePublisher {
+pub struct ClimateNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
     temp_prop: HomieID,
@@ -137,14 +125,14 @@ pub struct WeatherNodePublisher {
     pres_prop: HomieID,
 }
 
-impl WeatherNodePublisher {
+impl ClimateNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            temp_prop: WEATHER_NODE_TEMP_PROP_ID,
-            hum_prop: WEATHER_NODE_HUM_PROP_ID,
-            pres_prop: WEATHER_NODE_PRES_PROP_ID,
+            temp_prop: CLIMATE_NODE_TEMP_PROP_ID,
+            hum_prop: CLIMATE_NODE_HUM_PROP_ID,
+            pres_prop: CLIMATE_NODE_PRES_PROP_ID,
         }
     }
 

@@ -1,9 +1,9 @@
 use homie5::{
+    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef,
 };
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,8 @@ use crate::SMARTHOME_TYPE_VIBRATION;
 pub const VIBRATION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("vibration");
 pub const VIBRATION_NODE_DEFAULT_NAME: &str = "Vibration sensor";
 pub const VIBRATION_NODE_VIBRATION_PROP_ID: HomieID = HomieID::new_const("vibration");
-pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID: HomieID = HomieID::new_const("vibration-strength");
+pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID: HomieID =
+    HomieID::new_const("vibration-strength");
 
 #[derive(Debug)]
 pub struct VibrationNode {
@@ -67,9 +68,7 @@ impl VibrationNodeBuilder {
                 .build(),
         )
         .add_property_cond(
-            VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID
-                .try_into()
-                .unwrap(),
+            VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID,
             config.vibration_strength,
             || {
                 PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
@@ -123,9 +122,7 @@ impl VibrationNodePublisher {
             node,
             client,
             vibr_prop: VIBRATION_NODE_VIBRATION_PROP_ID,
-            vibr_strength: VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID
-                .try_into()
-                .unwrap(),
+            vibr_strength: VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID,
         }
     }
 

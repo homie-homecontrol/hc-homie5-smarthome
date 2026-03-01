@@ -1,25 +1,23 @@
 use homie5::{
+    Homie5DeviceProtocol, Homie5Message, HomieColorValue, HomieID, HomieValue, NodeRef,
+    PropertyRef,
     device_description::{
         ColorFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
         IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, HomieColorValue, HomieID, HomieValue, NodeRef,
-    PropertyRef,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_COLORLIGHT,
-};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_COLOR, SetCommandParser};
 
-pub const COLORLIGHT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("colorlight");
-pub const COLORLIGHT_NODE_DEFAULT_NAME: &str = "Colorlight control";
-pub const COLORLIGHT_NODE_COLOR_PROP_ID: HomieID = HomieID::new_const("color");
-pub const COLORLIGHT_NODE_COLOR_TEMP_PROP_ID: HomieID = HomieID::new_const("color-temperature");
+pub const COLOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("color");
+pub const COLOR_NODE_DEFAULT_NAME: &str = "Color control";
+pub const COLOR_NODE_COLOR_PROP_ID: HomieID = HomieID::new_const("color");
+pub const COLOR_NODE_COLOR_TEMP_PROP_ID: HomieID = HomieID::new_const("color-temperature");
 
 #[derive(Debug)]
-pub struct ColorlightNode {
-    pub publisher: ColorlightNodePublisher,
+pub struct ColorNode {
+    pub publisher: ColorNodePublisher,
     pub color: HomieColorValue,
     pub color_target: HomieColorValue,
     pub color_temperature: i64,
@@ -27,21 +25,21 @@ pub struct ColorlightNode {
 }
 
 #[derive(Debug)]
-pub enum ColorlightNodeSetEvents {
+pub enum ColorNodeSetEvents {
     Color(HomieColorValue),
     ColorTemperature(i64),
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct ColorlightNodeConfig {
+pub struct ColorNodeConfig {
     pub settable: bool,
     pub color_formats: Vec<ColorFormat>,
     pub ctmin: i64,
     pub ctmax: i64,
 }
 
-impl Default for ColorlightNodeConfig {
+impl Default for ColorNodeConfig {
     fn default() -> Self {
         Self {
             settable: true,
@@ -52,27 +50,24 @@ impl Default for ColorlightNodeConfig {
     }
 }
 
-pub struct ColorlightNodeBuilder {
+pub struct ColorNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl ColorlightNodeBuilder {
-    pub fn new(config: &ColorlightNodeConfig) -> Self {
+impl ColorNodeBuilder {
+    pub fn new(config: &ColorNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(COLORLIGHT_NODE_DEFAULT_NAME),
+            NodeDescriptionBuilder::new().name(COLOR_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_COLORLIGHT);
+        .r#type(SMARTHOME_TYPE_COLOR);
 
         Self { node_builder: db }
     }
 
-    fn build_node(
-        db: NodeDescriptionBuilder,
-        config: &ColorlightNodeConfig,
-    ) -> NodeDescriptionBuilder {
+    fn build_node(db: NodeDescriptionBuilder, config: &ColorNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            COLORLIGHT_NODE_COLOR_PROP_ID,
+            COLOR_NODE_COLOR_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Color)
                 .name("Color")
                 .format(HomiePropertyFormat::Color(config.color_formats.clone()))
@@ -81,7 +76,7 @@ impl ColorlightNodeBuilder {
                 .build(),
         )
         .add_property(
-            COLORLIGHT_NODE_COLOR_TEMP_PROP_ID,
+            COLOR_NODE_COLOR_TEMP_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
                 .name("Color temperature")
                 .format(HomiePropertyFormat::IntegerRange(IntegerRange {
@@ -108,10 +103,10 @@ impl ColorlightNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, ColorlightNodePublisher) {
+    ) -> (HomieNodeDescription, ColorNodePublisher) {
         (
             self.node_builder.build(),
-            ColorlightNodePublisher::new(
+            ColorNodePublisher::new(
                 NodeRef::new(
                     client.homie_domain().to_owned(),
                     client.id().to_owned(),
@@ -124,20 +119,20 @@ impl ColorlightNodeBuilder {
 }
 
 #[derive(Debug)]
-pub struct ColorlightNodePublisher {
+pub struct ColorNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
     color_prop_id: HomieID,
     color_temp_prop_id: HomieID,
 }
 
-impl ColorlightNodePublisher {
+impl ColorNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            color_prop_id: COLORLIGHT_NODE_COLOR_PROP_ID,
-            color_temp_prop_id: COLORLIGHT_NODE_COLOR_TEMP_PROP_ID,
+            color_prop_id: COLOR_NODE_COLOR_PROP_ID,
+            color_temp_prop_id: COLOR_NODE_COLOR_TEMP_PROP_ID,
         }
     }
 
@@ -170,8 +165,8 @@ impl ColorlightNodePublisher {
     }
 }
 
-impl SetCommandParser for ColorlightNodePublisher {
-    type Event = ColorlightNodeSetEvents;
+impl SetCommandParser for ColorNodePublisher {
+    type Event = ColorNodeSetEvents;
 
     fn parse_set(
         &self,
@@ -194,7 +189,7 @@ impl SetCommandParser for ColorlightNodePublisher {
 
             match parsed {
                 Ok(HomieValue::Color(value)) => {
-                    ParseOutcome::Parsed(ColorlightNodeSetEvents::Color(value))
+                    ParseOutcome::Parsed(ColorNodeSetEvents::Color(value))
                 }
                 _ => ParseOutcome::Invalid(ParseError::new(
                     property.prop_id().to_string(),
@@ -215,7 +210,7 @@ impl SetCommandParser for ColorlightNodePublisher {
 
             match parsed {
                 Ok(HomieValue::Integer(value)) => {
-                    ParseOutcome::Parsed(ColorlightNodeSetEvents::ColorTemperature(value))
+                    ParseOutcome::Parsed(ColorNodeSetEvents::ColorTemperature(value))
                 }
                 _ => ParseOutcome::Invalid(ParseError::new(
                     property.prop_id().to_string(),

@@ -1,11 +1,11 @@
 use chrono::prelude::*;
 
 use homie5::{
+    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
@@ -109,17 +109,13 @@ impl MaintenanceNodeBuilder {
                     .build()
             },
         )
-        .add_property_cond(
-            MAINTENANCE_NODE_REACHABLE_PROP_ID,
-            config.reachable,
-            || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
-                    .name("Reachable")
-                    .settable(false)
-                    .retained(true)
-                    .build()
-            },
-        )
+        .add_property_cond(MAINTENANCE_NODE_REACHABLE_PROP_ID, config.reachable, || {
+            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+                .name("Reachable")
+                .settable(false)
+                .retained(true)
+                .build()
+        })
     }
 
     pub fn name<S: Into<String>>(mut self, name: impl Into<Option<S>>) -> Self {

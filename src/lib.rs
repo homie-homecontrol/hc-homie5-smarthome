@@ -1,46 +1,50 @@
 pub mod alerts;
 pub mod button_node;
-pub mod colorlight_node;
+pub mod climate_node;
+pub mod color_node;
 pub mod contact_node;
-pub mod dimmer_node;
-pub mod light_scene_node;
+pub mod level_node;
+pub mod lock_node;
 pub mod maintenance_node;
 pub mod motion_node;
 pub mod numeric_sensor_node;
 pub mod orientation_node;
 pub mod powermeter_node;
+pub mod scene_node;
 pub mod shutter_node;
 pub mod switch_node;
 pub mod thermostat_node;
 pub mod tilt_node;
+pub mod valve_node;
 pub mod vibration_node;
 pub mod water_sensor_node;
-pub mod weather_node;
 
 use std::{fmt, str::FromStr};
 
 use button_node::ButtonNodeConfig;
-use colorlight_node::{ColorlightNode, ColorlightNodeConfig};
+use climate_node::{ClimateNode, ClimateNodeConfig};
+use color_node::{ColorNode, ColorNodeConfig};
 use contact_node::ContactNode;
-use dimmer_node::{DimmerNode, DimmerNodeConfig};
-use light_scene_node::LightSceneNodeConfig;
+use level_node::{LevelNode, LevelNodeConfig};
+use lock_node::LockNodeConfig;
 use maintenance_node::{MaintenanceNode, MaintenanceNodeConfig};
 use motion_node::{MotionNode, MotionNodeConfig};
 use numeric_sensor_node::NumericSensorNode;
 use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
+use scene_node::SceneNodeConfig;
 use serde::{Deserialize, Serialize};
 use shutter_node::{ShutterNode, ShutterNodeConfig};
 use switch_node::{SwitchNode, SwitchNodeConfig};
 use thermostat_node::ThermostatNodeConfig;
 use tilt_node::TiltNode;
+use valve_node::ValveNodeConfig;
 use vibration_node::VibrationNodeConfig;
 use water_sensor_node::WaterSensorNode;
-use weather_node::{WeatherNode, WeatherNodeConfig};
 
 /// Helper macro to generate static smarthome type strings
 macro_rules! create_smarthome_type {
     ($type:expr) => {
-        concat!("homie-homecontrol/v1/type=", $type)
+        concat!("homie-homecontrol/v2/type=", $type)
     };
 }
 
@@ -48,21 +52,23 @@ macro_rules! create_smarthome_type {
 #[macro_export]
 macro_rules! create_smarthome_type_extension {
     ($type:expr) => {
-        concat!("homie-homecontrol/v1/extension/type=", $type)
+        concat!("homie-homecontrol/v2/extension/type=", $type)
     };
 }
 
-pub const SMARTHOME_NS_V1: &str = "homie-homecontrol/v1";
+pub const SMARTHOME_NS_V2: &str = "homie-homecontrol/v2";
+
+// ── Capability type constants ───────────────────────────────────────────────
 
 pub const SMARTHOME_TYPE_MAINTENANCE: &str = create_smarthome_type!("maintenance");
 pub const SMARTHOME_TYPE_SWITCH: &str = create_smarthome_type!("switch");
-pub const SMARTHOME_TYPE_DIMMER: &str = create_smarthome_type!("dimmer");
+pub const SMARTHOME_TYPE_LEVEL: &str = create_smarthome_type!("level");
 pub const SMARTHOME_TYPE_CONTACT: &str = create_smarthome_type!("contact");
-pub const SMARTHOME_TYPE_WEATHER: &str = create_smarthome_type!("weather");
+pub const SMARTHOME_TYPE_CLIMATE: &str = create_smarthome_type!("climate");
 pub const SMARTHOME_TYPE_MOTION: &str = create_smarthome_type!("motion");
 pub const SMARTHOME_TYPE_BUTTON: &str = create_smarthome_type!("button");
-pub const SMARTHOME_TYPE_COLORLIGHT: &str = create_smarthome_type!("colorlight");
-pub const SMARTHOME_TYPE_LIGHTSCENE: &str = create_smarthome_type!("lightscene");
+pub const SMARTHOME_TYPE_COLOR: &str = create_smarthome_type!("color");
+pub const SMARTHOME_TYPE_SCENE: &str = create_smarthome_type!("scene");
 pub const SMARTHOME_TYPE_NUMERIC: &str = create_smarthome_type!("numeric");
 pub const SMARTHOME_TYPE_VIBRATION: &str = create_smarthome_type!("vibration");
 pub const SMARTHOME_TYPE_ORIENTATION: &str = create_smarthome_type!("orientation");
@@ -71,6 +77,32 @@ pub const SMARTHOME_TYPE_SHUTTER: &str = create_smarthome_type!("shutter");
 pub const SMARTHOME_TYPE_TILT: &str = create_smarthome_type!("tilt");
 pub const SMARTHOME_TYPE_THERMOSTAT: &str = create_smarthome_type!("thermostat");
 pub const SMARTHOME_TYPE_POWERMETER: &str = create_smarthome_type!("powermeter");
+pub const SMARTHOME_TYPE_LOCK: &str = create_smarthome_type!("lock");
+pub const SMARTHOME_TYPE_VALVE: &str = create_smarthome_type!("valve");
+
+// ── Well-known device class constants ───────────────────────────────────────
+//
+// These are intended for the device-level `type` field in Homie 5 device
+// descriptions.  They classify what the *physical device* is, independent
+// of which capability nodes it exposes.
+
+pub const DEVICE_CLASS_LIGHT: &str = "homie-homecontrol/v2/device-class=light";
+pub const DEVICE_CLASS_OUTLET: &str = "homie-homecontrol/v2/device-class=outlet";
+pub const DEVICE_CLASS_THERMOSTAT: &str = "homie-homecontrol/v2/device-class=thermostat";
+pub const DEVICE_CLASS_RADIATOR_VALVE: &str = "homie-homecontrol/v2/device-class=radiator-valve";
+pub const DEVICE_CLASS_CLIMATE_SENSOR: &str = "homie-homecontrol/v2/device-class=climate-sensor";
+pub const DEVICE_CLASS_MOTION_SENSOR: &str = "homie-homecontrol/v2/device-class=motion-sensor";
+pub const DEVICE_CLASS_CONTACT_SENSOR: &str = "homie-homecontrol/v2/device-class=contact-sensor";
+pub const DEVICE_CLASS_WATER_SENSOR: &str = "homie-homecontrol/v2/device-class=water-sensor";
+pub const DEVICE_CLASS_LOCK: &str = "homie-homecontrol/v2/device-class=lock";
+pub const DEVICE_CLASS_SHUTTER: &str = "homie-homecontrol/v2/device-class=shutter";
+pub const DEVICE_CLASS_FAN: &str = "homie-homecontrol/v2/device-class=fan";
+pub const DEVICE_CLASS_VALVE: &str = "homie-homecontrol/v2/device-class=valve";
+pub const DEVICE_CLASS_BUTTON: &str = "homie-homecontrol/v2/device-class=button";
+pub const DEVICE_CLASS_SIREN: &str = "homie-homecontrol/v2/device-class=siren";
+pub const DEVICE_CLASS_POWERMETER: &str = "homie-homecontrol/v2/device-class=powermeter";
+
+// ── Parse infrastructure ────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseErrorKind {
@@ -88,7 +120,11 @@ pub struct ParseError {
 }
 
 impl ParseError {
-    pub fn new(property_id: impl Into<String>, payload: impl Into<String>, kind: ParseErrorKind) -> Self {
+    pub fn new(
+        property_id: impl Into<String>,
+        payload: impl Into<String>,
+        kind: ParseErrorKind,
+    ) -> Self {
         Self {
             property_id: property_id.into(),
             payload: payload.into(),
@@ -168,6 +204,157 @@ pub trait SetCommandParser {
     ) -> ParseOutcome<Self::Event>;
 }
 
+// ── SmarthomeType enum ──────────────────────────────────────────────────────
+
+/// SmarthomeType enum representing the capability node types.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum SmarthomeType {
+    Switch,
+    Level,
+    Maintenance,
+    Contact,
+    Climate,
+    Motion,
+    Button,
+    Color,
+    Scene,
+    Numeric,
+    Vibration,
+    Orientation,
+    WaterSensor,
+    Shutter,
+    Tilt,
+    Thermostat,
+    Powermeter,
+    Lock,
+    Valve,
+}
+
+impl SmarthomeType {
+    /// Convert the enum variant into its corresponding string representation.
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            SmarthomeType::Switch => SMARTHOME_TYPE_SWITCH,
+            SmarthomeType::Level => SMARTHOME_TYPE_LEVEL,
+            SmarthomeType::Maintenance => SMARTHOME_TYPE_MAINTENANCE,
+            SmarthomeType::Contact => SMARTHOME_TYPE_CONTACT,
+            SmarthomeType::Climate => SMARTHOME_TYPE_CLIMATE,
+            SmarthomeType::Motion => SMARTHOME_TYPE_MOTION,
+            SmarthomeType::Button => SMARTHOME_TYPE_BUTTON,
+            SmarthomeType::Color => SMARTHOME_TYPE_COLOR,
+            SmarthomeType::Scene => SMARTHOME_TYPE_SCENE,
+            SmarthomeType::Numeric => SMARTHOME_TYPE_NUMERIC,
+            SmarthomeType::Vibration => SMARTHOME_TYPE_VIBRATION,
+            SmarthomeType::Orientation => SMARTHOME_TYPE_ORIENTATION,
+            SmarthomeType::WaterSensor => SMARTHOME_TYPE_WATER_SENSOR,
+            SmarthomeType::Shutter => SMARTHOME_TYPE_SHUTTER,
+            SmarthomeType::Tilt => SMARTHOME_TYPE_TILT,
+            SmarthomeType::Thermostat => SMARTHOME_TYPE_THERMOSTAT,
+            SmarthomeType::Powermeter => SMARTHOME_TYPE_POWERMETER,
+            SmarthomeType::Lock => SMARTHOME_TYPE_LOCK,
+            SmarthomeType::Valve => SMARTHOME_TYPE_VALVE,
+        }
+    }
+
+    /// Create a SmarthomeType from a string containing a constant value.
+    pub fn from_constant(value: &str) -> Option<Self> {
+        match value {
+            SMARTHOME_TYPE_SWITCH => Some(SmarthomeType::Switch),
+            SMARTHOME_TYPE_LEVEL => Some(SmarthomeType::Level),
+            SMARTHOME_TYPE_MAINTENANCE => Some(SmarthomeType::Maintenance),
+            SMARTHOME_TYPE_CONTACT => Some(SmarthomeType::Contact),
+            SMARTHOME_TYPE_CLIMATE => Some(SmarthomeType::Climate),
+            SMARTHOME_TYPE_MOTION => Some(SmarthomeType::Motion),
+            SMARTHOME_TYPE_BUTTON => Some(SmarthomeType::Button),
+            SMARTHOME_TYPE_COLOR => Some(SmarthomeType::Color),
+            SMARTHOME_TYPE_SCENE => Some(SmarthomeType::Scene),
+            SMARTHOME_TYPE_NUMERIC => Some(SmarthomeType::Numeric),
+            SMARTHOME_TYPE_VIBRATION => Some(SmarthomeType::Vibration),
+            SMARTHOME_TYPE_ORIENTATION => Some(SmarthomeType::Orientation),
+            SMARTHOME_TYPE_WATER_SENSOR => Some(SmarthomeType::WaterSensor),
+            SMARTHOME_TYPE_SHUTTER => Some(SmarthomeType::Shutter),
+            SMARTHOME_TYPE_TILT => Some(SmarthomeType::Tilt),
+            SMARTHOME_TYPE_THERMOSTAT => Some(SmarthomeType::Thermostat),
+            SMARTHOME_TYPE_POWERMETER => Some(SmarthomeType::Powermeter),
+            SMARTHOME_TYPE_LOCK => Some(SmarthomeType::Lock),
+            SMARTHOME_TYPE_VALVE => Some(SmarthomeType::Valve),
+            _ => None,
+        }
+    }
+}
+
+impl FromStr for SmarthomeType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        SmarthomeType::from_constant(s).ok_or(())
+    }
+}
+
+impl fmt::Display for SmarthomeType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl Serialize for SmarthomeType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for SmarthomeType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = <&str>::deserialize(deserializer)?;
+        SmarthomeType::from_constant(value)
+            .ok_or_else(|| serde::de::Error::custom(format!("invalid smarthome type: {value}")))
+    }
+}
+
+// ── Convenience config/node enums ───────────────────────────────────────────
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub enum SmarthomeProperyConfig {
+    Button(ButtonNodeConfig),
+    Color(ColorNodeConfig),
+    Level(LevelNodeConfig),
+    Lock(LockNodeConfig),
+    Scene(SceneNodeConfig),
+    Maintenance(MaintenanceNodeConfig),
+    Motion(MotionNodeConfig),
+    Shutter(ShutterNodeConfig),
+    Switch(SwitchNodeConfig),
+    Thermostat(ThermostatNodeConfig),
+    Valve(ValveNodeConfig),
+    Vibration(VibrationNodeConfig),
+    Climate(ClimateNodeConfig),
+    Powermeter(PowermeterNodeConfig),
+}
+
+#[derive(Debug)]
+pub enum SmarthomeNode {
+    MaintenanceNode(MaintenanceNode),
+    SwitchNode(SwitchNode),
+    LevelNode(LevelNode),
+    ClimateNode(ClimateNode),
+    ContactNode(ContactNode),
+    MotionNode(MotionNode),
+    ColorNode(ColorNode),
+    NumericSensorNode(NumericSensorNode),
+    WaterSensor(WaterSensorNode),
+    ShutterNode(ShutterNode),
+    TiltNode(TiltNode),
+    Powermeter(PowermeterNode),
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
 #[cfg(test)]
 mod parse_outcome_tests {
     use super::*;
@@ -177,17 +364,26 @@ mod parse_outcome_tests {
         assert_eq!(ParseOutcome::Parsed(42).ok(), Some(42));
         assert_eq!(ParseOutcome::<i32>::NoMatch.ok(), None);
         assert_eq!(
-            ParseOutcome::<i32>::Invalid(ParseError::new("x", "y", ParseErrorKind::InvalidHomieValue)).ok(),
+            ParseOutcome::<i32>::Invalid(ParseError::new(
+                "x",
+                "y",
+                ParseErrorKind::InvalidHomieValue
+            ))
+            .ok(),
             None
         );
     }
 
     #[test]
     fn parse_outcome_into_result_preserves_invalid_error() {
-        let no_match = ParseOutcome::<i32>::NoMatch.into_result().expect("no match should be ok");
+        let no_match = ParseOutcome::<i32>::NoMatch
+            .into_result()
+            .expect("no match should be ok");
         assert_eq!(no_match, None);
 
-        let parsed = ParseOutcome::Parsed(7).into_result().expect("parsed should be ok");
+        let parsed = ParseOutcome::Parsed(7)
+            .into_result()
+            .expect("parsed should be ok");
         assert_eq!(parsed, Some(7));
 
         let err = ParseOutcome::<i32>::Invalid(ParseError::new(
@@ -223,48 +419,67 @@ mod config_serde_default_tests {
 
     #[test]
     fn empty_object_deserializes_to_default_for_all_node_configs() {
-        let switch: SwitchNodeConfig = serde_json::from_str("{}").expect("switch config must deserialize");
+        let switch: SwitchNodeConfig =
+            serde_json::from_str("{}").expect("switch config must deserialize");
         assert_eq!(switch, SwitchNodeConfig::default());
 
-        let dimmer: DimmerNodeConfig = serde_json::from_str("{}").expect("dimmer config must deserialize");
-        assert_eq!(dimmer, DimmerNodeConfig::default());
+        let level: LevelNodeConfig =
+            serde_json::from_str("{}").expect("level config must deserialize");
+        assert_eq!(level, LevelNodeConfig::default());
 
-        let shutter: ShutterNodeConfig = serde_json::from_str("{}").expect("shutter config must deserialize");
+        let shutter: ShutterNodeConfig =
+            serde_json::from_str("{}").expect("shutter config must deserialize");
         assert_eq!(shutter, ShutterNodeConfig::default());
 
-        let colorlight: ColorlightNodeConfig = serde_json::from_str("{}").expect("colorlight config must deserialize");
-        assert_eq!(colorlight, ColorlightNodeConfig::default());
+        let color: ColorNodeConfig =
+            serde_json::from_str("{}").expect("color config must deserialize");
+        assert_eq!(color, ColorNodeConfig::default());
 
-        let light_scene: LightSceneNodeConfig = serde_json::from_str("{}").expect("light scene config must deserialize");
-        assert_eq!(light_scene, LightSceneNodeConfig::default());
+        let scene: SceneNodeConfig =
+            serde_json::from_str("{}").expect("scene config must deserialize");
+        assert_eq!(scene, SceneNodeConfig::default());
 
-        let thermostat: ThermostatNodeConfig = serde_json::from_str("{}").expect("thermostat config must deserialize");
+        let thermostat: ThermostatNodeConfig =
+            serde_json::from_str("{}").expect("thermostat config must deserialize");
         assert_eq!(thermostat, ThermostatNodeConfig::default());
 
-        let weather: WeatherNodeConfig = serde_json::from_str("{}").expect("weather config must deserialize");
-        assert_eq!(weather, WeatherNodeConfig::default());
+        let climate: ClimateNodeConfig =
+            serde_json::from_str("{}").expect("climate config must deserialize");
+        assert_eq!(climate, ClimateNodeConfig::default());
 
-        let motion: MotionNodeConfig = serde_json::from_str("{}").expect("motion config must deserialize");
+        let motion: MotionNodeConfig =
+            serde_json::from_str("{}").expect("motion config must deserialize");
         assert_eq!(motion, MotionNodeConfig::default());
 
-        let vibration: VibrationNodeConfig = serde_json::from_str("{}").expect("vibration config must deserialize");
+        let vibration: VibrationNodeConfig =
+            serde_json::from_str("{}").expect("vibration config must deserialize");
         assert_eq!(vibration, VibrationNodeConfig::default());
 
         let maintenance: MaintenanceNodeConfig =
             serde_json::from_str("{}").expect("maintenance config must deserialize");
         assert_eq!(maintenance, MaintenanceNodeConfig::default());
 
-        let button: ButtonNodeConfig = serde_json::from_str("{}").expect("button config must deserialize");
+        let button: ButtonNodeConfig =
+            serde_json::from_str("{}").expect("button config must deserialize");
         assert_eq!(button, ButtonNodeConfig::default());
 
-        let powermeter: PowermeterNodeConfig = serde_json::from_str("{}").expect("powermeter config must deserialize");
+        let powermeter: PowermeterNodeConfig =
+            serde_json::from_str("{}").expect("powermeter config must deserialize");
         assert_eq!(powermeter, PowermeterNodeConfig::default());
+
+        let lock: LockNodeConfig =
+            serde_json::from_str("{}").expect("lock config must deserialize");
+        assert_eq!(lock, LockNodeConfig::default());
+
+        let valve: ValveNodeConfig =
+            serde_json::from_str("{}").expect("valve config must deserialize");
+        assert_eq!(valve, ValveNodeConfig::default());
     }
 
     #[test]
     fn partial_config_deserialization_keeps_defaults_for_missing_fields() {
-        let thermostat: ThermostatNodeConfig =
-            serde_json::from_str(r#"{"unit":"F"}"#).expect("thermostat partial config must deserialize");
+        let thermostat: ThermostatNodeConfig = serde_json::from_str(r#"{"unit":"F"}"#)
+            .expect("thermostat partial config must deserialize");
         assert_eq!(thermostat.unit, "F");
 
         let expected_thermostat = ThermostatNodeConfig {
@@ -273,122 +488,15 @@ mod config_serde_default_tests {
         };
         assert_eq!(thermostat, expected_thermostat);
 
-        let light_scene: LightSceneNodeConfig =
-            serde_json::from_str(r#"{"scenes":["scene-a"]}"#).expect("light scene partial config must deserialize");
+        let scene: SceneNodeConfig = serde_json::from_str(r#"{"scenes":["scene-a"]}"#)
+            .expect("scene partial config must deserialize");
         assert_eq!(
-            light_scene,
-            LightSceneNodeConfig {
+            scene,
+            SceneNodeConfig {
                 scenes: vec!["scene-a".to_string()],
-                ..LightSceneNodeConfig::default()
+                ..SceneNodeConfig::default()
             }
         );
-    }
-}
-
-/// SmarthomeType enum representing various smart home device types.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum SmarthomeType {
-    Switch,
-    Dimmer,
-    Maintenance,
-    Contact,
-    Weather,
-    Motion,
-    Button,
-    ColorLight,
-    LightScene,
-    Numeric,
-    Vibration,
-    Orientation,
-    WaterSensor,
-    Shutter,
-    Tilt,
-    Thermostat,
-    Powermeter,
-}
-
-impl SmarthomeType {
-    /// Convert the enum variant into its corresponding string representation.
-    pub const fn as_str(&self) -> &'static str {
-        match self {
-            SmarthomeType::Switch => SMARTHOME_TYPE_SWITCH,
-            SmarthomeType::Dimmer => SMARTHOME_TYPE_DIMMER,
-            SmarthomeType::Maintenance => SMARTHOME_TYPE_MAINTENANCE,
-            SmarthomeType::Contact => SMARTHOME_TYPE_CONTACT,
-            SmarthomeType::Weather => SMARTHOME_TYPE_WEATHER,
-            SmarthomeType::Motion => SMARTHOME_TYPE_MOTION,
-            SmarthomeType::Button => SMARTHOME_TYPE_BUTTON,
-            SmarthomeType::ColorLight => SMARTHOME_TYPE_COLORLIGHT,
-            SmarthomeType::LightScene => SMARTHOME_TYPE_LIGHTSCENE,
-            SmarthomeType::Numeric => SMARTHOME_TYPE_NUMERIC,
-            SmarthomeType::Vibration => SMARTHOME_TYPE_VIBRATION,
-            SmarthomeType::Orientation => SMARTHOME_TYPE_ORIENTATION,
-            SmarthomeType::WaterSensor => SMARTHOME_TYPE_WATER_SENSOR,
-            SmarthomeType::Shutter => SMARTHOME_TYPE_SHUTTER,
-            SmarthomeType::Tilt => SMARTHOME_TYPE_TILT,
-            SmarthomeType::Thermostat => SMARTHOME_TYPE_THERMOSTAT,
-            SmarthomeType::Powermeter => SMARTHOME_TYPE_POWERMETER,
-        }
-    }
-
-    /// Create a SmarthomeType from a string containing a constant value.
-    pub fn from_constant(value: &str) -> Option<Self> {
-        match value {
-            SMARTHOME_TYPE_SWITCH => Some(SmarthomeType::Switch),
-            SMARTHOME_TYPE_DIMMER => Some(SmarthomeType::Dimmer),
-            SMARTHOME_TYPE_MAINTENANCE => Some(SmarthomeType::Maintenance),
-            SMARTHOME_TYPE_CONTACT => Some(SmarthomeType::Contact),
-            SMARTHOME_TYPE_WEATHER => Some(SmarthomeType::Weather),
-            SMARTHOME_TYPE_MOTION => Some(SmarthomeType::Motion),
-            SMARTHOME_TYPE_BUTTON => Some(SmarthomeType::Button),
-            SMARTHOME_TYPE_COLORLIGHT => Some(SmarthomeType::ColorLight),
-            SMARTHOME_TYPE_LIGHTSCENE => Some(SmarthomeType::LightScene),
-            SMARTHOME_TYPE_NUMERIC => Some(SmarthomeType::Numeric),
-            SMARTHOME_TYPE_VIBRATION => Some(SmarthomeType::Vibration),
-            SMARTHOME_TYPE_ORIENTATION => Some(SmarthomeType::Orientation),
-            SMARTHOME_TYPE_WATER_SENSOR => Some(SmarthomeType::WaterSensor),
-            SMARTHOME_TYPE_SHUTTER => Some(SmarthomeType::Shutter),
-            SMARTHOME_TYPE_TILT => Some(SmarthomeType::Tilt),
-            SMARTHOME_TYPE_THERMOSTAT => Some(SmarthomeType::Thermostat),
-            SMARTHOME_TYPE_POWERMETER => Some(SmarthomeType::Powermeter),
-            _ => None,
-        }
-    }
-}
-
-/// Implement `FromStr` to parse a SmarthomeType from a string.
-impl FromStr for SmarthomeType {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        SmarthomeType::from_constant(s).ok_or(())
-    }
-}
-
-/// Implement `Display` for better formatting and output.
-impl fmt::Display for SmarthomeType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl Serialize for SmarthomeType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.as_str())
-    }
-}
-
-impl<'de> Deserialize<'de> for SmarthomeType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = <&str>::deserialize(deserializer)?;
-        SmarthomeType::from_constant(value)
-            .ok_or_else(|| serde::de::Error::custom(format!("invalid smarthome type: {value}")))
     }
 }
 
@@ -400,14 +508,14 @@ mod smarthome_type_serde_tests {
     fn serializes_and_deserializes_canonical_constants() {
         let types = [
             SmarthomeType::Switch,
-            SmarthomeType::Dimmer,
+            SmarthomeType::Level,
             SmarthomeType::Maintenance,
             SmarthomeType::Contact,
-            SmarthomeType::Weather,
+            SmarthomeType::Climate,
             SmarthomeType::Motion,
             SmarthomeType::Button,
-            SmarthomeType::ColorLight,
-            SmarthomeType::LightScene,
+            SmarthomeType::Color,
+            SmarthomeType::Scene,
             SmarthomeType::Numeric,
             SmarthomeType::Vibration,
             SmarthomeType::Orientation,
@@ -416,54 +524,26 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Tilt,
             SmarthomeType::Thermostat,
             SmarthomeType::Powermeter,
+            SmarthomeType::Lock,
+            SmarthomeType::Valve,
         ];
 
         for ty in types {
             let json = serde_json::to_string(&ty).expect("serialize smarthome type");
             assert_eq!(json, format!("\"{}\"", ty.as_str()));
 
-            let parsed: SmarthomeType = serde_json::from_str(&json).expect("deserialize smarthome type");
+            let parsed: SmarthomeType =
+                serde_json::from_str(&json).expect("deserialize smarthome type");
             assert_eq!(parsed, ty);
         }
     }
 
     #[test]
     fn rejects_non_canonical_short_names() {
-        let err = serde_json::from_str::<SmarthomeType>("\"switch\"").expect_err("must reject short name");
+        let err = serde_json::from_str::<SmarthomeType>("\"switch\"")
+            .expect_err("must reject short name");
         assert!(err.to_string().contains("invalid smarthome type"));
     }
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub enum SmarthomeProperyConfig {
-    Button(ButtonNodeConfig),
-    ColorLight(ColorlightNodeConfig),
-    Dimmer(DimmerNodeConfig),
-    LightScene(LightSceneNodeConfig),
-    Maintenance(MaintenanceNodeConfig),
-    Motion(MotionNodeConfig),
-    Shutter(ShutterNodeConfig),
-    Switch(SwitchNodeConfig),
-    Thermostat(ThermostatNodeConfig),
-    Vibration(VibrationNodeConfig),
-    Weather(WeatherNodeConfig),
-    Powermeter(PowermeterNodeConfig),
-}
-
-#[derive(Debug)]
-pub enum SmarthomeNode {
-    MaintenanceNode(MaintenanceNode),
-    SwitchNode(SwitchNode),
-    DimmerNode(DimmerNode),
-    WeatherNode(WeatherNode),
-    ContactNode(ContactNode),
-    MotionNode(MotionNode),
-    ColorlightNode(ColorlightNode),
-    NumericSensorNode(NumericSensorNode),
-    WaterSensor(WaterSensorNode),
-    ShutterNode(ShutterNode),
-    TiltNode(TiltNode),
-    Powermeter(PowermeterNode),
 }
 
 #[cfg(test)]
@@ -480,13 +560,13 @@ mod tests {
     };
 
     use crate::{
-        dimmer_node::{DIMMER_NODE_DEFAULT_ID, DimmerNodeBuilder},
+        SetCommandParser,
+        climate_node::{CLIMATE_NODE_DEFAULT_ID, ClimateNodeBuilder},
+        level_node::{LEVEL_NODE_DEFAULT_ID, LevelNodeBuilder},
         maintenance_node::{MAINTENANCE_NODE_DEFAULT_ID, MaintenanceNodeBuilder},
         switch_node::{
             SWITCH_NODE_DEFAULT_ID, SwitchNodeActions, SwitchNodeBuilder, SwitchNodeSetEvents,
         },
-        SetCommandParser,
-        weather_node::{WEATHER_NODE_DEFAULT_ID, WeatherNodeBuilder},
     };
     #[allow(clippy::large_enum_variant)]
     #[derive(Debug)]
@@ -585,7 +665,7 @@ mod tests {
         let id: HomieID = "test-hc-smarthome-1".try_into().unwrap();
         let mut switch_state = false;
         let mut switch_state2 = false;
-        let mut dimmer_state: i64 = 0;
+        let mut level_value: i64 = 0;
 
         let (client, last_will) = Homie5DeviceProtocol::new(id.clone(), _settings.homie_domain);
         mqttoptions.set_last_will(lw_to_rumqttc(last_will));
@@ -630,21 +710,18 @@ mod tests {
         let (switch_node2, switch_node_publisher2) = SwitchNodeBuilder::new(&Default::default())
             .build_with_publisher("switch2".try_into().unwrap(), &client);
 
-        let (dimmer_node, dimmer_node_publisher) = DimmerNodeBuilder::new(&Default::default())
-            .build_with_publisher(DIMMER_NODE_DEFAULT_ID, &client);
+        let (level_node, level_node_publisher) = LevelNodeBuilder::new(&Default::default())
+            .build_with_publisher(LEVEL_NODE_DEFAULT_ID, &client);
 
-        let (weather_node, weather_node_publisher) = WeatherNodeBuilder::new(&Default::default())
-            .build_with_publisher(WEATHER_NODE_DEFAULT_ID, &client);
+        let (climate_node, climate_node_publisher) = ClimateNodeBuilder::new(&Default::default())
+            .build_with_publisher(CLIMATE_NODE_DEFAULT_ID, &client);
 
         let desc = DeviceDescriptionBuilder::new()
             .name("hc-smarthome-test")
-            .add_node(
-                MAINTENANCE_NODE_DEFAULT_ID,
-                maintenance_node,
-            )
+            .add_node(MAINTENANCE_NODE_DEFAULT_ID, maintenance_node)
             .add_node(SWITCH_NODE_DEFAULT_ID, switch_node)
-            .add_node(DIMMER_NODE_DEFAULT_ID, dimmer_node)
-            .add_node(WEATHER_NODE_DEFAULT_ID, weather_node)
+            .add_node(LEVEL_NODE_DEFAULT_ID, level_node)
+            .add_node(CLIMATE_NODE_DEFAULT_ID, climate_node)
             .add_node("switch2".try_into().unwrap(), switch_node2)
             .build();
 
@@ -749,17 +826,17 @@ mod tests {
                                 }
                             }
                         }
-                        if let Some(dimmer_node_event) =
-                            dimmer_node_publisher.parse_set_event(&desc, event).ok()
+                        if let Some(level_node_event) =
+                            level_node_publisher.parse_set_event(&desc, event).ok()
                         {
-                            println!("DimmerNode: {:#?}", dimmer_node_event);
-                            match dimmer_node_event {
-                                crate::dimmer_node::DimmerNodeSetEvents::Brightness(value) => {
-                                    dimmer_state = value;
+                            println!("LevelNode: {:#?}", level_node_event);
+                            match level_node_event {
+                                crate::level_node::LevelNodeSetEvents::Value(value) => {
+                                    level_value = value;
 
                                     let _ = publish(
                                         &mqtt_client,
-                                        dimmer_node_publisher.brightness_target(dimmer_state),
+                                        level_node_publisher.value_target(level_value),
                                     )
                                     .await;
 
@@ -767,23 +844,23 @@ mod tests {
 
                                     let _ = publish(
                                         &mqtt_client,
-                                        dimmer_node_publisher.brightness(dimmer_state),
+                                        level_node_publisher.value(level_value),
                                     )
                                     .await;
                                 }
-                                crate::dimmer_node::DimmerNodeSetEvents::Action(action) => {
+                                crate::level_node::LevelNodeSetEvents::Action(action) => {
                                     match action {
-                                        crate::dimmer_node::DimmerNodeActions::Brighter => {
-                                            dimmer_state = std::cmp::min(dimmer_state + 10, 100);
+                                        crate::level_node::LevelNodeActions::StepUp => {
+                                            level_value = std::cmp::min(level_value + 10, 100);
                                         }
-                                        crate::dimmer_node::DimmerNodeActions::Darker => {
-                                            dimmer_state = std::cmp::max(dimmer_state - 10, 1);
+                                        crate::level_node::LevelNodeActions::StepDown => {
+                                            level_value = std::cmp::max(level_value - 10, 1);
                                         }
                                     }
 
                                     let _ = publish(
                                         &mqtt_client,
-                                        dimmer_node_publisher.brightness_target(dimmer_state),
+                                        level_node_publisher.value_target(level_value),
                                     )
                                     .await;
 
@@ -791,7 +868,7 @@ mod tests {
 
                                     let _ = publish(
                                         &mqtt_client,
-                                        dimmer_node_publisher.brightness(dimmer_state),
+                                        level_node_publisher.value(level_value),
                                     )
                                     .await;
                                 }
@@ -852,11 +929,10 @@ mod tests {
                         let _ = publish(&mqtt_client, switch_node_publisher2.state(switch_state2))
                             .await;
                         let _ =
-                            publish(&mqtt_client, dimmer_node_publisher.brightness(dimmer_state))
-                                .await;
+                            publish(&mqtt_client, level_node_publisher.value(level_value)).await;
                         let _ =
-                            publish(&mqtt_client, weather_node_publisher.temperature(12.4)).await;
-                        let _ = publish(&mqtt_client, weather_node_publisher.humidity(64)).await;
+                            publish(&mqtt_client, climate_node_publisher.temperature(12.4)).await;
+                        let _ = publish(&mqtt_client, climate_node_publisher.humidity(64)).await;
 
                         let _ = publish(
                             &mqtt_client,

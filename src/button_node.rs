@@ -1,11 +1,11 @@
 use std::{fmt::Display, str::FromStr};
 
 use homie5::{
+    Homie5DeviceProtocol, Homie5ProtocolError, HomieID, NodeRef,
     device_description::{
         HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5ProtocolError, HomieID, NodeRef,
 };
 use serde::{Deserialize, Serialize};
 

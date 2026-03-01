@@ -1,16 +1,16 @@
 use core::fmt;
 
 use homie5::{
+    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
+    PropertyRef,
     device_description::{
         BooleanFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
-    PropertyRef,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_SWITCH};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_SWITCH, SetCommandParser};
 
 pub const SWITCH_NODE_DEFAULT_ID: HomieID = HomieID::new_const("switch");
 pub const SWITCH_NODE_DEFAULT_NAME: &str = "On/Off switch";

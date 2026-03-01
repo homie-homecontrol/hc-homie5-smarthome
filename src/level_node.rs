@@ -1,84 +1,88 @@
 use std::str::FromStr;
 
 use homie5::{
+    HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
+    HomieValue, NodeRef, PropertyRef,
     device_description::{
         HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
-    Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
-    PropertyRef, HOMIE_UNIT_PERCENT,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SetCommandParser, SMARTHOME_TYPE_DIMMER};
+use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_TYPE_LEVEL, SetCommandParser};
 
-pub const DIMMER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("dimmer");
-pub const DIMMER_NODE_DEFAULT_NAME: &str = "Brightness control";
-pub const DIMMER_NODE_BRIGHTNESS_PROP_ID: HomieID = HomieID::new_const("brightness");
-pub const DIMMER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+pub const LEVEL_NODE_DEFAULT_ID: HomieID = HomieID::new_const("level");
+pub const LEVEL_NODE_DEFAULT_NAME: &str = "Level control";
+pub const LEVEL_NODE_VALUE_PROP_ID: HomieID = HomieID::new_const("value");
+pub const LEVEL_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
 
 #[derive(Debug)]
-pub struct DimmerNode {
-    pub publisher: DimmerNodePublisher,
-    pub state: i64,
-    pub state_target: i64,
+pub struct LevelNode {
+    pub publisher: LevelNodePublisher,
+    pub value: i64,
+    pub value_target: i64,
 }
 
 #[derive(Debug)]
-pub enum DimmerNodeActions {
-    Brighter,
-    Darker,
+pub enum LevelNodeActions {
+    StepUp,
+    StepDown,
 }
 
-impl FromStr for DimmerNodeActions {
+impl FromStr for LevelNodeActions {
     type Err = Homie5ProtocolError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "brighter" => Ok(DimmerNodeActions::Brighter),
-            "darker" => Ok(DimmerNodeActions::Darker),
+            "step-up" => Ok(LevelNodeActions::StepUp),
+            "step-down" => Ok(LevelNodeActions::StepDown),
             _ => Err(Homie5ProtocolError::InvalidPayload),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum DimmerNodeSetEvents {
-    Brightness(i64),
-    Action(DimmerNodeActions),
+pub enum LevelNodeSetEvents {
+    Value(i64),
+    Action(LevelNodeActions),
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct DimmerNodeConfig {
+pub struct LevelNodeConfig {
     pub settable: bool,
+    pub step_action: bool,
 }
 
-impl Default for DimmerNodeConfig {
+impl Default for LevelNodeConfig {
     fn default() -> Self {
-        Self { settable: true }
+        Self {
+            settable: true,
+            step_action: true,
+        }
     }
 }
 
-pub struct DimmerNodeBuilder {
+pub struct LevelNodeBuilder {
     node_builder: NodeDescriptionBuilder,
 }
 
-impl DimmerNodeBuilder {
-    pub fn new(config: &DimmerNodeConfig) -> Self {
+impl LevelNodeBuilder {
+    pub fn new(config: &LevelNodeConfig) -> Self {
         let db = Self::build_node(
-            NodeDescriptionBuilder::new().name(DIMMER_NODE_DEFAULT_NAME),
+            NodeDescriptionBuilder::new().name(LEVEL_NODE_DEFAULT_NAME),
             config,
         )
-        .r#type(SMARTHOME_TYPE_DIMMER);
+        .r#type(SMARTHOME_TYPE_LEVEL);
 
         Self { node_builder: db }
     }
 
-    fn build_node(db: NodeDescriptionBuilder, config: &DimmerNodeConfig) -> NodeDescriptionBuilder {
+    fn build_node(db: NodeDescriptionBuilder, config: &LevelNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            DIMMER_NODE_BRIGHTNESS_PROP_ID,
+            LEVEL_NODE_VALUE_PROP_ID,
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
-                .name("Brightness Level")
+                .name("Level")
                 .format(HomiePropertyFormat::IntegerRange(IntegerRange {
                     min: Some(0),
                     max: Some(100),
@@ -89,18 +93,17 @@ impl DimmerNodeBuilder {
                 .retained(true)
                 .build(),
         )
-        .add_property(
-            DIMMER_NODE_ACTION_PROP_ID,
+        .add_property_cond(LEVEL_NODE_ACTION_PROP_ID, config.step_action, || {
             PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Change Brightness")
+                .name("Step level")
                 .format(HomiePropertyFormat::Enum(vec![
-                    "brighter".to_owned(),
-                    "darker".to_owned(),
+                    "step-up".to_owned(),
+                    "step-down".to_owned(),
                 ]))
                 .settable(config.settable)
                 .retained(false)
-                .build(),
-        )
+                .build()
+        })
     }
 
     pub fn name<S: Into<String>>(mut self, name: impl Into<Option<S>>) -> Self {
@@ -116,11 +119,11 @@ impl DimmerNodeBuilder {
         self,
         node_id: HomieID,
         client: &Homie5DeviceProtocol,
-    ) -> (HomieNodeDescription, DimmerNodePublisher) {
+    ) -> (HomieNodeDescription, LevelNodePublisher) {
         let did = client.id().clone();
         (
             self.node_builder.build(),
-            DimmerNodePublisher::new(
+            LevelNodePublisher::new(
                 NodeRef::new(client.homie_domain().to_owned(), did, node_id),
                 client.clone(),
             ),
@@ -129,53 +132,53 @@ impl DimmerNodeBuilder {
 }
 
 #[derive(Debug)]
-pub struct DimmerNodePublisher {
+pub struct LevelNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    brightness_prop: HomieID,
+    value_prop: HomieID,
     action_prop: HomieID,
 }
 
-impl DimmerNodePublisher {
+impl LevelNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
         Self {
             node,
             client,
-            brightness_prop: DIMMER_NODE_BRIGHTNESS_PROP_ID,
-            action_prop: DIMMER_NODE_ACTION_PROP_ID,
+            value_prop: LEVEL_NODE_VALUE_PROP_ID,
+            action_prop: LEVEL_NODE_ACTION_PROP_ID,
         }
     }
 
-    pub fn brightness(&self, value: i64) -> homie5::client::Publish {
+    pub fn value(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.brightness_prop,
+            &self.value_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn brightness_target(&self, value: i64) -> homie5::client::Publish {
+    pub fn value_target(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.brightness_prop,
+            &self.value_prop,
             value.to_string(),
             true,
         )
     }
 
-    pub fn action(&self, action: DimmerNodeActions) -> homie5::client::Publish {
+    pub fn action(&self, action: LevelNodeActions) -> homie5::client::Publish {
         let action_str = match action {
-            DimmerNodeActions::Brighter => "brighter",
-            DimmerNodeActions::Darker => "darker",
+            LevelNodeActions::StepUp => "step-up",
+            LevelNodeActions::StepDown => "step-down",
         };
         self.client
             .publish_value(self.node.node_id(), &self.action_prop, action_str, false)
     }
 }
 
-impl SetCommandParser for DimmerNodePublisher {
-    type Event = DimmerNodeSetEvents;
+impl SetCommandParser for LevelNodePublisher {
+    type Event = LevelNodeSetEvents;
 
     fn parse_set(
         &self,
@@ -185,7 +188,7 @@ impl SetCommandParser for DimmerNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.brightness_prop) {
+        if property.match_with_node(&self.node, &self.value_prop) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -198,7 +201,7 @@ impl SetCommandParser for DimmerNodePublisher {
 
             match parsed {
                 Ok(HomieValue::Integer(value)) => {
-                    ParseOutcome::Parsed(DimmerNodeSetEvents::Brightness(value))
+                    ParseOutcome::Parsed(LevelNodeSetEvents::Value(value))
                 }
                 _ => ParseOutcome::Invalid(ParseError::new(
                     property.prop_id().to_string(),
@@ -218,8 +221,8 @@ impl SetCommandParser for DimmerNodePublisher {
             };
 
             match parsed {
-                Ok(HomieValue::Enum(value)) => match DimmerNodeActions::from_str(&value) {
-                    Ok(action) => ParseOutcome::Parsed(DimmerNodeSetEvents::Action(action)),
+                Ok(HomieValue::Enum(value)) => match LevelNodeActions::from_str(&value) {
+                    Ok(action) => ParseOutcome::Parsed(LevelNodeSetEvents::Action(action)),
                     Err(_) => ParseOutcome::Invalid(ParseError::new(
                         property.prop_id().to_string(),
                         set_value,
@@ -248,7 +251,7 @@ impl SetCommandParser for DimmerNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.brightness_prop.to_string(),
+                self.value_prop.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),
