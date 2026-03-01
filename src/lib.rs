@@ -9,6 +9,7 @@ pub mod co_node;
 pub mod color_node;
 pub mod contact_node;
 pub mod daylight_node;
+pub mod garage_door_node;
 pub mod illuminance_node;
 pub mod level_node;
 pub mod link_node;
@@ -43,6 +44,7 @@ use co_node::CoNode;
 use color_node::{ColorNode, ColorNodeConfig};
 use contact_node::ContactNode;
 use daylight_node::{DaylightNode, DaylightNodeConfig};
+use garage_door_node::{GarageDoorNode, GarageDoorNodeConfig};
 use illuminance_node::IlluminanceNode;
 use level_node::{LevelNode, LevelNodeConfig};
 use link_node::{LinkNode, LinkNodeConfig};
@@ -119,6 +121,7 @@ pub const SMARTHOME_CAP_CO: &str = smarthome_cap!("co");
 pub const SMARTHOME_CAP_ALARM: &str = smarthome_cap!("alarm");
 pub const SMARTHOME_CAP_ILLUMINANCE: &str = smarthome_cap!("illuminance");
 pub const SMARTHOME_CAP_DAYLIGHT: &str = smarthome_cap!("daylight");
+pub const SMARTHOME_CAP_GARAGE_DOOR: &str = smarthome_cap!("garage-door");
 pub const SMARTHOME_CAP_AIR_QUALITY: &str = smarthome_cap!("air-quality");
 pub const SMARTHOME_CAP_CAMERA: &str = smarthome_cap!("camera");
 pub const SMARTHOME_CAP_TIMER: &str = smarthome_cap!("timer");
@@ -288,6 +291,7 @@ pub enum SmarthomeType {
     Alarm,
     Illuminance,
     Daylight,
+    GarageDoor,
     AirQuality,
     Camera,
     Timer,
@@ -325,6 +329,7 @@ impl SmarthomeType {
             SmarthomeType::Alarm => SMARTHOME_CAP_ALARM,
             SmarthomeType::Illuminance => SMARTHOME_CAP_ILLUMINANCE,
             SmarthomeType::Daylight => SMARTHOME_CAP_DAYLIGHT,
+            SmarthomeType::GarageDoor => SMARTHOME_CAP_GARAGE_DOOR,
             SmarthomeType::AirQuality => SMARTHOME_CAP_AIR_QUALITY,
             SmarthomeType::Camera => SMARTHOME_CAP_CAMERA,
             SmarthomeType::Timer => SMARTHOME_CAP_TIMER,
@@ -362,6 +367,7 @@ impl SmarthomeType {
             SMARTHOME_CAP_ALARM => Some(SmarthomeType::Alarm),
             SMARTHOME_CAP_ILLUMINANCE => Some(SmarthomeType::Illuminance),
             SMARTHOME_CAP_DAYLIGHT => Some(SmarthomeType::Daylight),
+            SMARTHOME_CAP_GARAGE_DOOR => Some(SmarthomeType::GarageDoor),
             SMARTHOME_CAP_AIR_QUALITY => Some(SmarthomeType::AirQuality),
             SMARTHOME_CAP_CAMERA => Some(SmarthomeType::Camera),
             SMARTHOME_CAP_TIMER => Some(SmarthomeType::Timer),
@@ -417,6 +423,7 @@ pub enum SmarthomeProperyConfig {
     Climate(ClimateNodeConfig),
     Color(ColorNodeConfig),
     Daylight(DaylightNodeConfig),
+    GarageDoor(GarageDoorNodeConfig),
     Level(LevelNodeConfig),
     Link(LinkNodeConfig),
     Lock(LockNodeConfig),
@@ -444,6 +451,7 @@ pub enum SmarthomeNode {
     ColorNode(ColorNode),
     ContactNode(ContactNode),
     DaylightNode(DaylightNode),
+    GarageDoorNode(GarageDoorNode),
     IlluminanceNode(IlluminanceNode),
     LevelNode(LevelNode),
     LinkNode(LinkNode),
@@ -612,6 +620,10 @@ mod config_serde_default_tests {
             serde_json::from_str("{}").expect("air-quality config must deserialize");
         assert_eq!(air_quality, AirQualityNodeConfig::default());
 
+        let garage_door: GarageDoorNodeConfig =
+            serde_json::from_str("{}").expect("garage-door config must deserialize");
+        assert_eq!(garage_door, GarageDoorNodeConfig::default());
+
         let camera: CameraNodeConfig =
             serde_json::from_str("{}").expect("camera config must deserialize");
         assert_eq!(camera, CameraNodeConfig::default());
@@ -679,6 +691,7 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Alarm,
             SmarthomeType::Illuminance,
             SmarthomeType::Daylight,
+            SmarthomeType::GarageDoor,
             SmarthomeType::AirQuality,
             SmarthomeType::Camera,
             SmarthomeType::Timer,

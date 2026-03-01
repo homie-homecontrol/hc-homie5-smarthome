@@ -70,6 +70,7 @@ document are to be interpreted as described in
 | Lock        | `lock`         | `hc-smarthome/v2/cap/lock`         | Actuator       | Lock/unlock control                           |
 | Valve       | `valve`        | `hc-smarthome/v2/cap/valve`        | Actuator       | Binary valve open/close control               |
 | Alarm       | `alarm`        | `hc-smarthome/v2/cap/alarm`        | Actuator       | Siren/alarm on/off, sound, duration           |
+| Garage Door | `garage-door`  | `hc-smarthome/v2/cap/garage-door`  | Actuator       | Garage door action/state control              |
 | Climate     | `climate`      | `hc-smarthome/v2/cap/climate`      | Sensor         | Temperature, humidity, pressure sensing       |
 | Motion      | `motion`       | `hc-smarthome/v2/cap/motion`       | Sensor         | Binary motion detection                       |
 | Illuminance | `illuminance`  | `hc-smarthome/v2/cap/illuminance`  | Sensor         | Ambient light level (lux)                     |
@@ -119,7 +120,7 @@ document are to be interpreted as described in
 | Mediaplayer    | `hc-smarthome/v2/dc/mediaplayer`    | `mediaplayer`| `media-info`, `volume`                 | Media player or TV               |
 | Smoke Sensor   | `hc-smarthome/v2/dc/smoke-sensor`   | `smoke`      | --                                     | Smoke/fire detector              |
 | Speaker        | `hc-smarthome/v2/dc/speaker`        | `volume`     | `mediaplayer`, `media-info`            | Smart speaker                    |
-| Garage Door    | `hc-smarthome/v2/dc/garage-door`    | `switch`     | `contact`                              | Garage door opener               |
+| Garage Door    | `hc-smarthome/v2/dc/garage-door`    | `garage-door`| `contact`                              | Garage door opener               |
 | Doorbell       | `hc-smarthome/v2/dc/doorbell`       | `button`     | `camera`                               | Doorbell                         |
 | Vibration Sensor | `hc-smarthome/v2/dc/vibration-sensor` | `vibration` | --                                  | Vibration sensor                 |
 | Tilt Sensor    | `hc-smarthome/v2/dc/tilt-sensor`    | `tilt`       | --                                     | Tilt sensor                      |
@@ -156,6 +157,43 @@ these rules.
 
 `color` and `scene` capabilities are **not** affected by the switch/level
 coupling -- they operate independently.
+
+#### Garage Door: Garage-Door + Contact Coupling
+
+When a device of class `garage-door` exposes both `garage-door` and `contact`
+capabilities, the following rules apply:
+
+- `garage-door/state` SHOULD represent runtime opener state using
+  `open,closed,opening,closing,stopped,unknown`.
+- If `contact` is present, `contact/state` SHOULD represent the physical
+  end-stop state (`open`/`closed`) and SHOULD be treated as authoritative for
+  final-open and final-closed state.
+- During travel, implementations SHOULD publish `garage-door/state` as
+  `opening` or `closing`.
+- After movement completes, implementations SHOULD converge
+  `garage-door/state` to `open` or `closed` consistently with `contact/state`
+  when contact data is available.
+- For openers supporting pulse-style `trigger`, after a `stopped` state the
+  next `trigger` SHOULD reverse the previous travel direction.
+
+#### Mediaplayer / Media Info Coherence
+
+When a device exposes `mediaplayer` and/or `media-info`, the following rules
+apply:
+
+- After a successfully handled `mediaplayer/action` command,
+  `mediaplayer/state` SHOULD be updated promptly to the resulting runtime
+  state.
+- If `media-info/progress` is exposed and `mediaplayer/state=paused`,
+  `progress` SHOULD remain stable except for explicit seek operations.
+- If `media-info/progress` is exposed and `mediaplayer/state=playing`,
+  `progress` SHOULD advance monotonically over time (allowing small timing
+  jitter).
+- When `media-info/seekable` is `false`, implementations SHOULD ignore `/set`
+  commands on `media-info/progress`.
+- `disabled` values for `mediaplayer/shuffle`, `mediaplayer/repeat`, and
+  `volume/mute` SHOULD indicate temporary unavailability (not equivalent to
+  `off`).
 
 ---
 
@@ -308,6 +346,22 @@ and set an auto-stop duration.
 | Alarm state    | `state`    | Boolean  | --   | --                    | yes      | yes      | no       | Alarm active (true) or off (false) |
 | Alarm sound    | `sound`    | Enum     | --   | Configured sounds     | yes      | yes      | yes      | Selected alarm sound/mode          |
 | Alarm duration | `duration` | Integer  | `s`  | `0:`                  | yes      | yes      | yes      | Auto-stop after N seconds          |
+
+---
+
+#### Garage Door
+
+**ID:** `garage-door` | **Type:** `hc-smarthome/v2/cap/garage-door`
+
+Garage door control with command actions and retained runtime state.
+
+| Property          | ID       | Datatype | Unit | Format                                           | Settable | Retained | Optional | Description                       |
+| ----------------- | -------- | -------- | ---- | ------------------------------------------------ | -------- | -------- | -------- | --------------------------------- |
+| Garage door state | `state`  | Enum     | --   | `open,closed,opening,closing,stopped,unknown`   | no       | yes      | no       | Current runtime door state        |
+| Garage door action| `action` | Enum     | --   | `open,close,trigger,stop`                        | yes      | no       | no       | Command action for door movement  |
+
+`trigger` is intended for pulse-style openers that toggle behavior based on
+current movement state.
 
 ---
 
@@ -723,6 +777,7 @@ All config structs implement `Default` and `Deserialize` with
 | Climate     | `ClimateNodeConfig`     | `temperature`, `humidity`, `pressure`, `temp_unit`       |
 | Vibration   | `VibrationNodeConfig`   | `vibration_strength`                                     |
 | Daylight    | `DaylightNodeConfig`    | `phase`                                                  |
+| Garage Door | `GarageDoorNodeConfig`  | `settable`, action flags, state flags                    |
 | Air Quality | `AirQualityNodeConfig`  | `co2`, `voc`, `pm25`, `pm10`, `aqi`                     |
 | Button      | `ButtonNodeConfig`      | `actions`                                                |
 | Powermeter  | `PowermeterNodeConfig`  | `current`, `voltage`, `frequency`, `consumption`         |
@@ -798,5 +853,4 @@ let desc = DeviceDescriptionBuilder::new()
     )
     .build();
 ```
-
 
