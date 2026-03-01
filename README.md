@@ -78,6 +78,9 @@ document are to be interpreted as described in
 | Orientation | `orientation` | `hc-smarthome/v2/cap/orientation` | Sensor         | 3-axis orientation and tilt angle             |
 | Button      | `button`      | `hc-smarthome/v2/cap/button`      | Infrastructure | Physical button press events                  |
 | Powermeter  | `powermeter`  | `hc-smarthome/v2/cap/powermeter`  | Infrastructure | Electrical power metering                     |
+| Mediaplayer | `mediaplayer` | `hc-smarthome/v2/cap/mediaplayer` | Media          | Playback transport control and modes          |
+| Media Info  | `media-info`  | `hc-smarthome/v2/cap/media-info`  | Media          | Now-playing metadata and progress             |
+| Volume      | `volume`      | `hc-smarthome/v2/cap/volume`      | Media          | Audio volume level and mute control           |
 | Battery     | `battery`     | `hc-smarthome/v2/cap/battery`     | Infrastructure | Battery level and voltage readings            |
 | Link        | `link`        | `hc-smarthome/v2/cap/link`        | Infrastructure | Signal strength, link quality, last-seen      |
 
@@ -104,6 +107,7 @@ document are to be interpreted as described in
 | Button         | `hc-smarthome/v2/dc/button`         | `button`     | --                                     | Physical push-button or remote   |
 | Siren          | `hc-smarthome/v2/dc/siren`          | `switch`     | --                                     | Alarm siren                      |
 | Powermeter     | `hc-smarthome/v2/dc/powermeter`     | `powermeter` | --                                     | Standalone power meter or clamp  |
+| Mediaplayer    | `hc-smarthome/v2/dc/mediaplayer`    | `mediaplayer`| `media-info`, `volume`                 | Media player, smart speaker, TV  |
 
 Any device class MAY additionally expose `battery` and/or `link` capability
 nodes. These are optional for all device classes and provide device health
@@ -404,6 +408,72 @@ Electrical power metering. Read-only.
 
 ---
 
+### Media Capabilities
+
+#### Mediaplayer
+
+**ID:** `mediaplayer` | **Type:** `hc-smarthome/v2/cap/mediaplayer`
+
+Playback transport control and mode settings. The `action` property triggers
+transport commands; `state` reports the current playback state. `shuffle`
+and `repeat` use a tri-state enum (`on`, `off`, `disabled`) where `disabled`
+indicates the feature is temporarily unavailable for the current media
+context (e.g. no shuffle during radio playback).
+
+| Property     | ID        | Datatype | Unit | Format                                                   | Settable | Retained | Optional | Description         |
+| ------------ | --------- | -------- | ---- | -------------------------------------------------------- | -------- | -------- | -------- | ------------------- |
+| Player action| `action`  | Enum     | --   | `play,pause`[,`stop`][,`next`][,`previous`][,`forward`][,`rewind`] | yes | no  | no       | Transport command   |
+| Play state   | `state`   | Enum     | --   | `playing,paused,stopped`                                 | no       | yes      | no       | Current play state  |
+| Shuffle mode | `shuffle` | Enum     | --   | `on,off,disabled`                                        | yes      | yes      | yes      | Shuffle mode        |
+| Repeat mode  | `repeat`  | Enum     | --   | `on,off,disabled`                                        | yes      | yes      | yes      | Repeat mode         |
+
+`play` and `pause` are always present. Additional actions (`stop`, `next`,
+`previous`, `forward`, `rewind`) are included based on device capabilities.
+
+---
+
+#### Media Info
+
+**ID:** `media-info` | **Type:** `hc-smarthome/v2/cap/media-info`
+
+Now-playing metadata and progress. The `title` property is always present;
+all other properties are optional. `subtitle` and `description` are generic
+text lines -- the bridge maps media-specific information (artist, album,
+director, episode, etc.) into them. The optional `metadata` property carries
+extended structured metadata as a JSON object with well-known keys.
+
+| Property    | ID            | Datatype | Unit | Format | Settable | Retained | Optional | Description                         |
+| ----------- | ------------- | -------- | ---- | ------ | -------- | -------- | -------- | ----------------------------------- |
+| Title       | `title`       | String   | --   | --     | no       | yes      | no       | Track/media title                   |
+| Subtitle    | `subtitle`    | String   | --   | --     | no       | yes      | yes      | Secondary text line (artist, etc.)  |
+| Description | `description` | String   | --   | --     | no       | yes      | yes      | Additional context line             |
+| Artwork     | `artwork`     | String   | --   | --     | no       | yes      | yes      | Artwork/cover URL                   |
+| Progress    | `progress`    | Integer  | `s`  | --     | yes      | yes      | yes      | Current position (seconds)          |
+| Length      | `length`      | Integer  | `s`  | --     | no       | yes      | yes      | Total duration (seconds)            |
+| Seekable    | `seekable`    | Boolean  | --   | --     | no       | yes      | yes      | Whether seeking is supported        |
+| Metadata    | `metadata`    | JSON     | --   | --     | no       | yes      | yes      | Extended metadata (well-known keys) |
+
+When `seekable` is `false`, the player SHOULD ignore `/set` commands on
+`progress`. UIs SHOULD grey out the seek control when `seekable` is absent
+or `false`.
+
+---
+
+#### Volume
+
+**ID:** `volume` | **Type:** `hc-smarthome/v2/cap/volume`
+
+Audio volume control with optional mute. The `mute` property uses a
+tri-state enum (`on`, `off`, `disabled`) following the same convention as
+the mediaplayer capability's shuffle/repeat properties.
+
+| Property     | ID    | Datatype | Unit | Format            | Settable | Retained | Optional | Description  |
+| ------------ | ----- | -------- | ---- | ----------------- | -------- | -------- | -------- | ------------ |
+| Volume level | `level` | Integer  | `%`  | `0:100`           | yes      | yes      | no       | Volume level |
+| Mute         | `mute`  | Enum     | --   | `on,off,disabled` | yes      | yes      | yes      | Mute state   |
+
+---
+
 #### Battery
 
 **ID:** `battery` | **Type:** `hc-smarthome/v2/cap/battery`
@@ -497,6 +567,9 @@ All config structs implement `Default` and `Deserialize` with
 | Vibration   | `VibrationNodeConfig`   | `vibration_strength`                                     |
 | Button      | `ButtonNodeConfig`      | `actions`                                                |
 | Powermeter  | `PowermeterNodeConfig`  | `current`, `voltage`, `frequency`, `consumption`         |
+| Mediaplayer | `MediaplayerNodeConfig` | `next`, `previous`, `forward`, `rewind`, `stop`, `shuffle`, `repeat` |
+| Media Info  | `MediaInfoNodeConfig`   | `subtitle`, `description`, `artwork`, `progress`, `length`, `seekable`, `metadata` |
+| Volume      | `VolumeNodeConfig`      | `mute`                                                   |
 | Battery     | `BatteryNodeConfig`     | `level`, `voltage`                                       |
 | Link        | `LinkNodeConfig`        | `signal`, `quality`, `last_seen`                         |
 

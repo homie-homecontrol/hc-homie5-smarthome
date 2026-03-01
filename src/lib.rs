@@ -7,6 +7,8 @@ pub mod contact_node;
 pub mod level_node;
 pub mod link_node;
 pub mod lock_node;
+pub mod media_info_node;
+pub mod mediaplayer_node;
 pub mod motion_node;
 pub mod orientation_node;
 pub mod powermeter_node;
@@ -17,6 +19,7 @@ pub mod thermostat_node;
 pub mod tilt_node;
 pub mod valve_node;
 pub mod vibration_node;
+pub mod volume_node;
 pub mod water_sensor_node;
 
 use std::{fmt, str::FromStr};
@@ -29,6 +32,8 @@ use contact_node::ContactNode;
 use level_node::{LevelNode, LevelNodeConfig};
 use link_node::{LinkNode, LinkNodeConfig};
 use lock_node::LockNodeConfig;
+use media_info_node::MediaInfoNodeConfig;
+use mediaplayer_node::MediaplayerNodeConfig;
 use motion_node::{MotionNode, MotionNodeConfig};
 use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
 use scene_node::SceneNodeConfig;
@@ -39,6 +44,7 @@ use thermostat_node::ThermostatNodeConfig;
 use tilt_node::TiltNode;
 use valve_node::ValveNodeConfig;
 use vibration_node::VibrationNodeConfig;
+use volume_node::VolumeNodeConfig;
 use water_sensor_node::WaterSensorNode;
 
 /// Helper macro to generate capability type strings (`hc-smarthome/v2/cap/<name>`)
@@ -86,6 +92,9 @@ pub const SMARTHOME_CAP_LOCK: &str = smarthome_cap!("lock");
 pub const SMARTHOME_CAP_VALVE: &str = smarthome_cap!("valve");
 pub const SMARTHOME_CAP_BATTERY: &str = smarthome_cap!("battery");
 pub const SMARTHOME_CAP_LINK: &str = smarthome_cap!("link");
+pub const SMARTHOME_CAP_MEDIAPLAYER: &str = smarthome_cap!("mediaplayer");
+pub const SMARTHOME_CAP_MEDIA_INFO: &str = smarthome_cap!("media-info");
+pub const SMARTHOME_CAP_VOLUME: &str = smarthome_cap!("volume");
 
 // ── Well-known device class constants ───────────────────────────────────────
 //
@@ -108,6 +117,7 @@ pub const DEVICE_CLASS_VALVE: &str = smarthome_dc!("valve");
 pub const DEVICE_CLASS_BUTTON: &str = smarthome_dc!("button");
 pub const DEVICE_CLASS_SIREN: &str = smarthome_dc!("siren");
 pub const DEVICE_CLASS_POWERMETER: &str = smarthome_dc!("powermeter");
+pub const DEVICE_CLASS_MEDIAPLAYER: &str = smarthome_dc!("mediaplayer");
 
 // ── Parse infrastructure ────────────────────────────────────────────────────
 
@@ -235,6 +245,9 @@ pub enum SmarthomeType {
     Valve,
     Battery,
     Link,
+    Mediaplayer,
+    MediaInfo,
+    Volume,
 }
 
 impl SmarthomeType {
@@ -260,6 +273,9 @@ impl SmarthomeType {
             SmarthomeType::Valve => SMARTHOME_CAP_VALVE,
             SmarthomeType::Battery => SMARTHOME_CAP_BATTERY,
             SmarthomeType::Link => SMARTHOME_CAP_LINK,
+            SmarthomeType::Mediaplayer => SMARTHOME_CAP_MEDIAPLAYER,
+            SmarthomeType::MediaInfo => SMARTHOME_CAP_MEDIA_INFO,
+            SmarthomeType::Volume => SMARTHOME_CAP_VOLUME,
         }
     }
 
@@ -285,6 +301,9 @@ impl SmarthomeType {
             SMARTHOME_CAP_VALVE => Some(SmarthomeType::Valve),
             SMARTHOME_CAP_BATTERY => Some(SmarthomeType::Battery),
             SMARTHOME_CAP_LINK => Some(SmarthomeType::Link),
+            SMARTHOME_CAP_MEDIAPLAYER => Some(SmarthomeType::Mediaplayer),
+            SMARTHOME_CAP_MEDIA_INFO => Some(SmarthomeType::MediaInfo),
+            SMARTHOME_CAP_VOLUME => Some(SmarthomeType::Volume),
             _ => None,
         }
     }
@@ -334,6 +353,8 @@ pub enum SmarthomeProperyConfig {
     Level(LevelNodeConfig),
     Link(LinkNodeConfig),
     Lock(LockNodeConfig),
+    MediaInfo(MediaInfoNodeConfig),
+    Mediaplayer(MediaplayerNodeConfig),
     Scene(SceneNodeConfig),
     Motion(MotionNodeConfig),
     Shutter(ShutterNodeConfig),
@@ -341,6 +362,7 @@ pub enum SmarthomeProperyConfig {
     Thermostat(ThermostatNodeConfig),
     Valve(ValveNodeConfig),
     Vibration(VibrationNodeConfig),
+    Volume(VolumeNodeConfig),
     Climate(ClimateNodeConfig),
     Powermeter(PowermeterNodeConfig),
 }
@@ -486,6 +508,18 @@ mod config_serde_default_tests {
         let valve: ValveNodeConfig =
             serde_json::from_str("{}").expect("valve config must deserialize");
         assert_eq!(valve, ValveNodeConfig::default());
+
+        let mediaplayer: MediaplayerNodeConfig =
+            serde_json::from_str("{}").expect("mediaplayer config must deserialize");
+        assert_eq!(mediaplayer, MediaplayerNodeConfig::default());
+
+        let media_info: MediaInfoNodeConfig =
+            serde_json::from_str("{}").expect("media-info config must deserialize");
+        assert_eq!(media_info, MediaInfoNodeConfig::default());
+
+        let volume: VolumeNodeConfig =
+            serde_json::from_str("{}").expect("volume config must deserialize");
+        assert_eq!(volume, VolumeNodeConfig::default());
     }
 
     #[test]
@@ -538,6 +572,9 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Valve,
             SmarthomeType::Battery,
             SmarthomeType::Link,
+            SmarthomeType::Mediaplayer,
+            SmarthomeType::MediaInfo,
+            SmarthomeType::Volume,
         ];
 
         for ty in types {
