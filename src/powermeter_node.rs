@@ -1,10 +1,10 @@
 use homie5::{
-    HOMIE_UNIT_HERTZ, HOMIE_UNIT_MILI_AMPERE, HOMIE_UNIT_VOLT, HOMIE_UNIT_WATT,
-    Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
         FloatRange, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
+    Homie5DeviceProtocol, HomieID, NodeRef, HOMIE_UNIT_HERTZ, HOMIE_UNIT_MILI_AMPERE,
+    HOMIE_UNIT_VOLT, HOMIE_UNIT_WATT,
 };
 use serde::{Deserialize, Serialize};
 
@@ -29,6 +29,7 @@ pub struct PowermeterNode {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct PowermeterNodeConfig {
     pub current: bool,
     pub voltage: bool,

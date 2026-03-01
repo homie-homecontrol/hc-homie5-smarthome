@@ -55,6 +55,7 @@ pub enum SwitchNodeSetEvents {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct SwitchNodeConfig {
     pub settable: bool,
 }

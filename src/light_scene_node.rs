@@ -21,6 +21,7 @@ pub enum LightSceneNodeActions {
 }
 
 #[derive(Debug, Default, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct LightSceneNodeConfig {
     pub scenes: Vec<String>,
     pub settable: bool,

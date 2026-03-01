@@ -217,6 +217,74 @@ mod parse_outcome_tests {
     }
 }
 
+#[cfg(test)]
+mod config_serde_default_tests {
+    use super::*;
+
+    #[test]
+    fn empty_object_deserializes_to_default_for_all_node_configs() {
+        let switch: SwitchNodeConfig = serde_json::from_str("{}").expect("switch config must deserialize");
+        assert_eq!(switch, SwitchNodeConfig::default());
+
+        let dimmer: DimmerNodeConfig = serde_json::from_str("{}").expect("dimmer config must deserialize");
+        assert_eq!(dimmer, DimmerNodeConfig::default());
+
+        let shutter: ShutterNodeConfig = serde_json::from_str("{}").expect("shutter config must deserialize");
+        assert_eq!(shutter, ShutterNodeConfig::default());
+
+        let colorlight: ColorlightNodeConfig = serde_json::from_str("{}").expect("colorlight config must deserialize");
+        assert_eq!(colorlight, ColorlightNodeConfig::default());
+
+        let light_scene: LightSceneNodeConfig = serde_json::from_str("{}").expect("light scene config must deserialize");
+        assert_eq!(light_scene, LightSceneNodeConfig::default());
+
+        let thermostat: ThermostatNodeConfig = serde_json::from_str("{}").expect("thermostat config must deserialize");
+        assert_eq!(thermostat, ThermostatNodeConfig::default());
+
+        let weather: WeatherNodeConfig = serde_json::from_str("{}").expect("weather config must deserialize");
+        assert_eq!(weather, WeatherNodeConfig::default());
+
+        let motion: MotionNodeConfig = serde_json::from_str("{}").expect("motion config must deserialize");
+        assert_eq!(motion, MotionNodeConfig::default());
+
+        let vibration: VibrationNodeConfig = serde_json::from_str("{}").expect("vibration config must deserialize");
+        assert_eq!(vibration, VibrationNodeConfig::default());
+
+        let maintenance: MaintenanceNodeConfig =
+            serde_json::from_str("{}").expect("maintenance config must deserialize");
+        assert_eq!(maintenance, MaintenanceNodeConfig::default());
+
+        let button: ButtonNodeConfig = serde_json::from_str("{}").expect("button config must deserialize");
+        assert_eq!(button, ButtonNodeConfig::default());
+
+        let powermeter: PowermeterNodeConfig = serde_json::from_str("{}").expect("powermeter config must deserialize");
+        assert_eq!(powermeter, PowermeterNodeConfig::default());
+    }
+
+    #[test]
+    fn partial_config_deserialization_keeps_defaults_for_missing_fields() {
+        let thermostat: ThermostatNodeConfig =
+            serde_json::from_str(r#"{"unit":"F"}"#).expect("thermostat partial config must deserialize");
+        assert_eq!(thermostat.unit, "F");
+
+        let expected_thermostat = ThermostatNodeConfig {
+            unit: "F".to_string(),
+            ..ThermostatNodeConfig::default()
+        };
+        assert_eq!(thermostat, expected_thermostat);
+
+        let light_scene: LightSceneNodeConfig =
+            serde_json::from_str(r#"{"scenes":["scene-a"]}"#).expect("light scene partial config must deserialize");
+        assert_eq!(
+            light_scene,
+            LightSceneNodeConfig {
+                scenes: vec!["scene-a".to_string()],
+                ..LightSceneNodeConfig::default()
+            }
+        );
+    }
+}
+
 /// SmarthomeType enum representing various smart home device types.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum SmarthomeType {

@@ -66,6 +66,7 @@ pub enum ShutterNodeSetEvents {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ShutterNodeConfig {
     pub can_stop: bool,
 }

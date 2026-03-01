@@ -119,6 +119,7 @@ pub enum ThermostatNodeSetEvents {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ThermostatNodeConfig {
     pub unit: String,
     pub valve: bool,

@@ -48,6 +48,7 @@ pub enum DimmerNodeSetEvents {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct DimmerNodeConfig {
     pub settable: bool,
 }

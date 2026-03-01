@@ -33,6 +33,7 @@ pub enum ColorlightNodeSetEvents {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ColorlightNodeConfig {
     pub settable: bool,
     pub color_formats: Vec<ColorFormat>,
