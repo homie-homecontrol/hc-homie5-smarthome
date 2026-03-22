@@ -4,8 +4,8 @@ use homie5::{
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
     PropertyRef,
     device_description::{
-        BooleanFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
-        NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -84,21 +84,18 @@ impl SwitchNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &SwitchNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             SWITCH_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("On/Off state")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "off".to_owned(),
-                    true_val: "on".to_owned(),
-                }))
+                .boolean_labels("off", "on")
                 .settable(config.settable)
                 .retained(true)
                 .build(),
         )
         .add_property(
             SWITCH_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(["toggle"])
+                .unwrap()
                 .name("Change state")
-                .format(HomiePropertyFormat::Enum(vec!["toggle".to_owned()]))
                 .settable(config.settable)
                 .retained(false)
                 .build(),

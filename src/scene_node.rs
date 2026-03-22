@@ -1,7 +1,7 @@
 use homie5::{
     Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
 };
@@ -47,9 +47,9 @@ impl SceneNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &SceneNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             SCENE_NODE_RECALL_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(config.scenes.clone())
+                .unwrap()
                 .name("Recall a scene")
-                .format(HomiePropertyFormat::Enum(config.scenes.clone()))
                 .settable(config.settable)
                 .retained(false)
                 .build(),

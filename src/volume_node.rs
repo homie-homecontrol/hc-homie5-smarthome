@@ -4,8 +4,8 @@ use homie5::{
     HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef,
     PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
-        NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, IntegerRange, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -74,27 +74,22 @@ impl VolumeNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &VolumeNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             VOLUME_NODE_LEVEL_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Volume level")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: Some(100),
                     step: None,
-                }))
+                })
                 .unit(HOMIE_UNIT_PERCENT)
                 .settable(true)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(VOLUME_NODE_MUTE_PROP_ID, config.mute, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(CONTROL_STATE_FORMAT)
+                .unwrap()
                 .name("Mute")
-                .format(HomiePropertyFormat::Enum(
-                    CONTROL_STATE_FORMAT
-                        .iter()
-                        .map(|s| (*s).to_owned())
-                        .collect(),
-                ))
                 .settable(true)
                 .retained(true)
                 .build()

@@ -1,8 +1,8 @@
 use homie5::{
     Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
-        BooleanFormat, FloatRange, HomieDeviceDescription, HomieNodeDescription,
-        HomiePropertyFormat, NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        FloatRange, HomieDeviceDescription, HomieNodeDescription, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -95,26 +95,23 @@ impl CameraNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &CameraNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             CAMERA_NODE_STREAM_URL_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+            PropertyDescriptionBuilder::string()
                 .name("Stream URL")
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(CAMERA_NODE_SNAPSHOT_URL_PROP_ID, config.snapshot, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+            PropertyDescriptionBuilder::string()
                 .name("Snapshot URL")
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(CAMERA_NODE_RECORDING_PROP_ID, config.recording, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Recording")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "stopped".to_owned(),
-                    true_val: "recording".to_owned(),
-                }))
+                .boolean_labels("stopped", "recording")
                 .settable(true)
                 .retained(true)
                 .build()
@@ -123,12 +120,9 @@ impl CameraNodeBuilder {
             CAMERA_NODE_MOTION_DETECTED_PROP_ID,
             config.motion_detected,
             || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+                PropertyDescriptionBuilder::boolean()
                     .name("Motion detected")
-                    .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                        false_val: "no motion".to_owned(),
-                        true_val: "motion detected".to_owned(),
-                    }))
+                    .boolean_labels("no motion", "motion detected")
                     .settable(false)
                     .retained(true)
                     .build()
@@ -138,7 +132,7 @@ impl CameraNodeBuilder {
             CAMERA_NODE_OBJECT_DETECTED_PROP_ID,
             config.object_detected,
             || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+                PropertyDescriptionBuilder::string()
                     .name("Object detected")
                     .settable(false)
                     .retained(true)
@@ -146,39 +140,39 @@ impl CameraNodeBuilder {
             },
         )
         .add_property_cond(CAMERA_NODE_PAN_PROP_ID, config.pan, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+            PropertyDescriptionBuilder::float()
                 .name("Pan angle")
                 .unit("°")
-                .format(HomiePropertyFormat::FloatRange(FloatRange {
+                .float_range(FloatRange {
                     min: Some(-180.0),
                     max: Some(180.0),
                     step: None,
-                }))
+                })
                 .settable(true)
                 .retained(true)
                 .build()
         })
         .add_property_cond(CAMERA_NODE_TILT_PROP_ID, config.tilt, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+            PropertyDescriptionBuilder::float()
                 .name("Tilt angle")
                 .unit("°")
-                .format(HomiePropertyFormat::FloatRange(FloatRange {
+                .float_range(FloatRange {
                     min: Some(-90.0),
                     max: Some(90.0),
                     step: None,
-                }))
+                })
                 .settable(true)
                 .retained(true)
                 .build()
         })
         .add_property_cond(CAMERA_NODE_ZOOM_PROP_ID, config.zoom, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+            PropertyDescriptionBuilder::float()
                 .name("Zoom level")
-                .format(HomiePropertyFormat::FloatRange(FloatRange {
+                .float_range(FloatRange {
                     min: Some(1.0),
                     max: Some(config.zoom_max),
                     step: None,
-                }))
+                })
                 .settable(true)
                 .retained(true)
                 .build()

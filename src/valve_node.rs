@@ -1,8 +1,8 @@
 use homie5::{
     Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
-        BooleanFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
-        NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -55,12 +55,9 @@ impl ValveNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &ValveNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             VALVE_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Valve state")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "closed".to_owned(),
-                    true_val: "open".to_owned(),
-                }))
+                .boolean_labels("closed", "open")
                 .settable(config.settable)
                 .retained(true)
                 .build(),

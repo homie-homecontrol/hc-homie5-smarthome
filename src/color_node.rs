@@ -2,8 +2,8 @@ use homie5::{
     Homie5DeviceProtocol, Homie5Message, HomieColorValue, HomieID, HomieValue, NodeRef,
     PropertyRef,
     device_description::{
-        ColorFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
-        IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        ColorFormat, HomieDeviceDescription, HomieNodeDescription, IntegerRange,
+        NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -68,22 +68,22 @@ impl ColorNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &ColorNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             COLOR_NODE_COLOR_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Color)
+            PropertyDescriptionBuilder::color(config.color_formats.clone())
+                .unwrap()
                 .name("Color")
-                .format(HomiePropertyFormat::Color(config.color_formats.clone()))
                 .settable(config.settable)
                 .retained(true)
                 .build(),
         )
         .add_property(
             COLOR_NODE_COLOR_TEMP_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Color temperature")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(config.ctmin),
                     max: Some(config.ctmax),
                     step: None,
-                }))
+                })
                 .settable(config.settable)
                 .retained(true)
                 .build(),

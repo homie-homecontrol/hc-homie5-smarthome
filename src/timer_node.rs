@@ -7,8 +7,8 @@ use homie5::{
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
     PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
-        NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, IntegerRange, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -170,75 +170,65 @@ impl TimerNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &TimerNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             TIMER_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(TimerState::ALL.iter().map(|s| s.as_str()))
+                .unwrap()
                 .name("Timer state")
-                .format(HomiePropertyFormat::Enum(
-                    TimerState::ALL
-                        .iter()
-                        .map(|s| s.as_str().to_owned())
-                        .collect(),
-                ))
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property(
             TIMER_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(TimerAction::ALL.iter().map(|a| a.as_str()))
+                .unwrap()
                 .name("Timer action")
-                .format(HomiePropertyFormat::Enum(
-                    TimerAction::ALL
-                        .iter()
-                        .map(|a| a.as_str().to_owned())
-                        .collect(),
-                ))
                 .settable(true)
                 .retained(false)
                 .build(),
         )
         .add_property(
             TIMER_NODE_DURATION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Duration")
                 .unit("s")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: None,
                     step: None,
-                }))
+                })
                 .settable(true)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(TIMER_NODE_LABEL_PROP_ID, config.label, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+            PropertyDescriptionBuilder::string()
                 .name("Label")
                 .settable(true)
                 .retained(true)
                 .build()
         })
         .add_property_cond(TIMER_NODE_REMAINING_PROP_ID, config.remaining, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Remaining time")
                 .unit("s")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: None,
                     step: None,
-                }))
+                })
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(TIMER_NODE_TRIGGER_TIME_PROP_ID, config.trigger_time, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Datetime)
+            PropertyDescriptionBuilder::datetime()
                 .name("Trigger time")
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(TIMER_NODE_CREATED_PROP_ID, config.created, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Datetime)
+            PropertyDescriptionBuilder::datetime()
                 .name("Created")
                 .settable(false)
                 .retained(true)

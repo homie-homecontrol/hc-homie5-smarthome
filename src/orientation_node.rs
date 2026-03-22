@@ -1,8 +1,6 @@
 use homie5::{
     HOMIE_UNIT_DEGREE, Homie5DeviceProtocol, HomieID, NodeRef,
-    device_description::{
-        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
-    },
+    device_description::{HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder},
 };
 
 use crate::SMARTHOME_CAP_ORIENTATION;
@@ -45,7 +43,7 @@ impl OrientationNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
             ORIENTATION_NODE_ORIENT_X_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Rotation X-Axis")
                 .retained(true)
                 .settable(false)
@@ -54,7 +52,7 @@ impl OrientationNodeBuilder {
         )
         .add_property(
             ORIENTATION_NODE_ORIENT_Y_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Rotation Y-Axis")
                 .retained(true)
                 .settable(false)
@@ -63,7 +61,7 @@ impl OrientationNodeBuilder {
         )
         .add_property(
             ORIENTATION_NODE_ORIENT_Z_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Rotation Z-Axis")
                 .retained(true)
                 .settable(false)
@@ -72,7 +70,7 @@ impl OrientationNodeBuilder {
         )
         .add_property(
             ORIENTATION_NODE_TILT_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Tilt angle")
                 .retained(true)
                 .settable(false)

@@ -1,8 +1,8 @@
 use homie5::{
     Homie5DeviceProtocol, Homie5Message, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
-        NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, IntegerRange, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -74,29 +74,29 @@ impl AlarmNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &AlarmNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             ALARM_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Alarm state")
                 .settable(true)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(ALARM_NODE_SOUND_PROP_ID, config.sound, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(config.sounds.iter().map(|s| s.as_str()))
+                .unwrap()
                 .name("Alarm sound")
-                .format(HomiePropertyFormat::Enum(config.sounds.clone()))
                 .settable(true)
                 .retained(true)
                 .build()
         })
         .add_property_cond(ALARM_NODE_DURATION_PROP_ID, config.duration, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Alarm duration")
                 .unit("s")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: None,
                     step: None,
-                }))
+                })
                 .settable(true)
                 .retained(true)
                 .build()

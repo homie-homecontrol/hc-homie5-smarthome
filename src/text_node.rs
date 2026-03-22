@@ -50,7 +50,7 @@ impl TextNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
             TEXT_NODE_TEXT_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+            PropertyDescriptionBuilder::string()
                 .name("Text content")
                 .settable(true)
                 .retained(true)

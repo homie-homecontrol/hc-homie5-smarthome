@@ -1,7 +1,7 @@
 use homie5::{
     HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        HomieNodeDescription, HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder,
+        HomieNodeDescription, IntegerRange, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
 };
@@ -61,20 +61,20 @@ impl BatteryNodeBuilder {
         config: &BatteryNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property_cond(BATTERY_NODE_LEVEL_PROP_ID, config.level, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Battery level")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: Some(100),
                     step: None,
-                }))
+                })
                 .unit(HOMIE_UNIT_PERCENT)
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(BATTERY_NODE_VOLTAGE_PROP_ID, config.voltage, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Battery voltage")
                 .unit("mV")
                 .settable(false)
