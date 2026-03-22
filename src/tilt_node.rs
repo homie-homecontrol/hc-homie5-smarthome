@@ -1,8 +1,7 @@
 use homie5::{
     Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 
@@ -39,12 +38,9 @@ impl TiltNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
             TILT_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Tilted state")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "not tilted".to_owned(),
-                    true_val: "tilted".to_owned(),
-                }))
+                .boolean_labels("not tilted", "tilted")
                 .settable(false)
                 .retained(true)
                 .build(),

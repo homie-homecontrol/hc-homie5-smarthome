@@ -2,8 +2,8 @@ use homie5::{
     HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_PERCENT, HOMIE_UNIT_SECONDS, Homie5DeviceProtocol,
     Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef, PropertyRef,
     device_description::{
-        BooleanFormat, FloatRange, HomieDeviceDescription, HomieNodeDescription,
-        HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        FloatRange, HomieDeviceDescription, HomieNodeDescription, IntegerRange,
+        NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -169,22 +169,22 @@ impl ThermostatNodeBuilder {
     ) -> NodeDescriptionBuilder {
         db.add_property(
             THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+            PropertyDescriptionBuilder::float()
                 .name("Set target temperature")
-                .format(HomiePropertyFormat::FloatRange(config.temp_range.clone()))
+                .float_range(config.temp_range.clone())
                 .unit(config.unit.to_owned())
                 .settable(true)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(THERMOSTAT_NODE_VALVE_PROP_ID, config.valve, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Valve opening Level")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: Some(100),
                     step: None,
-                }))
+                })
                 .unit(HOMIE_UNIT_PERCENT)
                 .settable(false)
                 .retained(true)
@@ -194,12 +194,9 @@ impl ThermostatNodeBuilder {
             THERMOSTAT_NODE_WINDOWOPEN_PROP_ID,
             config.windowopen,
             || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+                PropertyDescriptionBuilder::boolean()
                     .name("Window open detected")
-                    .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                        false_val: "closed".to_string(),
-                        true_val: "open".to_string(),
-                    }))
+                    .boolean_labels("closed", "open")
                     .settable(false)
                     .retained(true)
                     .build()
@@ -209,7 +206,7 @@ impl ThermostatNodeBuilder {
             THERMOSTAT_NODE_BOOST_STATE_PROP_ID,
             config.boost_state,
             || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+                PropertyDescriptionBuilder::boolean()
                     .name("Boost mode active")
                     .settable(true)
                     .retained(true)
@@ -220,13 +217,13 @@ impl ThermostatNodeBuilder {
             THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
             config.boost_time,
             || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+                PropertyDescriptionBuilder::integer()
                     .name("Seconds remaining for boost")
-                    .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                    .integer_range(IntegerRange {
                         min: Some(0),
                         max: None,
                         step: None,
-                    }))
+                    })
                     .unit(HOMIE_UNIT_SECONDS)
                     .settable(false)
                     .retained(false)
@@ -234,14 +231,14 @@ impl ThermostatNodeBuilder {
             },
         )
         .add_property_cond(THERMOSTAT_NODE_MODE_PROP_ID, config.mode, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Mode")
-                .format(HomiePropertyFormat::Enum(
-                    config.modes.iter().map(|m| m.into()).collect(),
-                ))
-                .settable(true)
-                .retained(true)
-                .build()
+            PropertyDescriptionBuilder::enumeration(
+                config.modes.iter().map(|m| <&str>::from(m)),
+            )
+            .unwrap()
+            .name("Mode")
+            .settable(true)
+            .retained(true)
+            .build()
         })
     }
 

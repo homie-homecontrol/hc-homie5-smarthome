@@ -3,8 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use homie5::{
     Homie5DeviceProtocol, Homie5ProtocolError, HomieID, NodeRef,
     device_description::{
-        HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -99,14 +98,14 @@ impl ButtonNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &ButtonNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             BUTTON_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Button action event")
-                .format(HomiePropertyFormat::Enum(
-                    config.actions.iter().map(|a| a.to_string()).collect(),
-                ))
-                .settable(false)
-                .retained(false)
-                .build(),
+            PropertyDescriptionBuilder::enumeration(
+                config.actions.iter().map(|a| a.to_string()).collect::<Vec<_>>(),
+            )
+            .unwrap()
+            .name("Button action event")
+            .settable(false)
+            .retained(false)
+            .build(),
         )
     }
 

@@ -63,7 +63,7 @@ impl ClimateNodeBuilder {
         config: &ClimateNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property_cond(CLIMATE_NODE_TEMP_PROP_ID, config.temperature, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+            PropertyDescriptionBuilder::float()
                 .name("Current temperature")
                 .retained(true)
                 .settable(false)
@@ -71,7 +71,7 @@ impl ClimateNodeBuilder {
                 .build()
         })
         .add_property_cond(CLIMATE_NODE_HUM_PROP_ID, config.humidity, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Current humidity")
                 .retained(true)
                 .settable(false)
@@ -79,7 +79,7 @@ impl ClimateNodeBuilder {
                 .build()
         })
         .add_property_cond(CLIMATE_NODE_PRES_PROP_ID, config.pressure, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Float)
+            PropertyDescriptionBuilder::float()
                 .name("Current pressure")
                 .retained(true)
                 .settable(false)

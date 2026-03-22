@@ -4,8 +4,8 @@ use homie5::{
     HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
     HomieValue, NodeRef, PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
-        NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, IntegerRange, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -104,13 +104,13 @@ impl ShutterNodeBuilder {
 
         db.add_property(
             SHUTTER_NODE_POSITION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Shutter position")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: Some(100),
                     step: None,
-                }))
+                })
                 .unit(HOMIE_UNIT_PERCENT)
                 .settable(true)
                 .retained(true)
@@ -118,14 +118,14 @@ impl ShutterNodeBuilder {
         )
         .add_property(
             SHUTTER_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Control Shutter")
-                .format(HomiePropertyFormat::Enum(
-                    actions.iter().map(|a| a.to_string()).collect(),
-                ))
-                .settable(true)
-                .retained(false)
-                .build(),
+            PropertyDescriptionBuilder::enumeration(
+                actions.iter().map(|a| a.to_string()),
+            )
+            .unwrap()
+            .name("Control Shutter")
+            .settable(true)
+            .retained(false)
+            .build(),
         )
     }
 

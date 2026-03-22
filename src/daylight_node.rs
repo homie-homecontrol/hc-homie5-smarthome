@@ -5,8 +5,7 @@ use chrono::prelude::*;
 use homie5::{
     Homie5DeviceProtocol, HomieID, HomieValue, NodeRef,
     device_description::{
-        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -104,31 +103,25 @@ impl DaylightNodeBuilder {
     ) -> NodeDescriptionBuilder {
         db.add_property(
             DAYLIGHT_NODE_DAYLIGHT_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Daylight")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "night".to_owned(),
-                    true_val: "day".to_owned(),
-                }))
+                .boolean_labels("night", "day")
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property(
             DAYLIGHT_NODE_DARK_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Dark")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "light".to_owned(),
-                    true_val: "dark".to_owned(),
-                }))
+                .boolean_labels("light", "dark")
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property(
             DAYLIGHT_NODE_SUNRISE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Datetime)
+            PropertyDescriptionBuilder::datetime()
                 .name("Sunrise")
                 .settable(false)
                 .retained(true)
@@ -136,24 +129,21 @@ impl DaylightNodeBuilder {
         )
         .add_property(
             DAYLIGHT_NODE_SUNSET_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Datetime)
+            PropertyDescriptionBuilder::datetime()
                 .name("Sunset")
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(DAYLIGHT_NODE_PHASE_PROP_ID, config.phase, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
-                .name("Daylight phase")
-                .format(HomiePropertyFormat::Enum(
-                    DaylightPhase::ALL
-                        .iter()
-                        .map(|p| p.as_str().to_owned())
-                        .collect(),
-                ))
-                .settable(false)
-                .retained(true)
-                .build()
+            PropertyDescriptionBuilder::enumeration(
+                DaylightPhase::ALL.iter().map(|p| p.as_str()),
+            )
+            .unwrap()
+            .name("Daylight phase")
+            .settable(false)
+            .retained(true)
+            .build()
         })
     }
 

@@ -5,7 +5,7 @@ use homie5::{
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
     PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
 };
@@ -227,48 +227,34 @@ impl MediaplayerNodeBuilder {
     ) -> NodeDescriptionBuilder {
         db.add_property(
             MEDIAPLAYER_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(config.build_action_format())
+                .unwrap()
                 .name("Player action")
-                .format(HomiePropertyFormat::Enum(config.build_action_format()))
                 .settable(true)
                 .retained(false)
                 .build(),
         )
         .add_property(
             MEDIAPLAYER_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(["playing", "paused", "stopped"])
+                .unwrap()
                 .name("Play state")
-                .format(HomiePropertyFormat::Enum(vec![
-                    "playing".to_owned(),
-                    "paused".to_owned(),
-                    "stopped".to_owned(),
-                ]))
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(MEDIAPLAYER_NODE_SHUFFLE_PROP_ID, config.shuffle, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(CONTROL_STATE_FORMAT)
+                .unwrap()
                 .name("Shuffle mode")
-                .format(HomiePropertyFormat::Enum(
-                    CONTROL_STATE_FORMAT
-                        .iter()
-                        .map(|s| (*s).to_owned())
-                        .collect(),
-                ))
                 .settable(true)
                 .retained(true)
                 .build()
         })
         .add_property_cond(MEDIAPLAYER_NODE_REPEAT_PROP_ID, config.repeat, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(CONTROL_STATE_FORMAT)
+                .unwrap()
                 .name("Repeat mode")
-                .format(HomiePropertyFormat::Enum(
-                    CONTROL_STATE_FORMAT
-                        .iter()
-                        .map(|s| (*s).to_owned())
-                        .collect(),
-                ))
                 .settable(true)
                 .retained(true)
                 .build()

@@ -3,8 +3,7 @@ use chrono::prelude::*;
 use homie5::{
     Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        HomieNodeDescription, HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -64,7 +63,7 @@ impl LinkNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &LinkNodeConfig) -> NodeDescriptionBuilder {
         db.add_property_cond(LINK_NODE_SIGNAL_PROP_ID, config.signal, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Signal strength")
                 .unit("dBm")
                 .settable(false)
@@ -72,19 +71,19 @@ impl LinkNodeBuilder {
                 .build()
         })
         .add_property_cond(LINK_NODE_QUALITY_PROP_ID, config.quality, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Link quality")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: Some(255),
                     step: None,
-                }))
+                })
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(LINK_NODE_LAST_SEEN_PROP_ID, config.last_seen, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Datetime)
+            PropertyDescriptionBuilder::datetime()
                 .name("Last seen")
                 .settable(false)
                 .retained(true)

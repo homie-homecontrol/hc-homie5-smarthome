@@ -5,8 +5,8 @@ use homie5::{
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
     PropertyRef,
     device_description::{
-        BooleanFormat, HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat,
-        NodeDescriptionBuilder, PropertyDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, NodeDescriptionBuilder,
+        PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -96,25 +96,18 @@ impl LockNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &LockNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             LOCK_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Lock state")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "unlocked".to_owned(),
-                    true_val: "locked".to_owned(),
-                }))
+                .boolean_labels("unlocked", "locked")
                 .settable(config.settable)
                 .retained(true)
                 .build(),
         )
         .add_property(
             LOCK_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(["lock", "unlock", "toggle"])
+                .unwrap()
                 .name("Lock action")
-                .format(HomiePropertyFormat::Enum(vec![
-                    "lock".to_owned(),
-                    "unlock".to_owned(),
-                    "toggle".to_owned(),
-                ]))
                 .settable(config.settable)
                 .retained(false)
                 .build(),

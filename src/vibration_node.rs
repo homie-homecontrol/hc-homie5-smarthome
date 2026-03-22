@@ -1,8 +1,7 @@
 use homie5::{
     Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -57,12 +56,9 @@ impl VibrationNodeBuilder {
     ) -> NodeDescriptionBuilder {
         db.add_property(
             VIBRATION_NODE_VIBRATION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Vibration detected")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "no-vibration".to_owned(),
-                    true_val: "vibration".to_owned(),
-                }))
+                .boolean_labels("no-vibration", "vibration")
                 .retained(true)
                 .settable(false)
                 .build(),
@@ -71,7 +67,7 @@ impl VibrationNodeBuilder {
             VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID,
             config.vibration_strength,
             || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+                PropertyDescriptionBuilder::integer()
                     .name("Vibration strength")
                     .retained(true)
                     .settable(false)

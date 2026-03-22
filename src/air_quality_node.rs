@@ -1,8 +1,7 @@
 use homie5::{
     Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        HomieNodeDescription, HomiePropertyFormat, IntegerRange, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -75,65 +74,65 @@ impl AirQualityNodeBuilder {
         config: &AirQualityNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property_cond(AIR_QUALITY_NODE_CO2_PROP_ID, config.co2, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("CO₂")
                 .unit("ppm")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: None,
                     step: None,
-                }))
+                })
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(AIR_QUALITY_NODE_VOC_PROP_ID, config.voc, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("VOC")
                 .unit("ppb")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: None,
                     step: None,
-                }))
+                })
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(AIR_QUALITY_NODE_PM25_PROP_ID, config.pm25, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("PM2.5")
                 .unit("µg/m³")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: None,
                     step: None,
-                }))
+                })
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(AIR_QUALITY_NODE_PM10_PROP_ID, config.pm10, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("PM10")
                 .unit("µg/m³")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: None,
                     step: None,
-                }))
+                })
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(AIR_QUALITY_NODE_AQI_PROP_ID, config.aqi, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Air quality index")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: Some(500),
                     step: None,
-                }))
+                })
                 .settable(false)
                 .retained(true)
                 .build()

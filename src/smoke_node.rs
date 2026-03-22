@@ -1,8 +1,7 @@
 use homie5::{
     Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 
@@ -43,12 +42,9 @@ impl SmokeNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
             SMOKE_NODE_DETECTED_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Smoke detected")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "no smoke".to_owned(),
-                    true_val: "smoke detected".to_owned(),
-                }))
+                .boolean_labels("no smoke", "smoke detected")
                 .settable(false)
                 .retained(true)
                 .build(),

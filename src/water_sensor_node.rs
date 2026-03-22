@@ -1,8 +1,7 @@
 use homie5::{
     Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        BooleanFormat, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 
@@ -40,12 +39,9 @@ impl WaterSensorNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
             WATER_SENSOR_NODE_DETECTED_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Water detection")
-                .format(HomiePropertyFormat::Boolean(BooleanFormat {
-                    false_val: "no water".to_owned(),
-                    true_val: "water detected".to_owned(),
-                }))
+                .boolean_labels("no water", "water detected")
                 .settable(false)
                 .retained(true)
                 .build(),

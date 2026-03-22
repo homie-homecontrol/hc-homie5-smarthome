@@ -43,7 +43,7 @@ impl IlluminanceNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
             ILLUMINANCE_NODE_ILLUMINANCE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Illuminance")
                 .unit(HOMIE_UNIT_LUX)
                 .settable(false)

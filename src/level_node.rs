@@ -4,7 +4,7 @@ use homie5::{
     HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID,
     HomieValue, NodeRef, PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, IntegerRange,
+        HomieDeviceDescription, HomieNodeDescription, IntegerRange,
         NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
@@ -81,25 +81,22 @@ impl LevelNodeBuilder {
     fn build_node(db: NodeDescriptionBuilder, config: &LevelNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
             LEVEL_NODE_VALUE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Level")
-                .format(HomiePropertyFormat::IntegerRange(IntegerRange {
+                .integer_range(IntegerRange {
                     min: Some(0),
                     max: Some(100),
                     step: None,
-                }))
+                })
                 .unit(HOMIE_UNIT_PERCENT)
                 .settable(config.settable)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(LEVEL_NODE_ACTION_PROP_ID, config.step_action, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(["step-up", "step-down"])
+                .unwrap()
                 .name("Step level")
-                .format(HomiePropertyFormat::Enum(vec![
-                    "step-up".to_owned(),
-                    "step-down".to_owned(),
-                ]))
                 .settable(config.settable)
                 .retained(false)
                 .build()

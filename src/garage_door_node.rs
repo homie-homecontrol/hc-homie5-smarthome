@@ -5,7 +5,7 @@ use homie5::{
     Homie5DeviceProtocol, Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef,
     PropertyRef,
     device_description::{
-        HomieDeviceDescription, HomieNodeDescription, HomiePropertyFormat, NodeDescriptionBuilder,
+        HomieDeviceDescription, HomieNodeDescription, NodeDescriptionBuilder,
         PropertyDescriptionBuilder,
     },
 };
@@ -195,18 +195,18 @@ impl GarageDoorNodeBuilder {
     ) -> NodeDescriptionBuilder {
         db.add_property(
             GARAGE_DOOR_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(config.build_state_format().iter().map(|s| s.as_str()))
+                .unwrap()
                 .name("Garage door state")
-                .format(HomiePropertyFormat::Enum(config.build_state_format()))
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property(
             GARAGE_DOOR_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Enum)
+            PropertyDescriptionBuilder::enumeration(config.build_action_format().iter().map(|s| s.as_str()))
+                .unwrap()
                 .name("Garage door action")
-                .format(HomiePropertyFormat::Enum(config.build_action_format()))
                 .settable(config.settable)
                 .retained(false)
                 .build(),

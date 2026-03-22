@@ -93,14 +93,14 @@ impl MediaInfoNodeBuilder {
     ) -> NodeDescriptionBuilder {
         db.add_property(
             MEDIA_INFO_NODE_TITLE_PROP_ID,
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+            PropertyDescriptionBuilder::string()
                 .name("Title")
                 .settable(false)
                 .retained(true)
                 .build(),
         )
         .add_property_cond(MEDIA_INFO_NODE_SUBTITLE_PROP_ID, config.subtitle, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+            PropertyDescriptionBuilder::string()
                 .name("Subtitle")
                 .settable(false)
                 .retained(true)
@@ -110,7 +110,7 @@ impl MediaInfoNodeBuilder {
             MEDIA_INFO_NODE_DESCRIPTION_PROP_ID,
             config.description,
             || {
-                PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+                PropertyDescriptionBuilder::string()
                     .name("Description")
                     .settable(false)
                     .retained(true)
@@ -118,14 +118,14 @@ impl MediaInfoNodeBuilder {
             },
         )
         .add_property_cond(MEDIA_INFO_NODE_ARTWORK_PROP_ID, config.artwork, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::String)
+            PropertyDescriptionBuilder::string()
                 .name("Artwork URL")
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(MEDIA_INFO_NODE_PROGRESS_PROP_ID, config.progress, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Progress")
                 .unit("s")
                 .settable(true)
@@ -133,7 +133,7 @@ impl MediaInfoNodeBuilder {
                 .build()
         })
         .add_property_cond(MEDIA_INFO_NODE_LENGTH_PROP_ID, config.length, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Integer)
+            PropertyDescriptionBuilder::integer()
                 .name("Length")
                 .unit("s")
                 .settable(false)
@@ -141,14 +141,14 @@ impl MediaInfoNodeBuilder {
                 .build()
         })
         .add_property_cond(MEDIA_INFO_NODE_SEEKABLE_PROP_ID, config.seekable, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::Boolean)
+            PropertyDescriptionBuilder::boolean()
                 .name("Seekable")
                 .settable(false)
                 .retained(true)
                 .build()
         })
         .add_property_cond(MEDIA_INFO_NODE_METADATA_PROP_ID, config.metadata, || {
-            PropertyDescriptionBuilder::new(homie5::HomieDataType::JSON)
+            PropertyDescriptionBuilder::json()
                 .name("Metadata")
                 .settable(false)
                 .retained(true)
