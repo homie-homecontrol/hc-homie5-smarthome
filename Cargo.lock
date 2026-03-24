@@ -355,7 +355,7 @@ checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
 
 [[package]]
 name = "hc-homie5-smarthome"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bytes",
  "chrono",
@@ -371,9 +371,9 @@ dependencies = [
 
 [[package]]
 name = "homie5"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2227962db7ae1cb5c247b6fa82cb759633d7c45974c596919243c9b72698709c"
+checksum = "c4b680accbe54b39fe9799a47783ab833294ec9ca1b603d36e91eb6430c7d61f"
 dependencies = [
  "chrono",
  "log",
