@@ -83,6 +83,7 @@ document are to be interpreted as described in
 | Orientation | `orientation`  | `hc-smarthome/v2/cap/orientation`  | Sensor         | 3-axis orientation and tilt angle             |
 | Daylight    | `daylight`     | `hc-smarthome/v2/cap/daylight`     | Sensor         | Daylight/dark state, sunrise/sunset, phase    |
 | Air Quality | `air-quality`  | `hc-smarthome/v2/cap/air-quality`  | Sensor         | CO₂, VOC, PM2.5, PM10, AQI                   |
+| BBQ Probe   | `bbq-probe`    | `hc-smarthome/v2/cap/bbq-probe`    | Sensor         | BBQ/food temperature probe with thresholds    |
 | Button      | `button`       | `hc-smarthome/v2/cap/button`       | Infrastructure | Physical button press events                  |
 | Powermeter  | `powermeter`   | `hc-smarthome/v2/cap/powermeter`   | Infrastructure | Electrical power metering                     |
 | Camera      | `camera`       | `hc-smarthome/v2/cap/camera`       | Infrastructure | Video stream, snapshots, PTZ, detection       |
@@ -125,6 +126,7 @@ document are to be interpreted as described in
 | Vibration Sensor | `hc-smarthome/v2/dc/vibration-sensor` | `vibration` | --                                  | Vibration sensor                 |
 | Tilt Sensor    | `hc-smarthome/v2/dc/tilt-sensor`    | `tilt`       | --                                     | Tilt sensor                      |
 | Camera         | `hc-smarthome/v2/dc/camera`         | `camera`     | --                                     | IP camera                        |
+| BBQ Thermometer | `hc-smarthome/v2/dc/bbq-thermometer` | `bbq-probe` (1+) | --                                | BBQ/food thermometer             |
 
 Any device class MAY additionally expose `battery` and/or `link` capability
 nodes. These are optional for all device classes and provide device health
@@ -525,6 +527,37 @@ Binary tilt detection. Read-only.
 | Rotation Y-Axis | `orientation-y` | Integer  | `°`  | --     | no       | yes      | no       | Y axis rotation angle |
 | Rotation Z-Axis | `orientation-z` | Integer  | `°`  | --     | no       | yes      | no       | Z axis rotation angle |
 | Tilt angle      | `tilt`          | Integer  | `°`  | --     | no       | yes      | no       | Tilt angle            |
+
+---
+
+#### BBQ Probe
+
+**ID:** `bbq-probe` | **Type:** `hc-smarthome/v2/cap/bbq-probe`
+
+A single independently addressable BBQ/food temperature probe. A multi-channel
+thermometer publishes one `bbq-probe` node per channel. `temperature` and
+`connected` are mandatory; all other properties are config-gated with
+independently configurable settability. All temperatures on one node use the
+same configured unit and numeric range (default `°C`, `-40..400`).
+
+A disconnected probe (`connected=false`) keeps its last valid retained
+temperature -- producers MUST NOT publish a fabricated reading. Threshold
+comparisons are inclusive: `temperature <= low-threshold` is `low`,
+`temperature >= high-threshold` is `high`. A disconnected probe reports
+`threshold-state=unavailable`.
+
+| Property        | ID                | Datatype | Unit  | Format                             | Settable | Retained | Optional | Description                       |
+| --------------- | ----------------- | -------- | ----- | ---------------------------------- | -------- | -------- | -------- | --------------------------------- |
+| Temperature     | `temperature`     | Float    | conf. | configured range                   | no       | yes      | no       | Last valid probe temperature      |
+| Connected       | `connected`       | Boolean  | --    | `false="disconnected"`, `true="connected"` | no | yes  | no       | Probe reading currently valid     |
+| Low threshold   | `low-threshold`   | Float    | conf. | configured range                   | conf.    | yes      | yes      | Inclusive lower alarm boundary    |
+| High threshold  | `high-threshold`  | Float    | conf. | configured range                   | conf.    | yes      | yes      | Inclusive upper alarm boundary    |
+| Threshold state | `threshold-state` | Enum     | --    | `low,normal,high,unavailable`      | no       | yes      | yes      | Derived threshold state           |
+| Role            | `role`            | Enum     | --    | conf. (default `pit,food,ambient,other`) | conf. | yes    | yes      | Probe purpose                     |
+| Label           | `label`           | String   | --    | --                                 | conf.    | yes      | yes      | Runtime-changeable probe label    |
+| Alarm mode      | `alarm-mode`      | Enum     | --    | producer-configured variants       | conf.    | yes      | yes      | Device alarm delivery mode        |
+| Color           | `color`           | Color    | --    | `rgb`                              | conf.    | yes      | yes      | User-selected probe color         |
+| Sensor type     | `sensor-type`     | Enum     | --    | producer-configured variants       | conf.    | yes      | yes      | Human-readable native probe type  |
 
 ---
 
