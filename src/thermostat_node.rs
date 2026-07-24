@@ -231,14 +231,12 @@ impl ThermostatNodeBuilder {
             },
         )
         .add_property_cond(THERMOSTAT_NODE_MODE_PROP_ID, config.mode, || {
-            PropertyDescriptionBuilder::enumeration(
-                config.modes.iter().map(|m| <&str>::from(m)),
-            )
-            .unwrap()
-            .name("Mode")
-            .settable(true)
-            .retained(true)
-            .build()
+            PropertyDescriptionBuilder::enumeration(config.modes.iter().map(|m| <&str>::from(m)))
+                .unwrap()
+                .name("Mode")
+                .settable(true)
+                .retained(true)
+                .build()
         })
     }
 

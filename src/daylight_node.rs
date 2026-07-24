@@ -136,14 +136,12 @@ impl DaylightNodeBuilder {
                 .build(),
         )
         .add_property_cond(DAYLIGHT_NODE_PHASE_PROP_ID, config.phase, || {
-            PropertyDescriptionBuilder::enumeration(
-                DaylightPhase::ALL.iter().map(|p| p.as_str()),
-            )
-            .unwrap()
-            .name("Daylight phase")
-            .settable(false)
-            .retained(true)
-            .build()
+            PropertyDescriptionBuilder::enumeration(DaylightPhase::ALL.iter().map(|p| p.as_str()))
+                .unwrap()
+                .name("Daylight phase")
+                .settable(false)
+                .retained(true)
+                .build()
         })
     }
 
