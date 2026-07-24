@@ -2,6 +2,7 @@ pub mod air_quality_node;
 pub mod alarm_node;
 pub mod alerts;
 pub mod battery_node;
+pub mod bbq_probe_node;
 pub mod button_node;
 pub mod camera_node;
 pub mod climate_node;
@@ -37,6 +38,7 @@ use std::{fmt, str::FromStr};
 use air_quality_node::{AirQualityNode, AirQualityNodeConfig};
 use alarm_node::{AlarmNode, AlarmNodeConfig};
 use battery_node::{BatteryNode, BatteryNodeConfig};
+use bbq_probe_node::{BbqProbeNode, BbqProbeNodeConfig};
 use button_node::ButtonNodeConfig;
 use camera_node::{CameraNode, CameraNodeConfig};
 use climate_node::{ClimateNode, ClimateNodeConfig};
@@ -112,6 +114,7 @@ pub const SMARTHOME_CAP_POWERMETER: &str = smarthome_cap!("powermeter");
 pub const SMARTHOME_CAP_LOCK: &str = smarthome_cap!("lock");
 pub const SMARTHOME_CAP_VALVE: &str = smarthome_cap!("valve");
 pub const SMARTHOME_CAP_BATTERY: &str = smarthome_cap!("battery");
+pub const SMARTHOME_CAP_BBQ_PROBE: &str = smarthome_cap!("bbq-probe");
 pub const SMARTHOME_CAP_LINK: &str = smarthome_cap!("link");
 pub const SMARTHOME_CAP_MEDIAPLAYER: &str = smarthome_cap!("mediaplayer");
 pub const SMARTHOME_CAP_MEDIA_INFO: &str = smarthome_cap!("media-info");
@@ -155,6 +158,7 @@ pub const DEVICE_CLASS_GARAGE_DOOR: &str = smarthome_dc!("garage-door");
 pub const DEVICE_CLASS_DOORBELL: &str = smarthome_dc!("doorbell");
 pub const DEVICE_CLASS_VIBRATION_SENSOR: &str = smarthome_dc!("vibration-sensor");
 pub const DEVICE_CLASS_TILT_SENSOR: &str = smarthome_dc!("tilt-sensor");
+pub const DEVICE_CLASS_BBQ_THERMOMETER: &str = smarthome_dc!("bbq-thermometer");
 pub const DEVICE_CLASS_CAMERA: &str = smarthome_dc!("camera");
 
 // ── Parse infrastructure ────────────────────────────────────────────────────
@@ -282,6 +286,7 @@ pub enum SmarthomeType {
     Lock,
     Valve,
     Battery,
+    BbqProbe,
     Link,
     Mediaplayer,
     MediaInfo,
@@ -320,6 +325,7 @@ impl SmarthomeType {
             SmarthomeType::Lock => SMARTHOME_CAP_LOCK,
             SmarthomeType::Valve => SMARTHOME_CAP_VALVE,
             SmarthomeType::Battery => SMARTHOME_CAP_BATTERY,
+            SmarthomeType::BbqProbe => SMARTHOME_CAP_BBQ_PROBE,
             SmarthomeType::Link => SMARTHOME_CAP_LINK,
             SmarthomeType::Mediaplayer => SMARTHOME_CAP_MEDIAPLAYER,
             SmarthomeType::MediaInfo => SMARTHOME_CAP_MEDIA_INFO,
@@ -358,6 +364,7 @@ impl SmarthomeType {
             SMARTHOME_CAP_LOCK => Some(SmarthomeType::Lock),
             SMARTHOME_CAP_VALVE => Some(SmarthomeType::Valve),
             SMARTHOME_CAP_BATTERY => Some(SmarthomeType::Battery),
+            SMARTHOME_CAP_BBQ_PROBE => Some(SmarthomeType::BbqProbe),
             SMARTHOME_CAP_LINK => Some(SmarthomeType::Link),
             SMARTHOME_CAP_MEDIAPLAYER => Some(SmarthomeType::Mediaplayer),
             SMARTHOME_CAP_MEDIA_INFO => Some(SmarthomeType::MediaInfo),
@@ -418,6 +425,7 @@ pub enum SmarthomeProperyConfig {
     AirQuality(AirQualityNodeConfig),
     Alarm(AlarmNodeConfig),
     Battery(BatteryNodeConfig),
+    BbqProbe(BbqProbeNodeConfig),
     Button(ButtonNodeConfig),
     Camera(CameraNodeConfig),
     Climate(ClimateNodeConfig),
@@ -440,11 +448,15 @@ pub enum SmarthomeProperyConfig {
     Volume(VolumeNodeConfig),
 }
 
+/// Convenience union of all capability node state structs for heterogeneous
+/// storage. Variant sizes intentionally differ with capability complexity.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum SmarthomeNode {
     AirQualityNode(AirQualityNode),
     AlarmNode(AlarmNode),
     BatteryNode(BatteryNode),
+    BbqProbeNode(BbqProbeNode),
     CameraNode(CameraNode),
     ClimateNode(ClimateNode),
     CoNode(CoNode),
@@ -576,6 +588,10 @@ mod config_serde_default_tests {
             serde_json::from_str("{}").expect("battery config must deserialize");
         assert_eq!(battery, BatteryNodeConfig::default());
 
+        let bbq_probe: BbqProbeNodeConfig =
+            serde_json::from_str("{}").expect("bbq-probe config must deserialize");
+        assert_eq!(bbq_probe, BbqProbeNodeConfig::default());
+
         let link: LinkNodeConfig =
             serde_json::from_str("{}").expect("link config must deserialize");
         assert_eq!(link, LinkNodeConfig::default());
@@ -682,6 +698,7 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Lock,
             SmarthomeType::Valve,
             SmarthomeType::Battery,
+            SmarthomeType::BbqProbe,
             SmarthomeType::Link,
             SmarthomeType::Mediaplayer,
             SmarthomeType::MediaInfo,
