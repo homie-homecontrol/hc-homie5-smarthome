@@ -118,14 +118,12 @@ impl ShutterNodeBuilder {
         )
         .add_property(
             SHUTTER_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::enumeration(
-                actions.iter().map(|a| a.to_string()),
-            )
-            .unwrap()
-            .name("Control Shutter")
-            .settable(true)
-            .retained(false)
-            .build(),
+            PropertyDescriptionBuilder::enumeration(actions.iter().map(|a| a.to_string()))
+                .unwrap()
+                .name("Control Shutter")
+                .settable(true)
+                .retained(false)
+                .build(),
         )
     }
 

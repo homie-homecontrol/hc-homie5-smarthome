@@ -99,7 +99,11 @@ impl ButtonNodeBuilder {
         db.add_property(
             BUTTON_NODE_ACTION_PROP_ID,
             PropertyDescriptionBuilder::enumeration(
-                config.actions.iter().map(|a| a.to_string()).collect::<Vec<_>>(),
+                config
+                    .actions
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<_>>(),
             )
             .unwrap()
             .name("Button action event")

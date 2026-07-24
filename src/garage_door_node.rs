@@ -195,21 +195,25 @@ impl GarageDoorNodeBuilder {
     ) -> NodeDescriptionBuilder {
         db.add_property(
             GARAGE_DOOR_NODE_STATE_PROP_ID,
-            PropertyDescriptionBuilder::enumeration(config.build_state_format().iter().map(|s| s.as_str()))
-                .unwrap()
-                .name("Garage door state")
-                .settable(false)
-                .retained(true)
-                .build(),
+            PropertyDescriptionBuilder::enumeration(
+                config.build_state_format().iter().map(|s| s.as_str()),
+            )
+            .unwrap()
+            .name("Garage door state")
+            .settable(false)
+            .retained(true)
+            .build(),
         )
         .add_property(
             GARAGE_DOOR_NODE_ACTION_PROP_ID,
-            PropertyDescriptionBuilder::enumeration(config.build_action_format().iter().map(|s| s.as_str()))
-                .unwrap()
-                .name("Garage door action")
-                .settable(config.settable)
-                .retained(false)
-                .build(),
+            PropertyDescriptionBuilder::enumeration(
+                config.build_action_format().iter().map(|s| s.as_str()),
+            )
+            .unwrap()
+            .name("Garage door action")
+            .settable(config.settable)
+            .retained(false)
+            .build(),
         )
     }
 

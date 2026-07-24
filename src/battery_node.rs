@@ -1,8 +1,7 @@
 use homie5::{
     HOMIE_UNIT_PERCENT, Homie5DeviceProtocol, HomieID, NodeRef,
     device_description::{
-        HomieNodeDescription, IntegerRange, NodeDescriptionBuilder,
-        PropertyDescriptionBuilder,
+        HomieNodeDescription, IntegerRange, NodeDescriptionBuilder, PropertyDescriptionBuilder,
     },
 };
 use serde::{Deserialize, Serialize};
