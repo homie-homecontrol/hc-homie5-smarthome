@@ -1,6 +1,6 @@
 [package]
 name = "hc-homie5-smarthome"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2024"
 publish = true
 description = "Homie Homecontrol base library offering sane defaults for smarthome device nodes like switches, sensors,..."
@@ -26,4 +26,4 @@ bytes = "1.5"
 [dependencies]
 chrono = "0.4"
 serde = "1.0"
-homie5 = { version = "0.11" }
+homie5 = { version = "0.12" }

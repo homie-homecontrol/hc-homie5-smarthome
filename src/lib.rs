@@ -1073,21 +1073,13 @@ mod tests {
                 ClientEvent::Mqtt(event) => match &event {
                     rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(ca)) => {
                         println!("Connected! Publishing Device: {:#?}", ca);
-                        let _ = publish(
-                            &mqtt_client,
-                            client.publish_state_for_id(&id, HomieDeviceStatus::Init),
-                        )
-                        .await;
-                        let _ = publish(
-                            &mqtt_client,
-                            client.publish_description_for_id(&id, &desc).unwrap(),
-                        )
-                        .await;
-                        let _ = subscribe(
-                            &mqtt_client,
-                            client.subscribe_props_for_id(&id, &desc).unwrap(),
-                        )
-                        .await;
+                        let _ =
+                            publish(&mqtt_client, client.publish_state(HomieDeviceStatus::Init))
+                                .await;
+                        let _ =
+                            publish(&mqtt_client, client.publish_description(&desc).unwrap()).await;
+                        let _ =
+                            subscribe(&mqtt_client, client.subscribe_props(&desc).unwrap()).await;
                         if let Some(p) = battery_node_publisher.level(100) {
                             let _ = publish(&mqtt_client, p).await;
                         }
@@ -1114,11 +1106,9 @@ mod tests {
                             publish(&mqtt_client, climate_node_publisher.temperature(12.4)).await;
                         let _ = publish(&mqtt_client, climate_node_publisher.humidity(64)).await;
 
-                        let _ = publish(
-                            &mqtt_client,
-                            client.publish_state_for_id(&id, HomieDeviceStatus::Ready),
-                        )
-                        .await;
+                        let _ =
+                            publish(&mqtt_client, client.publish_state(HomieDeviceStatus::Ready))
+                                .await;
                     }
                     rumqttc::Event::Incoming(rumqttc::Packet::Publish(p)) => {
                         println!("MQTT Publish: {:#?}", p);
