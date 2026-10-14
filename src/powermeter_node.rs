@@ -7,15 +7,36 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_CAP_POWERMETER;
+use crate::{PropSpec, SMARTHOME_CAP_POWERMETER};
 
 pub const POWERMETER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("powermeter");
 pub const POWERMETER_NODE_DEFAULT_NAME: &str = "Powermeter";
-pub const POWERMETER_NODE_POWER_PROP_ID: HomieID = HomieID::new_const("power");
-pub const POWERMETER_NODE_CURRENT_PROP_ID: HomieID = HomieID::new_const("current");
-pub const POWERMETER_NODE_VOLTAGE_PROP_ID: HomieID = HomieID::new_const("voltage");
-pub const POWERMETER_NODE_FREQUENCY_PROP_ID: HomieID = HomieID::new_const("frequency");
-pub const POWERMETER_NODE_CONSUMPTION_PROP_ID: HomieID = HomieID::new_const("consumption");
+
+pub const POWERMETER_NODE_POWER_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("power"),
+    retained: true,
+    settable: false,
+};
+pub const POWERMETER_NODE_CURRENT_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("current"),
+    retained: true,
+    settable: false,
+};
+pub const POWERMETER_NODE_VOLTAGE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("voltage"),
+    retained: true,
+    settable: false,
+};
+pub const POWERMETER_NODE_FREQUENCY_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("frequency"),
+    retained: true,
+    settable: false,
+};
+pub const POWERMETER_NODE_CONSUMPTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("consumption"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct PowermeterNode {
@@ -78,7 +99,7 @@ impl PowermeterNodeBuilder {
         config: &PowermeterNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            POWERMETER_NODE_POWER_PROP_ID,
+            POWERMETER_NODE_POWER_PROP.id,
             PropertyDescriptionBuilder::float()
                 .name("Power")
                 .unit(HOMIE_UNIT_WATT)
@@ -87,11 +108,11 @@ impl PowermeterNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(POWERMETER_NODE_POWER_PROP.settable)
+                .retained(POWERMETER_NODE_POWER_PROP.retained)
                 .build(),
         )
-        .add_property_cond(POWERMETER_NODE_CURRENT_PROP_ID, config.current, || {
+        .add_property_cond(POWERMETER_NODE_CURRENT_PROP.id, config.current, || {
             PropertyDescriptionBuilder::float()
                 .name("Current")
                 .unit(HOMIE_UNIT_MILI_AMPERE)
@@ -100,11 +121,11 @@ impl PowermeterNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(POWERMETER_NODE_CURRENT_PROP.settable)
+                .retained(POWERMETER_NODE_CURRENT_PROP.retained)
                 .build()
         })
-        .add_property_cond(POWERMETER_NODE_VOLTAGE_PROP_ID, config.voltage, || {
+        .add_property_cond(POWERMETER_NODE_VOLTAGE_PROP.id, config.voltage, || {
             PropertyDescriptionBuilder::float()
                 .name("Voltage")
                 .unit(HOMIE_UNIT_VOLT)
@@ -113,11 +134,11 @@ impl PowermeterNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(POWERMETER_NODE_VOLTAGE_PROP.settable)
+                .retained(POWERMETER_NODE_VOLTAGE_PROP.retained)
                 .build()
         })
-        .add_property_cond(POWERMETER_NODE_FREQUENCY_PROP_ID, config.frequency, || {
+        .add_property_cond(POWERMETER_NODE_FREQUENCY_PROP.id, config.frequency, || {
             PropertyDescriptionBuilder::float()
                 .name("Frequency")
                 .unit(HOMIE_UNIT_HERTZ)
@@ -126,12 +147,12 @@ impl PowermeterNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(POWERMETER_NODE_FREQUENCY_PROP.settable)
+                .retained(POWERMETER_NODE_FREQUENCY_PROP.retained)
                 .build()
         })
         .add_property_cond(
-            POWERMETER_NODE_CONSUMPTION_PROP_ID,
+            POWERMETER_NODE_CONSUMPTION_PROP.id,
             config.consumption,
             || {
                 PropertyDescriptionBuilder::float()
@@ -142,8 +163,8 @@ impl PowermeterNodeBuilder {
                         max: None,
                         step: None,
                     })
-                    .settable(false)
-                    .retained(true)
+                    .settable(POWERMETER_NODE_CONSUMPTION_PROP.settable)
+                    .retained(POWERMETER_NODE_CONSUMPTION_PROP.retained)
                     .build()
             },
         )
@@ -181,64 +202,51 @@ impl PowermeterNodeBuilder {
 pub struct PowermeterNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    power_prop: HomieID,
-    current_prop: HomieID,
-    voltage_prop: HomieID,
-    frequency_prop: HomieID,
-    consumption_prop: HomieID,
 }
 
 impl PowermeterNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            power_prop: POWERMETER_NODE_POWER_PROP_ID,
-            current_prop: POWERMETER_NODE_CURRENT_PROP_ID,
-            voltage_prop: POWERMETER_NODE_VOLTAGE_PROP_ID,
-            frequency_prop: POWERMETER_NODE_FREQUENCY_PROP_ID,
-            consumption_prop: POWERMETER_NODE_CONSUMPTION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn power(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.power_prop,
+            &POWERMETER_NODE_POWER_PROP.id,
             value.to_string(),
-            true,
+            POWERMETER_NODE_POWER_PROP.retained,
         )
     }
     pub fn current(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.current_prop,
+            &POWERMETER_NODE_CURRENT_PROP.id,
             value.to_string(),
-            true,
+            POWERMETER_NODE_CURRENT_PROP.retained,
         )
     }
     pub fn voltage(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.voltage_prop,
+            &POWERMETER_NODE_VOLTAGE_PROP.id,
             value.to_string(),
-            true,
+            POWERMETER_NODE_VOLTAGE_PROP.retained,
         )
     }
     pub fn frequency(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.frequency_prop,
+            &POWERMETER_NODE_FREQUENCY_PROP.id,
             value.to_string(),
-            true,
+            POWERMETER_NODE_FREQUENCY_PROP.retained,
         )
     }
     pub fn consumption(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.consumption_prop,
+            &POWERMETER_NODE_CONSUMPTION_PROP.id,
             value.to_string(),
-            true,
+            POWERMETER_NODE_CONSUMPTION_PROP.retained,
         )
     }
 }

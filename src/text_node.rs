@@ -6,11 +6,18 @@ use homie5::{
     },
 };
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_TEXT, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_TEXT, SetCommandParser,
+};
 
 pub const TEXT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("text");
 pub const TEXT_NODE_DEFAULT_NAME: &str = "Text";
-pub const TEXT_NODE_TEXT_PROP_ID: HomieID = HomieID::new_const("text");
+
+pub const TEXT_NODE_TEXT_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("text"),
+    retained: true,
+    settable: true,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -49,11 +56,11 @@ impl TextNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            TEXT_NODE_TEXT_PROP_ID,
+            TEXT_NODE_TEXT_PROP.id,
             PropertyDescriptionBuilder::string()
                 .name("Text content")
-                .settable(true)
-                .retained(true)
+                .settable(TEXT_NODE_TEXT_PROP.settable)
+                .retained(TEXT_NODE_TEXT_PROP.retained)
                 .build(),
         )
     }
@@ -92,21 +99,20 @@ impl TextNodeBuilder {
 pub struct TextNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    text_prop: HomieID,
 }
 
 impl TextNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            text_prop: TEXT_NODE_TEXT_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn text(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.text_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &TEXT_NODE_TEXT_PROP.id,
+            value,
+            TEXT_NODE_TEXT_PROP.retained,
+        )
     }
 }
 
@@ -121,7 +127,7 @@ impl SetCommandParser for TextNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.text_prop) {
+        if property.match_with_node(&self.node, &TEXT_NODE_TEXT_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -158,7 +164,7 @@ impl SetCommandParser for TextNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.text_prop.to_string(),
+                TEXT_NODE_TEXT_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

@@ -6,15 +6,36 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_CAP_AIR_QUALITY;
+use crate::{PropSpec, SMARTHOME_CAP_AIR_QUALITY};
 
 pub const AIR_QUALITY_NODE_DEFAULT_ID: HomieID = HomieID::new_const("air-quality");
 pub const AIR_QUALITY_NODE_DEFAULT_NAME: &str = "Air quality";
-pub const AIR_QUALITY_NODE_CO2_PROP_ID: HomieID = HomieID::new_const("co2");
-pub const AIR_QUALITY_NODE_VOC_PROP_ID: HomieID = HomieID::new_const("voc");
-pub const AIR_QUALITY_NODE_PM25_PROP_ID: HomieID = HomieID::new_const("pm25");
-pub const AIR_QUALITY_NODE_PM10_PROP_ID: HomieID = HomieID::new_const("pm10");
-pub const AIR_QUALITY_NODE_AQI_PROP_ID: HomieID = HomieID::new_const("aqi");
+
+pub const AIR_QUALITY_NODE_CO2_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("co2"),
+    retained: true,
+    settable: false,
+};
+pub const AIR_QUALITY_NODE_VOC_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("voc"),
+    retained: true,
+    settable: false,
+};
+pub const AIR_QUALITY_NODE_PM25_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("pm25"),
+    retained: true,
+    settable: false,
+};
+pub const AIR_QUALITY_NODE_PM10_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("pm10"),
+    retained: true,
+    settable: false,
+};
+pub const AIR_QUALITY_NODE_AQI_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("aqi"),
+    retained: true,
+    settable: false,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -73,7 +94,7 @@ impl AirQualityNodeBuilder {
         db: NodeDescriptionBuilder,
         config: &AirQualityNodeConfig,
     ) -> NodeDescriptionBuilder {
-        db.add_property_cond(AIR_QUALITY_NODE_CO2_PROP_ID, config.co2, || {
+        db.add_property_cond(AIR_QUALITY_NODE_CO2_PROP.id, config.co2, || {
             PropertyDescriptionBuilder::integer()
                 .name("CO₂")
                 .unit("ppm")
@@ -82,11 +103,11 @@ impl AirQualityNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(AIR_QUALITY_NODE_CO2_PROP.settable)
+                .retained(AIR_QUALITY_NODE_CO2_PROP.retained)
                 .build()
         })
-        .add_property_cond(AIR_QUALITY_NODE_VOC_PROP_ID, config.voc, || {
+        .add_property_cond(AIR_QUALITY_NODE_VOC_PROP.id, config.voc, || {
             PropertyDescriptionBuilder::integer()
                 .name("VOC")
                 .unit("ppb")
@@ -95,11 +116,11 @@ impl AirQualityNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(AIR_QUALITY_NODE_VOC_PROP.settable)
+                .retained(AIR_QUALITY_NODE_VOC_PROP.retained)
                 .build()
         })
-        .add_property_cond(AIR_QUALITY_NODE_PM25_PROP_ID, config.pm25, || {
+        .add_property_cond(AIR_QUALITY_NODE_PM25_PROP.id, config.pm25, || {
             PropertyDescriptionBuilder::integer()
                 .name("PM2.5")
                 .unit("µg/m³")
@@ -108,11 +129,11 @@ impl AirQualityNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(AIR_QUALITY_NODE_PM25_PROP.settable)
+                .retained(AIR_QUALITY_NODE_PM25_PROP.retained)
                 .build()
         })
-        .add_property_cond(AIR_QUALITY_NODE_PM10_PROP_ID, config.pm10, || {
+        .add_property_cond(AIR_QUALITY_NODE_PM10_PROP.id, config.pm10, || {
             PropertyDescriptionBuilder::integer()
                 .name("PM10")
                 .unit("µg/m³")
@@ -121,11 +142,11 @@ impl AirQualityNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(AIR_QUALITY_NODE_PM10_PROP.settable)
+                .retained(AIR_QUALITY_NODE_PM10_PROP.retained)
                 .build()
         })
-        .add_property_cond(AIR_QUALITY_NODE_AQI_PROP_ID, config.aqi, || {
+        .add_property_cond(AIR_QUALITY_NODE_AQI_PROP.id, config.aqi, || {
             PropertyDescriptionBuilder::integer()
                 .name("Air quality index")
                 .integer_range(IntegerRange {
@@ -133,8 +154,8 @@ impl AirQualityNodeBuilder {
                     max: Some(500),
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(AIR_QUALITY_NODE_AQI_PROP.settable)
+                .retained(AIR_QUALITY_NODE_AQI_PROP.retained)
                 .build()
         })
     }
@@ -173,56 +194,55 @@ impl AirQualityNodeBuilder {
 pub struct AirQualityNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    co2_prop: HomieID,
-    voc_prop: HomieID,
-    pm25_prop: HomieID,
-    pm10_prop: HomieID,
-    aqi_prop: HomieID,
 }
 
 impl AirQualityNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            co2_prop: AIR_QUALITY_NODE_CO2_PROP_ID,
-            voc_prop: AIR_QUALITY_NODE_VOC_PROP_ID,
-            pm25_prop: AIR_QUALITY_NODE_PM25_PROP_ID,
-            pm10_prop: AIR_QUALITY_NODE_PM10_PROP_ID,
-            aqi_prop: AIR_QUALITY_NODE_AQI_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn co2(&self, value: i64) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.co2_prop, value.to_string(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &AIR_QUALITY_NODE_CO2_PROP.id,
+            value.to_string(),
+            AIR_QUALITY_NODE_CO2_PROP.retained,
+        )
     }
 
     pub fn voc(&self, value: i64) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.voc_prop, value.to_string(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &AIR_QUALITY_NODE_VOC_PROP.id,
+            value.to_string(),
+            AIR_QUALITY_NODE_VOC_PROP.retained,
+        )
     }
 
     pub fn pm25(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.pm25_prop,
+            &AIR_QUALITY_NODE_PM25_PROP.id,
             value.to_string(),
-            true,
+            AIR_QUALITY_NODE_PM25_PROP.retained,
         )
     }
 
     pub fn pm10(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.pm10_prop,
+            &AIR_QUALITY_NODE_PM10_PROP.id,
             value.to_string(),
-            true,
+            AIR_QUALITY_NODE_PM10_PROP.retained,
         )
     }
 
     pub fn aqi(&self, value: i64) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.aqi_prop, value.to_string(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &AIR_QUALITY_NODE_AQI_PROP.id,
+            value.to_string(),
+            AIR_QUALITY_NODE_AQI_PROP.retained,
+        )
     }
 }

@@ -8,13 +8,26 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_CAP_LINK;
+use crate::{PropSpec, SMARTHOME_CAP_LINK};
 
 pub const LINK_NODE_DEFAULT_ID: HomieID = HomieID::new_const("link");
 pub const LINK_NODE_DEFAULT_NAME: &str = "Link quality";
-pub const LINK_NODE_SIGNAL_PROP_ID: HomieID = HomieID::new_const("signal");
-pub const LINK_NODE_QUALITY_PROP_ID: HomieID = HomieID::new_const("quality");
-pub const LINK_NODE_LAST_SEEN_PROP_ID: HomieID = HomieID::new_const("last-seen");
+
+pub const LINK_NODE_SIGNAL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("signal"),
+    retained: true,
+    settable: false,
+};
+pub const LINK_NODE_QUALITY_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("quality"),
+    retained: true,
+    settable: false,
+};
+pub const LINK_NODE_LAST_SEEN_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("last-seen"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct LinkNode {
@@ -62,15 +75,15 @@ impl LinkNodeBuilder {
     }
 
     fn build_node(db: NodeDescriptionBuilder, config: &LinkNodeConfig) -> NodeDescriptionBuilder {
-        db.add_property_cond(LINK_NODE_SIGNAL_PROP_ID, config.signal, || {
+        db.add_property_cond(LINK_NODE_SIGNAL_PROP.id, config.signal, || {
             PropertyDescriptionBuilder::integer()
                 .name("Signal strength")
                 .unit("dBm")
-                .settable(false)
-                .retained(true)
+                .settable(LINK_NODE_SIGNAL_PROP.settable)
+                .retained(LINK_NODE_SIGNAL_PROP.retained)
                 .build()
         })
-        .add_property_cond(LINK_NODE_QUALITY_PROP_ID, config.quality, || {
+        .add_property_cond(LINK_NODE_QUALITY_PROP.id, config.quality, || {
             PropertyDescriptionBuilder::integer()
                 .name("Link quality")
                 .integer_range(IntegerRange {
@@ -78,15 +91,15 @@ impl LinkNodeBuilder {
                     max: Some(255),
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(LINK_NODE_QUALITY_PROP.settable)
+                .retained(LINK_NODE_QUALITY_PROP.retained)
                 .build()
         })
-        .add_property_cond(LINK_NODE_LAST_SEEN_PROP_ID, config.last_seen, || {
+        .add_property_cond(LINK_NODE_LAST_SEEN_PROP.id, config.last_seen, || {
             PropertyDescriptionBuilder::datetime()
                 .name("Last seen")
-                .settable(false)
-                .retained(true)
+                .settable(LINK_NODE_LAST_SEEN_PROP.settable)
+                .retained(LINK_NODE_LAST_SEEN_PROP.retained)
                 .build()
         })
     }
@@ -125,9 +138,6 @@ pub struct LinkNodePublisher {
     client: Homie5DeviceProtocol,
     config: LinkNodeConfig,
     node: NodeRef,
-    signal_prop: HomieID,
-    quality_prop: HomieID,
-    last_seen_prop: HomieID,
 }
 
 impl LinkNodePublisher {
@@ -136,9 +146,6 @@ impl LinkNodePublisher {
             node,
             client,
             config,
-            signal_prop: LINK_NODE_SIGNAL_PROP_ID,
-            quality_prop: LINK_NODE_QUALITY_PROP_ID,
-            last_seen_prop: LINK_NODE_LAST_SEEN_PROP_ID,
         }
     }
 
@@ -148,9 +155,9 @@ impl LinkNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.signal_prop,
+            &LINK_NODE_SIGNAL_PROP.id,
             value.to_string(),
-            true,
+            LINK_NODE_SIGNAL_PROP.retained,
         ))
     }
 
@@ -160,9 +167,9 @@ impl LinkNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.quality_prop,
+            &LINK_NODE_QUALITY_PROP.id,
             value.to_string(),
-            true,
+            LINK_NODE_QUALITY_PROP.retained,
         ))
     }
 
@@ -172,9 +179,9 @@ impl LinkNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.last_seen_prop,
+            &LINK_NODE_LAST_SEEN_PROP.id,
             value.to_rfc3339_opts(SecondsFormat::Millis, true),
-            true,
+            LINK_NODE_LAST_SEEN_PROP.retained,
         ))
     }
 }

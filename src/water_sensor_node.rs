@@ -5,11 +5,16 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_WATER_SENSOR;
+use crate::{PropSpec, SMARTHOME_CAP_WATER_SENSOR};
 
 pub const WATER_SENSOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("water");
 pub const WATER_SENSOR_NODE_DEFAULT_NAME: &str = "Water sensor";
-pub const WATER_SENSOR_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
+
+pub const WATER_SENSOR_NODE_DETECTED_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("detected"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct WaterSensorNode {
@@ -38,12 +43,12 @@ impl WaterSensorNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            WATER_SENSOR_NODE_DETECTED_PROP_ID,
+            WATER_SENSOR_NODE_DETECTED_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Water detection")
                 .boolean_labels("no water", "water detected")
-                .settable(false)
-                .retained(true)
+                .settable(WATER_SENSOR_NODE_DETECTED_PROP.settable)
+                .retained(WATER_SENSOR_NODE_DETECTED_PROP.retained)
                 .build(),
         )
     }
@@ -80,24 +85,19 @@ impl WaterSensorNodeBuilder {
 pub struct WaterSensorNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    detected_prop: HomieID,
 }
 
 impl WaterSensorNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            detected_prop: WATER_SENSOR_NODE_DETECTED_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn detected(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.detected_prop,
+            &WATER_SENSOR_NODE_DETECTED_PROP.id,
             value.to_string(),
-            true,
+            WATER_SENSOR_NODE_DETECTED_PROP.retained,
         )
     }
 }

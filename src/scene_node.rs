@@ -7,11 +7,18 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SCENE, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_SCENE, SetCommandParser,
+};
 
 pub const SCENE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("scene");
 pub const SCENE_NODE_DEFAULT_NAME: &str = "Scene recall";
-pub const SCENE_NODE_RECALL_PROP_ID: HomieID = HomieID::new_const("recall");
+
+pub const SCENE_NODE_RECALL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("recall"),
+    retained: false,
+    settable: true,
+};
 
 #[derive(Debug)]
 pub enum SceneNodeActions {
@@ -46,12 +53,12 @@ impl SceneNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &SceneNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            SCENE_NODE_RECALL_PROP_ID,
+            SCENE_NODE_RECALL_PROP.id,
             PropertyDescriptionBuilder::enumeration(config.scenes.clone())
                 .unwrap()
                 .name("Recall a scene")
-                .settable(config.settable)
-                .retained(false)
+                .settable(SCENE_NODE_RECALL_PROP.settable && config.settable)
+                .retained(SCENE_NODE_RECALL_PROP.retained)
                 .build(),
         )
     }
@@ -89,7 +96,6 @@ impl SceneNodeBuilder {
 pub struct SceneNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    recall_prop: HomieID,
     config: SceneNodeConfig,
 }
 
@@ -99,7 +105,6 @@ impl SceneNodePublisher {
             node,
             config,
             client,
-            recall_prop: SCENE_NODE_RECALL_PROP_ID,
         }
     }
 
@@ -108,10 +113,12 @@ impl SceneNodePublisher {
         SceneNodeActions::Recall(scene): &SceneNodeActions,
     ) -> Option<homie5::client::Publish> {
         if self.config.scenes.contains(scene) {
-            Some(
-                self.client
-                    .publish_value(self.node.node_id(), &self.recall_prop, scene, false),
-            )
+            Some(self.client.publish_value(
+                self.node.node_id(),
+                &SCENE_NODE_RECALL_PROP.id,
+                scene,
+                SCENE_NODE_RECALL_PROP.retained,
+            ))
         } else {
             None
         }
@@ -127,7 +134,7 @@ impl SetCommandParser for SceneNodePublisher {
         desc: &HomieDeviceDescription,
         set_value: &str,
     ) -> ParseOutcome<Self::Event> {
-        if property.match_with_node(&self.node, &self.recall_prop) {
+        if property.match_with_node(&self.node, &SCENE_NODE_RECALL_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -164,7 +171,7 @@ impl SetCommandParser for SceneNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.recall_prop.to_string(),
+                SCENE_NODE_RECALL_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

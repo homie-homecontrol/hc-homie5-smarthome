@@ -7,18 +7,53 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_MEDIA_INFO, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_MEDIA_INFO, SetCommandParser,
+};
 
 pub const MEDIA_INFO_NODE_DEFAULT_ID: HomieID = HomieID::new_const("media-info");
 pub const MEDIA_INFO_NODE_DEFAULT_NAME: &str = "Media information";
-pub const MEDIA_INFO_NODE_TITLE_PROP_ID: HomieID = HomieID::new_const("title");
-pub const MEDIA_INFO_NODE_SUBTITLE_PROP_ID: HomieID = HomieID::new_const("subtitle");
-pub const MEDIA_INFO_NODE_DESCRIPTION_PROP_ID: HomieID = HomieID::new_const("description");
-pub const MEDIA_INFO_NODE_ARTWORK_PROP_ID: HomieID = HomieID::new_const("artwork");
-pub const MEDIA_INFO_NODE_PROGRESS_PROP_ID: HomieID = HomieID::new_const("progress");
-pub const MEDIA_INFO_NODE_LENGTH_PROP_ID: HomieID = HomieID::new_const("length");
-pub const MEDIA_INFO_NODE_SEEKABLE_PROP_ID: HomieID = HomieID::new_const("seekable");
-pub const MEDIA_INFO_NODE_METADATA_PROP_ID: HomieID = HomieID::new_const("metadata");
+
+pub const MEDIA_INFO_NODE_TITLE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("title"),
+    retained: true,
+    settable: false,
+};
+pub const MEDIA_INFO_NODE_SUBTITLE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("subtitle"),
+    retained: true,
+    settable: false,
+};
+pub const MEDIA_INFO_NODE_DESCRIPTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("description"),
+    retained: true,
+    settable: false,
+};
+pub const MEDIA_INFO_NODE_ARTWORK_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("artwork"),
+    retained: true,
+    settable: false,
+};
+pub const MEDIA_INFO_NODE_PROGRESS_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("progress"),
+    retained: true,
+    settable: true,
+};
+pub const MEDIA_INFO_NODE_LENGTH_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("length"),
+    retained: true,
+    settable: false,
+};
+pub const MEDIA_INFO_NODE_SEEKABLE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("seekable"),
+    retained: true,
+    settable: false,
+};
+pub const MEDIA_INFO_NODE_METADATA_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("metadata"),
+    retained: true,
+    settable: false,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -92,66 +127,66 @@ impl MediaInfoNodeBuilder {
         config: &MediaInfoNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            MEDIA_INFO_NODE_TITLE_PROP_ID,
+            MEDIA_INFO_NODE_TITLE_PROP.id,
             PropertyDescriptionBuilder::string()
                 .name("Title")
-                .settable(false)
-                .retained(true)
+                .settable(MEDIA_INFO_NODE_TITLE_PROP.settable)
+                .retained(MEDIA_INFO_NODE_TITLE_PROP.retained)
                 .build(),
         )
-        .add_property_cond(MEDIA_INFO_NODE_SUBTITLE_PROP_ID, config.subtitle, || {
+        .add_property_cond(MEDIA_INFO_NODE_SUBTITLE_PROP.id, config.subtitle, || {
             PropertyDescriptionBuilder::string()
                 .name("Subtitle")
-                .settable(false)
-                .retained(true)
+                .settable(MEDIA_INFO_NODE_SUBTITLE_PROP.settable)
+                .retained(MEDIA_INFO_NODE_SUBTITLE_PROP.retained)
                 .build()
         })
         .add_property_cond(
-            MEDIA_INFO_NODE_DESCRIPTION_PROP_ID,
+            MEDIA_INFO_NODE_DESCRIPTION_PROP.id,
             config.description,
             || {
                 PropertyDescriptionBuilder::string()
                     .name("Description")
-                    .settable(false)
-                    .retained(true)
+                    .settable(MEDIA_INFO_NODE_DESCRIPTION_PROP.settable)
+                    .retained(MEDIA_INFO_NODE_DESCRIPTION_PROP.retained)
                     .build()
             },
         )
-        .add_property_cond(MEDIA_INFO_NODE_ARTWORK_PROP_ID, config.artwork, || {
+        .add_property_cond(MEDIA_INFO_NODE_ARTWORK_PROP.id, config.artwork, || {
             PropertyDescriptionBuilder::string()
                 .name("Artwork URL")
-                .settable(false)
-                .retained(true)
+                .settable(MEDIA_INFO_NODE_ARTWORK_PROP.settable)
+                .retained(MEDIA_INFO_NODE_ARTWORK_PROP.retained)
                 .build()
         })
-        .add_property_cond(MEDIA_INFO_NODE_PROGRESS_PROP_ID, config.progress, || {
+        .add_property_cond(MEDIA_INFO_NODE_PROGRESS_PROP.id, config.progress, || {
             PropertyDescriptionBuilder::integer()
                 .name("Progress")
                 .unit("s")
-                .settable(true)
-                .retained(true)
+                .settable(MEDIA_INFO_NODE_PROGRESS_PROP.settable)
+                .retained(MEDIA_INFO_NODE_PROGRESS_PROP.retained)
                 .build()
         })
-        .add_property_cond(MEDIA_INFO_NODE_LENGTH_PROP_ID, config.length, || {
+        .add_property_cond(MEDIA_INFO_NODE_LENGTH_PROP.id, config.length, || {
             PropertyDescriptionBuilder::integer()
                 .name("Length")
                 .unit("s")
-                .settable(false)
-                .retained(true)
+                .settable(MEDIA_INFO_NODE_LENGTH_PROP.settable)
+                .retained(MEDIA_INFO_NODE_LENGTH_PROP.retained)
                 .build()
         })
-        .add_property_cond(MEDIA_INFO_NODE_SEEKABLE_PROP_ID, config.seekable, || {
+        .add_property_cond(MEDIA_INFO_NODE_SEEKABLE_PROP.id, config.seekable, || {
             PropertyDescriptionBuilder::boolean()
                 .name("Seekable")
-                .settable(false)
-                .retained(true)
+                .settable(MEDIA_INFO_NODE_SEEKABLE_PROP.settable)
+                .retained(MEDIA_INFO_NODE_SEEKABLE_PROP.retained)
                 .build()
         })
-        .add_property_cond(MEDIA_INFO_NODE_METADATA_PROP_ID, config.metadata, || {
+        .add_property_cond(MEDIA_INFO_NODE_METADATA_PROP.id, config.metadata, || {
             PropertyDescriptionBuilder::json()
                 .name("Metadata")
-                .settable(false)
-                .retained(true)
+                .settable(MEDIA_INFO_NODE_METADATA_PROP.settable)
+                .retained(MEDIA_INFO_NODE_METADATA_PROP.retained)
                 .build()
         })
     }
@@ -190,82 +225,83 @@ impl MediaInfoNodeBuilder {
 pub struct MediaInfoNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    title_prop: HomieID,
-    subtitle_prop: HomieID,
-    description_prop: HomieID,
-    artwork_prop: HomieID,
-    progress_prop: HomieID,
-    length_prop: HomieID,
-    seekable_prop: HomieID,
-    metadata_prop: HomieID,
 }
 
 impl MediaInfoNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            title_prop: MEDIA_INFO_NODE_TITLE_PROP_ID,
-            subtitle_prop: MEDIA_INFO_NODE_SUBTITLE_PROP_ID,
-            description_prop: MEDIA_INFO_NODE_DESCRIPTION_PROP_ID,
-            artwork_prop: MEDIA_INFO_NODE_ARTWORK_PROP_ID,
-            progress_prop: MEDIA_INFO_NODE_PROGRESS_PROP_ID,
-            length_prop: MEDIA_INFO_NODE_LENGTH_PROP_ID,
-            seekable_prop: MEDIA_INFO_NODE_SEEKABLE_PROP_ID,
-            metadata_prop: MEDIA_INFO_NODE_METADATA_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn title(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.title_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &MEDIA_INFO_NODE_TITLE_PROP.id,
+            value,
+            MEDIA_INFO_NODE_TITLE_PROP.retained,
+        )
     }
 
     pub fn subtitle(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.subtitle_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &MEDIA_INFO_NODE_SUBTITLE_PROP.id,
+            value,
+            MEDIA_INFO_NODE_SUBTITLE_PROP.retained,
+        )
     }
 
     pub fn description(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.description_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &MEDIA_INFO_NODE_DESCRIPTION_PROP.id,
+            value,
+            MEDIA_INFO_NODE_DESCRIPTION_PROP.retained,
+        )
     }
 
     pub fn artwork(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.artwork_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &MEDIA_INFO_NODE_ARTWORK_PROP.id,
+            value,
+            MEDIA_INFO_NODE_ARTWORK_PROP.retained,
+        )
     }
 
     pub fn progress(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.progress_prop,
+            &MEDIA_INFO_NODE_PROGRESS_PROP.id,
             value.to_string(),
-            true,
+            MEDIA_INFO_NODE_PROGRESS_PROP.retained,
         )
     }
 
     pub fn length(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.length_prop,
+            &MEDIA_INFO_NODE_LENGTH_PROP.id,
             value.to_string(),
-            true,
+            MEDIA_INFO_NODE_LENGTH_PROP.retained,
         )
     }
 
     pub fn seekable(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.seekable_prop,
+            &MEDIA_INFO_NODE_SEEKABLE_PROP.id,
             value.to_string(),
-            true,
+            MEDIA_INFO_NODE_SEEKABLE_PROP.retained,
         )
     }
 
     pub fn metadata(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.metadata_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &MEDIA_INFO_NODE_METADATA_PROP.id,
+            value,
+            MEDIA_INFO_NODE_METADATA_PROP.retained,
+        )
     }
 }
 
@@ -280,7 +316,7 @@ impl SetCommandParser for MediaInfoNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.progress_prop) {
+        if property.match_with_node(&self.node, &MEDIA_INFO_NODE_PROGRESS_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -317,7 +353,7 @@ impl SetCommandParser for MediaInfoNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.progress_prop.to_string(),
+                MEDIA_INFO_NODE_PROGRESS_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

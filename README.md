@@ -84,7 +84,10 @@ document are to be interpreted as described in
 | Daylight    | `daylight`     | `hc-smarthome/v2/cap/daylight`     | Sensor         | Daylight/dark state, sunrise/sunset, phase    |
 | Air Quality | `air-quality`  | `hc-smarthome/v2/cap/air-quality`  | Sensor         | CO₂, VOC, PM2.5, PM10, AQI                   |
 | BBQ Probe   | `bbq-probe`    | `hc-smarthome/v2/cap/bbq-probe`    | Sensor         | BBQ/food temperature probe with thresholds    |
-| Button      | `button`       | `hc-smarthome/v2/cap/button`       | Infrastructure | Physical button press events                  |
+| Button      | `button`       | `hc-smarthome/v2/cap/button`       | Input          | Button press/release/hold/multi-press events  |
+| Rotary      | `rotary`       | `hc-smarthome/v2/cap/rotary`       | Input          | Relative rotation of a dial, knob, or wheel   |
+| Gesture     | `gesture`      | `hc-smarthome/v2/cap/gesture`      | Input          | Named gestures (shake, flip, swipe, ...)      |
+| Selector    | `selector`     | `hc-smarthome/v2/cap/selector`     | Input          | Discrete user-selected position               |
 | Powermeter  | `powermeter`   | `hc-smarthome/v2/cap/powermeter`   | Infrastructure | Electrical power metering                     |
 | Camera      | `camera`       | `hc-smarthome/v2/cap/camera`       | Infrastructure | Video stream, snapshots, PTZ, detection       |
 | Timer       | `timer`        | `hc-smarthome/v2/cap/timer`        | Infrastructure | Countdown timer with state/action control     |
@@ -115,7 +118,7 @@ document are to be interpreted as described in
 | Shutter        | `hc-smarthome/v2/dc/shutter`        | `shutter`    | --                                     | Window blind, shade, or shutter  |
 | Fan            | `hc-smarthome/v2/dc/fan`            | `switch`     | `level`                                | Ceiling or standing fan          |
 | Valve          | `hc-smarthome/v2/dc/valve`          | `valve`      | --                                     | Water or gas shutoff valve       |
-| Button         | `hc-smarthome/v2/dc/button`         | `button`     | --                                     | Physical push-button or remote   |
+| Button         | `hc-smarthome/v2/dc/button`         | `button`     | `rotary`, `gesture`, `selector`        | Push-button, remote, dial, cube  |
 | Siren          | `hc-smarthome/v2/dc/siren`          | `alarm`      | --                                     | Alarm siren                      |
 | Powermeter     | `hc-smarthome/v2/dc/powermeter`     | `powermeter` | --                                     | Standalone power meter or clamp  |
 | Mediaplayer    | `hc-smarthome/v2/dc/mediaplayer`    | `mediaplayer`| `media-info`, `volume`                 | Media player or TV               |
@@ -561,23 +564,130 @@ comparisons are inclusive: `temperature <= low-threshold` is `low`,
 
 ---
 
-### Infrastructure Capabilities
+### Input Capabilities
+
+Input capabilities report what a person does with a device: pressing, turning,
+gesturing, or putting a control into a position. A device exposes one node per
+physical control. For example, a dimmer remote with a dial and a key exposes a
+`button` node and a `rotary` node; a remote with four keys exposes four
+`button` nodes. Events (`button`, `rotary`, `gesture`) are not retained;
+positions (`selector`) are retained state.
+
+Modeling rules for input devices:
+
+- **One control, one node.** A control that behaves differently per mode (the
+  layers of a scroll wheel, turning a knob while it is pressed) exposes one
+  node per mode.
+- **Many keys, many nodes.** A remote with N keys exposes N `button` nodes.
+- **Latching input switches** (a toggle wall switch, a detached relay input in
+  switch mode) are `switch` nodes with `settable=false`.
+- **Knobs and sliders with end stops** report an absolute level: a `level`
+  node with `settable=false` and `step_action=false`.
+- **Command-sending remotes** (devices that send on/off, dim-step, or scene
+  commands instead of button events) are translated by the bridge into the
+  button actions of the key that sent them. A held "dim up" key is
+  `long-press-start`, `long-press-repeat` ... `long-press-end`.
 
 #### Button
 
 **ID:** `button` | **Type:** `hc-smarthome/v2/cap/button`
 
-Physical push-button reporting press events. Output-only (not retained, not
-settable).
+A physical button reporting interaction events. Output-only (not retained, not
+settable). The values follow the press sequence of the Matter Switch cluster
+and the Home Assistant standard button event types.
 
-| Property            | ID       | Datatype | Unit | Format                 | Settable | Retained | Optional | Description        |
-| ------------------- | -------- | -------- | ---- | ---------------------- | -------- | -------- | -------- | ------------------ |
-| Button action event | `action` | Enum     | --   | Configured actions     | no       | no       | no       | Button press event |
+| Property            | ID       | Datatype | Unit | Format                              | Settable | Retained | Optional | Description              |
+| ------------------- | -------- | -------- | ---- | ----------------------------------- | -------- | -------- | -------- | ------------------------ |
+| Button action event | `action` | Enum     | --   | configured subset of the values below | no     | no       | no       | Button interaction event |
 
-All possible action values: `press`, `long-press`, `double-press`, `release`,
-`long-release`, `continuous`.
+| Value                             | Meaning                                                        |
+| --------------------------------- | -------------------------------------------------------------- |
+| `press-start`                     | The button was pressed down                                    |
+| `press-end`                       | The button was released after a short press ("the click")      |
+| `long-press-start`                | The button was held past the long-press threshold              |
+| `long-press-repeat`               | The button is still held; repeated at a device-defined interval |
+| `long-press-end`                  | The button was released after a long press                     |
+| `multi-press-2` ... `multi-press-6` | A sequence of 2 ... 6 presses completed                     |
+
+- The `action` format MUST list only the values the device can produce.
+- A device that reports a single event per click (no separate press and
+  release) MUST publish `press-end` and MUST NOT publish `press-start`.
+- A completed multi-press sequence is published once as `multi-press-N`.
+  Devices that also report the individual presses publish those first.
 
 ---
+
+#### Rotary
+
+**ID:** `rotary` | **Type:** `hc-smarthome/v2/cap/rotary`
+
+Relative rotation of a dial, knob, scroll wheel, or of the whole device. Each
+event reports how far the control was turned since the previous event.
+Output-only (not retained, not settable).
+
+| Property | ID         | Datatype | Unit | Format | Settable | Retained | Optional | Description                                                        |
+| -------- | ---------- | -------- | ---- | ------ | -------- | -------- | -------- | ------------------------------------------------------------------ |
+| Rotation | `rotation` | Float    | `°`  | --     | no       | no       | no       | Turn since the previous event: `+` clockwise, `-` counter-clockwise |
+
+Devices that count clicks (detents) instead of angles MUST convert them to
+degrees; the degrees per click are a setting of the bridge. Knobs with end
+stops report an absolute level and use `level` instead (see the modeling
+rules above).
+
+---
+
+#### Gesture
+
+**ID:** `gesture` | **Type:** `hc-smarthome/v2/cap/gesture`
+
+Named gestures: moving the device itself, gestures on a touch surface, and
+mid-air gestures. Output-only (not retained, not settable). The list of values
+is closed; new gestures are added by a change of this specification.
+
+| Property      | ID        | Datatype | Unit | Format                              | Settable | Retained | Optional | Description   |
+| ------------- | --------- | -------- | ---- | ----------------------------------- | -------- | -------- | -------- | ------------- |
+| Gesture event | `gesture` | Enum     | --   | configured subset of the values below | no     | no       | no       | Gesture event |
+
+| Value                                                  | Meaning                                         |
+| ------------------------------------------------------ | ----------------------------------------------- |
+| `shake`                                                | The device was shaken                           |
+| `throw`                                                | The device was thrown                           |
+| `free-fall`                                            | The device was dropped                          |
+| `slide`                                                | The device was pushed across a surface          |
+| `tap`                                                  | The device was tapped or knocked                |
+| `flip-90`                                              | The device was flipped by 90° onto another face |
+| `flip-180`                                             | The device was flipped by 180°                  |
+| `swipe-up`, `swipe-down`, `swipe-left`, `swipe-right`  | A swipe on a touch surface                      |
+| `wave-left`, `wave-right`                              | A mid-air hand wave                             |
+
+Turning the whole device is a rotation, not a gesture: it is published on a
+`rotary` node. Which face points up is a position: it is published on a
+`selector` node.
+
+---
+
+#### Selector
+
+**ID:** `selector` | **Type:** `hc-smarthome/v2/cap/selector`
+
+A discrete position chosen by the user: a multi-position selector switch, a
+mode knob with detents, or the face of a cube that points up. Read-only.
+
+| Property       | ID         | Datatype | Unit | Format                  | Settable | Retained | Optional | Description                  |
+| -------------- | ---------- | -------- | ---- | ----------------------- | -------- | -------- | -------- | ---------------------------- |
+| Position       | `position` | Integer  | --   | configured `min:max`    | no       | yes      | no       | Current position             |
+| Position label | `label`    | Enum     | --   | configured labels       | no       | yes      | yes      | Name of the current position |
+
+- When `label` is present, its format MUST contain exactly one name per
+  position, in position order (the first name belongs to `min`).
+- Publishers SHOULD publish `position` and `label` together on every change.
+
+Examples: the face of a cube that points up (`1:6`, no labels); a ventilation
+knob (`0:3`, labels `off,low,medium,high`).
+
+---
+
+### Infrastructure Capabilities
 
 #### Powermeter
 
@@ -812,7 +922,9 @@ All config structs implement `Default` and `Deserialize` with
 | Daylight    | `DaylightNodeConfig`    | `phase`                                                  |
 | Garage Door | `GarageDoorNodeConfig`  | `settable`, action flags, state flags                    |
 | Air Quality | `AirQualityNodeConfig`  | `co2`, `voc`, `pm25`, `pm10`, `aqi`                     |
-| Button      | `ButtonNodeConfig`      | `actions`                                                |
+| Button      | `ButtonNodeConfig`      | `actions` (default `press-end`)                          |
+| Gesture     | `GestureNodeConfig`     | `gestures` (default: all gestures)                       |
+| Selector    | `SelectorNodeConfig`    | `min`, `max`, `labels` (default `1:2`, no labels)        |
 | Powermeter  | `PowermeterNodeConfig`  | `current`, `voltage`, `frequency`, `consumption`         |
 | Camera      | `CameraNodeConfig`      | `snapshot`, `recording`, `motion_detected`, `object_detected`, `pan`, `tilt`, `zoom`, `zoom_max` |
 | Timer       | `TimerNodeConfig`       | `label`, `remaining`, `trigger_time`, `created`          |
@@ -824,7 +936,11 @@ All config structs implement `Default` and `Deserialize` with
 
 Capabilities **without** configuration (no optional properties): `motion`,
 `contact`, `water`, `tilt`, `orientation`, `illuminance`, `smoke`, `co`,
-`text`.
+`text`, `rotary`.
+
+`SelectorNodeBuilder::new` returns a `Result`: it rejects a config whose
+`labels` don't cover every position between `min` and `max`, an empty range,
+and labels that aren't a valid Homie enum (empty or duplicate names).
 
 ## Code Examples
 
@@ -852,6 +968,21 @@ match publisher.parse_set_event(&device_description, &incoming_event) {
     ParseOutcome::Invalid(err) => { /* log error */ }
 }
 ```
+
+### Addressing a property
+
+Every node module exports one `PropSpec` per property, holding its ID, whether
+it is retained, and whether it can be set at all:
+
+```rust
+use hc_homie5_smarthome::switch_node::SWITCH_NODE_STATE_PROP;
+
+let state = node_desc.properties.get(&SWITCH_NODE_STATE_PROP.id);
+assert!(SWITCH_NODE_STATE_PROP.retained);
+```
+
+Extension nodes defined outside this crate use the same
+`hc_homie5_smarthome::PropSpec` type for their properties.
 
 ### Composing a device from capabilities
 

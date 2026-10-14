@@ -7,18 +7,53 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_CAMERA, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_CAMERA, SetCommandParser,
+};
 
 pub const CAMERA_NODE_DEFAULT_ID: HomieID = HomieID::new_const("camera");
 pub const CAMERA_NODE_DEFAULT_NAME: &str = "Camera";
-pub const CAMERA_NODE_STREAM_URL_PROP_ID: HomieID = HomieID::new_const("stream-url");
-pub const CAMERA_NODE_SNAPSHOT_URL_PROP_ID: HomieID = HomieID::new_const("snapshot-url");
-pub const CAMERA_NODE_RECORDING_PROP_ID: HomieID = HomieID::new_const("recording");
-pub const CAMERA_NODE_MOTION_DETECTED_PROP_ID: HomieID = HomieID::new_const("motion-detected");
-pub const CAMERA_NODE_OBJECT_DETECTED_PROP_ID: HomieID = HomieID::new_const("object-detected");
-pub const CAMERA_NODE_PAN_PROP_ID: HomieID = HomieID::new_const("pan");
-pub const CAMERA_NODE_TILT_PROP_ID: HomieID = HomieID::new_const("tilt");
-pub const CAMERA_NODE_ZOOM_PROP_ID: HomieID = HomieID::new_const("zoom");
+
+pub const CAMERA_NODE_STREAM_URL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("stream-url"),
+    retained: true,
+    settable: false,
+};
+pub const CAMERA_NODE_SNAPSHOT_URL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("snapshot-url"),
+    retained: true,
+    settable: false,
+};
+pub const CAMERA_NODE_RECORDING_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("recording"),
+    retained: true,
+    settable: true,
+};
+pub const CAMERA_NODE_MOTION_DETECTED_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("motion-detected"),
+    retained: true,
+    settable: false,
+};
+pub const CAMERA_NODE_OBJECT_DETECTED_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("object-detected"),
+    retained: true,
+    settable: false,
+};
+pub const CAMERA_NODE_PAN_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("pan"),
+    retained: true,
+    settable: true,
+};
+pub const CAMERA_NODE_TILT_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("tilt"),
+    retained: true,
+    settable: true,
+};
+pub const CAMERA_NODE_ZOOM_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("zoom"),
+    retained: true,
+    settable: true,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -94,52 +129,52 @@ impl CameraNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &CameraNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            CAMERA_NODE_STREAM_URL_PROP_ID,
+            CAMERA_NODE_STREAM_URL_PROP.id,
             PropertyDescriptionBuilder::string()
                 .name("Stream URL")
-                .settable(false)
-                .retained(true)
+                .settable(CAMERA_NODE_STREAM_URL_PROP.settable)
+                .retained(CAMERA_NODE_STREAM_URL_PROP.retained)
                 .build(),
         )
-        .add_property_cond(CAMERA_NODE_SNAPSHOT_URL_PROP_ID, config.snapshot, || {
+        .add_property_cond(CAMERA_NODE_SNAPSHOT_URL_PROP.id, config.snapshot, || {
             PropertyDescriptionBuilder::string()
                 .name("Snapshot URL")
-                .settable(false)
-                .retained(true)
+                .settable(CAMERA_NODE_SNAPSHOT_URL_PROP.settable)
+                .retained(CAMERA_NODE_SNAPSHOT_URL_PROP.retained)
                 .build()
         })
-        .add_property_cond(CAMERA_NODE_RECORDING_PROP_ID, config.recording, || {
+        .add_property_cond(CAMERA_NODE_RECORDING_PROP.id, config.recording, || {
             PropertyDescriptionBuilder::boolean()
                 .name("Recording")
                 .boolean_labels("stopped", "recording")
-                .settable(true)
-                .retained(true)
+                .settable(CAMERA_NODE_RECORDING_PROP.settable)
+                .retained(CAMERA_NODE_RECORDING_PROP.retained)
                 .build()
         })
         .add_property_cond(
-            CAMERA_NODE_MOTION_DETECTED_PROP_ID,
+            CAMERA_NODE_MOTION_DETECTED_PROP.id,
             config.motion_detected,
             || {
                 PropertyDescriptionBuilder::boolean()
                     .name("Motion detected")
                     .boolean_labels("no motion", "motion detected")
-                    .settable(false)
-                    .retained(true)
+                    .settable(CAMERA_NODE_MOTION_DETECTED_PROP.settable)
+                    .retained(CAMERA_NODE_MOTION_DETECTED_PROP.retained)
                     .build()
             },
         )
         .add_property_cond(
-            CAMERA_NODE_OBJECT_DETECTED_PROP_ID,
+            CAMERA_NODE_OBJECT_DETECTED_PROP.id,
             config.object_detected,
             || {
                 PropertyDescriptionBuilder::string()
                     .name("Object detected")
-                    .settable(false)
-                    .retained(true)
+                    .settable(CAMERA_NODE_OBJECT_DETECTED_PROP.settable)
+                    .retained(CAMERA_NODE_OBJECT_DETECTED_PROP.retained)
                     .build()
             },
         )
-        .add_property_cond(CAMERA_NODE_PAN_PROP_ID, config.pan, || {
+        .add_property_cond(CAMERA_NODE_PAN_PROP.id, config.pan, || {
             PropertyDescriptionBuilder::float()
                 .name("Pan angle")
                 .unit("°")
@@ -148,11 +183,11 @@ impl CameraNodeBuilder {
                     max: Some(180.0),
                     step: None,
                 })
-                .settable(true)
-                .retained(true)
+                .settable(CAMERA_NODE_PAN_PROP.settable)
+                .retained(CAMERA_NODE_PAN_PROP.retained)
                 .build()
         })
-        .add_property_cond(CAMERA_NODE_TILT_PROP_ID, config.tilt, || {
+        .add_property_cond(CAMERA_NODE_TILT_PROP.id, config.tilt, || {
             PropertyDescriptionBuilder::float()
                 .name("Tilt angle")
                 .unit("°")
@@ -161,11 +196,11 @@ impl CameraNodeBuilder {
                     max: Some(90.0),
                     step: None,
                 })
-                .settable(true)
-                .retained(true)
+                .settable(CAMERA_NODE_TILT_PROP.settable)
+                .retained(CAMERA_NODE_TILT_PROP.retained)
                 .build()
         })
-        .add_property_cond(CAMERA_NODE_ZOOM_PROP_ID, config.zoom, || {
+        .add_property_cond(CAMERA_NODE_ZOOM_PROP.id, config.zoom, || {
             PropertyDescriptionBuilder::float()
                 .name("Zoom level")
                 .float_range(FloatRange {
@@ -173,8 +208,8 @@ impl CameraNodeBuilder {
                     max: Some(config.zoom_max),
                     step: None,
                 })
-                .settable(true)
-                .retained(true)
+                .settable(CAMERA_NODE_ZOOM_PROP.settable)
+                .retained(CAMERA_NODE_ZOOM_PROP.retained)
                 .build()
         })
     }
@@ -213,85 +248,82 @@ impl CameraNodeBuilder {
 pub struct CameraNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    stream_url_prop: HomieID,
-    snapshot_url_prop: HomieID,
-    recording_prop: HomieID,
-    motion_detected_prop: HomieID,
-    object_detected_prop: HomieID,
-    pan_prop: HomieID,
-    tilt_prop: HomieID,
-    zoom_prop: HomieID,
 }
 
 impl CameraNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            stream_url_prop: CAMERA_NODE_STREAM_URL_PROP_ID,
-            snapshot_url_prop: CAMERA_NODE_SNAPSHOT_URL_PROP_ID,
-            recording_prop: CAMERA_NODE_RECORDING_PROP_ID,
-            motion_detected_prop: CAMERA_NODE_MOTION_DETECTED_PROP_ID,
-            object_detected_prop: CAMERA_NODE_OBJECT_DETECTED_PROP_ID,
-            pan_prop: CAMERA_NODE_PAN_PROP_ID,
-            tilt_prop: CAMERA_NODE_TILT_PROP_ID,
-            zoom_prop: CAMERA_NODE_ZOOM_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn stream_url(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.stream_url_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &CAMERA_NODE_STREAM_URL_PROP.id,
+            value,
+            CAMERA_NODE_STREAM_URL_PROP.retained,
+        )
     }
 
     pub fn snapshot_url(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.snapshot_url_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &CAMERA_NODE_SNAPSHOT_URL_PROP.id,
+            value,
+            CAMERA_NODE_SNAPSHOT_URL_PROP.retained,
+        )
     }
 
     pub fn recording(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.recording_prop,
+            &CAMERA_NODE_RECORDING_PROP.id,
             value.to_string(),
-            true,
+            CAMERA_NODE_RECORDING_PROP.retained,
         )
     }
 
     pub fn motion_detected(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.motion_detected_prop,
+            &CAMERA_NODE_MOTION_DETECTED_PROP.id,
             value.to_string(),
-            true,
+            CAMERA_NODE_MOTION_DETECTED_PROP.retained,
         )
     }
 
     pub fn object_detected(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.object_detected_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &CAMERA_NODE_OBJECT_DETECTED_PROP.id,
+            value,
+            CAMERA_NODE_OBJECT_DETECTED_PROP.retained,
+        )
     }
 
     pub fn pan(&self, value: f64) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.pan_prop, value.to_string(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &CAMERA_NODE_PAN_PROP.id,
+            value.to_string(),
+            CAMERA_NODE_PAN_PROP.retained,
+        )
     }
 
     pub fn tilt(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.tilt_prop,
+            &CAMERA_NODE_TILT_PROP.id,
             value.to_string(),
-            true,
+            CAMERA_NODE_TILT_PROP.retained,
         )
     }
 
     pub fn zoom(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.zoom_prop,
+            &CAMERA_NODE_ZOOM_PROP.id,
             value.to_string(),
-            true,
+            CAMERA_NODE_ZOOM_PROP.retained,
         )
     }
 }
@@ -307,7 +339,7 @@ impl SetCommandParser for CameraNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.recording_prop) {
+        if property.match_with_node(&self.node, &CAMERA_NODE_RECORDING_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -328,7 +360,7 @@ impl SetCommandParser for CameraNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.pan_prop) {
+        } else if property.match_with_node(&self.node, &CAMERA_NODE_PAN_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -349,7 +381,7 @@ impl SetCommandParser for CameraNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.tilt_prop) {
+        } else if property.match_with_node(&self.node, &CAMERA_NODE_TILT_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -370,7 +402,7 @@ impl SetCommandParser for CameraNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.zoom_prop) {
+        } else if property.match_with_node(&self.node, &CAMERA_NODE_ZOOM_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -407,7 +439,7 @@ impl SetCommandParser for CameraNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.stream_url_prop.to_string(),
+                CAMERA_NODE_STREAM_URL_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

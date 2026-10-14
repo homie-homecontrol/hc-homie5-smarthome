@@ -5,11 +5,16 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_ILLUMINANCE;
+use crate::{PropSpec, SMARTHOME_CAP_ILLUMINANCE};
 
 pub const ILLUMINANCE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("illuminance");
 pub const ILLUMINANCE_NODE_DEFAULT_NAME: &str = "Illuminance sensor";
-pub const ILLUMINANCE_NODE_ILLUMINANCE_PROP_ID: HomieID = HomieID::new_const("illuminance");
+
+pub const ILLUMINANCE_NODE_ILLUMINANCE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("illuminance"),
+    retained: true,
+    settable: false,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -42,12 +47,12 @@ impl IlluminanceNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            ILLUMINANCE_NODE_ILLUMINANCE_PROP_ID,
+            ILLUMINANCE_NODE_ILLUMINANCE_PROP.id,
             PropertyDescriptionBuilder::integer()
                 .name("Illuminance")
                 .unit(HOMIE_UNIT_LUX)
-                .settable(false)
-                .retained(true)
+                .settable(ILLUMINANCE_NODE_ILLUMINANCE_PROP.settable)
+                .retained(ILLUMINANCE_NODE_ILLUMINANCE_PROP.retained)
                 .build(),
         )
     }
@@ -86,24 +91,19 @@ impl IlluminanceNodeBuilder {
 pub struct IlluminanceNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    illuminance_prop: HomieID,
 }
 
 impl IlluminanceNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            illuminance_prop: ILLUMINANCE_NODE_ILLUMINANCE_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn illuminance(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.illuminance_prop,
+            &ILLUMINANCE_NODE_ILLUMINANCE_PROP.id,
             value.to_string(),
-            true,
+            ILLUMINANCE_NODE_ILLUMINANCE_PROP.retained,
         )
     }
 }

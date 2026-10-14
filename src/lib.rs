@@ -11,6 +11,7 @@ pub mod color_node;
 pub mod contact_node;
 pub mod daylight_node;
 pub mod garage_door_node;
+pub mod gesture_node;
 pub mod illuminance_node;
 pub mod level_node;
 pub mod link_node;
@@ -20,7 +21,9 @@ pub mod mediaplayer_node;
 pub mod motion_node;
 pub mod orientation_node;
 pub mod powermeter_node;
+pub mod rotary_node;
 pub mod scene_node;
+pub mod selector_node;
 pub mod shutter_node;
 pub mod smoke_node;
 pub mod switch_node;
@@ -35,6 +38,8 @@ pub mod water_sensor_node;
 
 use std::{fmt, str::FromStr};
 
+use homie5::HomieID;
+
 use air_quality_node::{AirQualityNode, AirQualityNodeConfig};
 use alarm_node::{AlarmNode, AlarmNodeConfig};
 use battery_node::{BatteryNode, BatteryNodeConfig};
@@ -47,6 +52,7 @@ use color_node::{ColorNode, ColorNodeConfig};
 use contact_node::ContactNode;
 use daylight_node::{DaylightNode, DaylightNodeConfig};
 use garage_door_node::{GarageDoorNode, GarageDoorNodeConfig};
+use gesture_node::GestureNodeConfig;
 use illuminance_node::IlluminanceNode;
 use level_node::{LevelNode, LevelNodeConfig};
 use link_node::{LinkNode, LinkNodeConfig};
@@ -57,6 +63,7 @@ use motion_node::MotionNode;
 use orientation_node::OrientationNode;
 use powermeter_node::{PowermeterNode, PowermeterNodeConfig};
 use scene_node::SceneNodeConfig;
+use selector_node::{SelectorNode, SelectorNodeConfig};
 use serde::{Deserialize, Serialize};
 use shutter_node::{ShutterNode, ShutterNodeConfig};
 use smoke_node::SmokeNode;
@@ -129,6 +136,9 @@ pub const SMARTHOME_CAP_AIR_QUALITY: &str = smarthome_cap!("air-quality");
 pub const SMARTHOME_CAP_CAMERA: &str = smarthome_cap!("camera");
 pub const SMARTHOME_CAP_TIMER: &str = smarthome_cap!("timer");
 pub const SMARTHOME_CAP_TEXT: &str = smarthome_cap!("text");
+pub const SMARTHOME_CAP_ROTARY: &str = smarthome_cap!("rotary");
+pub const SMARTHOME_CAP_GESTURE: &str = smarthome_cap!("gesture");
+pub const SMARTHOME_CAP_SELECTOR: &str = smarthome_cap!("selector");
 
 // ── Well-known device class constants ───────────────────────────────────────
 //
@@ -160,6 +170,23 @@ pub const DEVICE_CLASS_VIBRATION_SENSOR: &str = smarthome_dc!("vibration-sensor"
 pub const DEVICE_CLASS_TILT_SENSOR: &str = smarthome_dc!("tilt-sensor");
 pub const DEVICE_CLASS_BBQ_THERMOMETER: &str = smarthome_dc!("bbq-thermometer");
 pub const DEVICE_CLASS_CAMERA: &str = smarthome_dc!("camera");
+
+// ── Property specs ──────────────────────────────────────────────────────────
+
+/// The facts of one node property that the builder, the publisher and the set
+/// parser must agree on. Node code reads these fields instead of writing
+/// literals, so the description and the published behaviour cannot drift apart.
+///
+/// Every node module exposes one `pub const <NODE>_NODE_<PROP>_PROP: PropSpec` per
+/// property; consumers use its `id` to address the property.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PropSpec {
+    pub id: HomieID,
+    pub retained: bool,
+    /// Whether the property can accept `/set` at all. Config-driven properties
+    /// must use `true`; their config can only switch it off.
+    pub settable: bool,
+}
 
 // ── Parse infrastructure ────────────────────────────────────────────────────
 
@@ -301,6 +328,9 @@ pub enum SmarthomeType {
     Camera,
     Timer,
     Text,
+    Rotary,
+    Gesture,
+    Selector,
 }
 
 impl SmarthomeType {
@@ -340,6 +370,9 @@ impl SmarthomeType {
             SmarthomeType::Camera => SMARTHOME_CAP_CAMERA,
             SmarthomeType::Timer => SMARTHOME_CAP_TIMER,
             SmarthomeType::Text => SMARTHOME_CAP_TEXT,
+            SmarthomeType::Rotary => SMARTHOME_CAP_ROTARY,
+            SmarthomeType::Gesture => SMARTHOME_CAP_GESTURE,
+            SmarthomeType::Selector => SMARTHOME_CAP_SELECTOR,
         }
     }
 
@@ -379,6 +412,9 @@ impl SmarthomeType {
             SMARTHOME_CAP_CAMERA => Some(SmarthomeType::Camera),
             SMARTHOME_CAP_TIMER => Some(SmarthomeType::Timer),
             SMARTHOME_CAP_TEXT => Some(SmarthomeType::Text),
+            SMARTHOME_CAP_ROTARY => Some(SmarthomeType::Rotary),
+            SMARTHOME_CAP_GESTURE => Some(SmarthomeType::Gesture),
+            SMARTHOME_CAP_SELECTOR => Some(SmarthomeType::Selector),
             _ => None,
         }
     }
@@ -432,6 +468,7 @@ pub enum SmarthomeProperyConfig {
     Color(ColorNodeConfig),
     Daylight(DaylightNodeConfig),
     GarageDoor(GarageDoorNodeConfig),
+    Gesture(GestureNodeConfig),
     Level(LevelNodeConfig),
     Link(LinkNodeConfig),
     Lock(LockNodeConfig),
@@ -439,6 +476,7 @@ pub enum SmarthomeProperyConfig {
     Mediaplayer(MediaplayerNodeConfig),
     Powermeter(PowermeterNodeConfig),
     Scene(SceneNodeConfig),
+    Selector(SelectorNodeConfig),
     Shutter(ShutterNodeConfig),
     Switch(SwitchNodeConfig),
     Thermostat(ThermostatNodeConfig),
@@ -473,6 +511,7 @@ pub enum SmarthomeNode {
     MotionNode(MotionNode),
     OrientationNode(OrientationNode),
     Powermeter(PowermeterNode),
+    SelectorNode(SelectorNode),
     ShutterNode(ShutterNode),
     SmokeNode(SmokeNode),
     SwitchNode(SwitchNode),
@@ -647,6 +686,14 @@ mod config_serde_default_tests {
         let timer: TimerNodeConfig =
             serde_json::from_str("{}").expect("timer config must deserialize");
         assert_eq!(timer, TimerNodeConfig::default());
+
+        let gesture: GestureNodeConfig =
+            serde_json::from_str("{}").expect("gesture config must deserialize");
+        assert_eq!(gesture, GestureNodeConfig::default());
+
+        let selector: SelectorNodeConfig =
+            serde_json::from_str("{}").expect("selector config must deserialize");
+        assert_eq!(selector, SelectorNodeConfig::default());
     }
 
     #[test]
@@ -713,6 +760,9 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Camera,
             SmarthomeType::Timer,
             SmarthomeType::Text,
+            SmarthomeType::Rotary,
+            SmarthomeType::Gesture,
+            SmarthomeType::Selector,
         ];
 
         for ty in types {

@@ -7,11 +7,18 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_VALVE, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_VALVE, SetCommandParser,
+};
 
 pub const VALVE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("valve");
 pub const VALVE_NODE_DEFAULT_NAME: &str = "Valve control";
-pub const VALVE_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
+
+pub const VALVE_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: true,
+};
 
 #[derive(Debug)]
 pub struct ValveNode {
@@ -54,12 +61,12 @@ impl ValveNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &ValveNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            VALVE_NODE_STATE_PROP_ID,
+            VALVE_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Valve state")
                 .boolean_labels("closed", "open")
-                .settable(config.settable)
-                .retained(true)
+                .settable(VALVE_NODE_STATE_PROP.settable && config.settable)
+                .retained(VALVE_NODE_STATE_PROP.retained)
                 .build(),
         )
     }
@@ -96,33 +103,28 @@ impl ValveNodeBuilder {
 pub struct ValveNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
 }
 
 impl ValveNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: VALVE_NODE_STATE_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.state_prop,
+            &VALVE_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            VALVE_NODE_STATE_PROP.retained,
         )
     }
 
     pub fn state_target(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.state_prop,
+            &VALVE_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            VALVE_NODE_STATE_PROP.retained,
         )
     }
 }
@@ -138,7 +140,7 @@ impl SetCommandParser for ValveNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.state_prop) {
+        if property.match_with_node(&self.node, &VALVE_NODE_STATE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -175,7 +177,7 @@ impl SetCommandParser for ValveNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.state_prop.to_string(),
+                VALVE_NODE_STATE_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

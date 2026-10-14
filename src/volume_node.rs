@@ -11,14 +11,23 @@ use homie5::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_VOLUME, SetCommandParser,
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_VOLUME, SetCommandParser,
     mediaplayer_node::ControlState,
 };
 
 pub const VOLUME_NODE_DEFAULT_ID: HomieID = HomieID::new_const("volume");
 pub const VOLUME_NODE_DEFAULT_NAME: &str = "Volume";
-pub const VOLUME_NODE_LEVEL_PROP_ID: HomieID = HomieID::new_const("level");
-pub const VOLUME_NODE_MUTE_PROP_ID: HomieID = HomieID::new_const("mute");
+
+pub const VOLUME_NODE_LEVEL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("level"),
+    retained: true,
+    settable: true,
+};
+pub const VOLUME_NODE_MUTE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("mute"),
+    retained: true,
+    settable: true,
+};
 
 const CONTROL_STATE_FORMAT: [&str; 3] = ["on", "off", "disabled"];
 
@@ -73,7 +82,7 @@ impl VolumeNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &VolumeNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            VOLUME_NODE_LEVEL_PROP_ID,
+            VOLUME_NODE_LEVEL_PROP.id,
             PropertyDescriptionBuilder::integer()
                 .name("Volume level")
                 .integer_range(IntegerRange {
@@ -82,16 +91,16 @@ impl VolumeNodeBuilder {
                     step: None,
                 })
                 .unit(HOMIE_UNIT_PERCENT)
-                .settable(true)
-                .retained(true)
+                .settable(VOLUME_NODE_LEVEL_PROP.settable)
+                .retained(VOLUME_NODE_LEVEL_PROP.retained)
                 .build(),
         )
-        .add_property_cond(VOLUME_NODE_MUTE_PROP_ID, config.mute, || {
+        .add_property_cond(VOLUME_NODE_MUTE_PROP.id, config.mute, || {
             PropertyDescriptionBuilder::enumeration(CONTROL_STATE_FORMAT)
                 .unwrap()
                 .name("Mute")
-                .settable(true)
-                .retained(true)
+                .settable(VOLUME_NODE_MUTE_PROP.settable)
+                .retained(VOLUME_NODE_MUTE_PROP.retained)
                 .build()
         })
     }
@@ -130,41 +139,38 @@ impl VolumeNodeBuilder {
 pub struct VolumeNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    level_prop: HomieID,
-    mute_prop: HomieID,
 }
 
 impl VolumeNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            level_prop: VOLUME_NODE_LEVEL_PROP_ID,
-            mute_prop: VOLUME_NODE_MUTE_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn level(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.level_prop,
+            &VOLUME_NODE_LEVEL_PROP.id,
             value.to_string(),
-            true,
+            VOLUME_NODE_LEVEL_PROP.retained,
         )
     }
 
     pub fn level_target(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.level_prop,
+            &VOLUME_NODE_LEVEL_PROP.id,
             value.to_string(),
-            true,
+            VOLUME_NODE_LEVEL_PROP.retained,
         )
     }
 
     pub fn mute(&self, value: ControlState) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.mute_prop, value.as_str(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &VOLUME_NODE_MUTE_PROP.id,
+            value.as_str(),
+            VOLUME_NODE_MUTE_PROP.retained,
+        )
     }
 }
 
@@ -179,7 +185,7 @@ impl SetCommandParser for VolumeNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.level_prop) {
+        if property.match_with_node(&self.node, &VOLUME_NODE_LEVEL_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -200,7 +206,7 @@ impl SetCommandParser for VolumeNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.mute_prop) {
+        } else if property.match_with_node(&self.node, &VOLUME_NODE_MUTE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -242,7 +248,7 @@ impl SetCommandParser for VolumeNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.level_prop.to_string(),
+                VOLUME_NODE_LEVEL_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

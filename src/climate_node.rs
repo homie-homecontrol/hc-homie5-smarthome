@@ -7,13 +7,26 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_CAP_CLIMATE;
+use crate::{PropSpec, SMARTHOME_CAP_CLIMATE};
 
 pub const CLIMATE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("climate");
 pub const CLIMATE_NODE_DEFAULT_NAME: &str = "Climate sensor";
-pub const CLIMATE_NODE_TEMP_PROP_ID: HomieID = HomieID::new_const("temperature");
-pub const CLIMATE_NODE_HUM_PROP_ID: HomieID = HomieID::new_const("humidity");
-pub const CLIMATE_NODE_PRES_PROP_ID: HomieID = HomieID::new_const("pressure");
+
+pub const CLIMATE_NODE_TEMP_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("temperature"),
+    retained: true,
+    settable: false,
+};
+pub const CLIMATE_NODE_HUM_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("humidity"),
+    retained: true,
+    settable: false,
+};
+pub const CLIMATE_NODE_PRES_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("pressure"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct ClimateNode {
@@ -62,27 +75,27 @@ impl ClimateNodeBuilder {
         db: NodeDescriptionBuilder,
         config: &ClimateNodeConfig,
     ) -> NodeDescriptionBuilder {
-        db.add_property_cond(CLIMATE_NODE_TEMP_PROP_ID, config.temperature, || {
+        db.add_property_cond(CLIMATE_NODE_TEMP_PROP.id, config.temperature, || {
             PropertyDescriptionBuilder::float()
                 .name("Current temperature")
-                .retained(true)
-                .settable(false)
+                .retained(CLIMATE_NODE_TEMP_PROP.retained)
+                .settable(CLIMATE_NODE_TEMP_PROP.settable)
                 .unit(config.temp_unit.to_owned())
                 .build()
         })
-        .add_property_cond(CLIMATE_NODE_HUM_PROP_ID, config.humidity, || {
+        .add_property_cond(CLIMATE_NODE_HUM_PROP.id, config.humidity, || {
             PropertyDescriptionBuilder::integer()
                 .name("Current humidity")
-                .retained(true)
-                .settable(false)
+                .retained(CLIMATE_NODE_HUM_PROP.retained)
+                .settable(CLIMATE_NODE_HUM_PROP.settable)
                 .unit(HOMIE_UNIT_PERCENT)
                 .build()
         })
-        .add_property_cond(CLIMATE_NODE_PRES_PROP_ID, config.pressure, || {
+        .add_property_cond(CLIMATE_NODE_PRES_PROP.id, config.pressure, || {
             PropertyDescriptionBuilder::float()
                 .name("Current pressure")
-                .retained(true)
-                .settable(false)
+                .retained(CLIMATE_NODE_PRES_PROP.retained)
+                .settable(CLIMATE_NODE_PRES_PROP.settable)
                 .unit(HOMIE_UNIT_KILOPASCAL)
                 .build()
         })
@@ -120,42 +133,37 @@ impl ClimateNodeBuilder {
 pub struct ClimateNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    temp_prop: HomieID,
-    hum_prop: HomieID,
-    pres_prop: HomieID,
 }
 
 impl ClimateNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            temp_prop: CLIMATE_NODE_TEMP_PROP_ID,
-            hum_prop: CLIMATE_NODE_HUM_PROP_ID,
-            pres_prop: CLIMATE_NODE_PRES_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn temperature(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.temp_prop,
+            &CLIMATE_NODE_TEMP_PROP.id,
             value.to_string(),
-            true,
+            CLIMATE_NODE_TEMP_PROP.retained,
         )
     }
 
     pub fn humidity(&self, value: i64) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.hum_prop, value.to_string(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &CLIMATE_NODE_HUM_PROP.id,
+            value.to_string(),
+            CLIMATE_NODE_HUM_PROP.retained,
+        )
     }
 
     pub fn pressure(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.pres_prop,
+            &CLIMATE_NODE_PRES_PROP.id,
             value.to_string(),
-            true,
+            CLIMATE_NODE_PRES_PROP.retained,
         )
     }
 }

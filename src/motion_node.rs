@@ -5,11 +5,16 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_MOTION;
+use crate::{PropSpec, SMARTHOME_CAP_MOTION};
 
 pub const MOTION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("motion");
 pub const MOTION_NODE_DEFAULT_NAME: &str = "Motion sensor";
-pub const MOTION_NODE_MOTION_PROP_ID: HomieID = HomieID::new_const("motion");
+
+pub const MOTION_NODE_MOTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("motion"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct MotionNode {
@@ -37,12 +42,12 @@ impl MotionNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            MOTION_NODE_MOTION_PROP_ID,
+            MOTION_NODE_MOTION_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Motion detected")
                 .boolean_labels("no-motion", "motion")
-                .retained(true)
-                .settable(false)
+                .retained(MOTION_NODE_MOTION_PROP.retained)
+                .settable(MOTION_NODE_MOTION_PROP.settable)
                 .build(),
         )
     }
@@ -79,24 +84,19 @@ impl MotionNodeBuilder {
 pub struct MotionNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    motion_prop: HomieID,
 }
 
 impl MotionNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            motion_prop: MOTION_NODE_MOTION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn motion(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.motion_prop,
+            &MOTION_NODE_MOTION_PROP.id,
             value.to_string(),
-            true,
+            MOTION_NODE_MOTION_PROP.retained,
         )
     }
 }

@@ -11,12 +11,23 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_LOCK, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_LOCK, SetCommandParser,
+};
 
 pub const LOCK_NODE_DEFAULT_ID: HomieID = HomieID::new_const("lock");
 pub const LOCK_NODE_DEFAULT_NAME: &str = "Lock control";
-pub const LOCK_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
-pub const LOCK_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+
+pub const LOCK_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: true,
+};
+pub const LOCK_NODE_ACTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("action"),
+    retained: false,
+    settable: true,
+};
 
 #[derive(Debug)]
 pub struct LockNode {
@@ -95,21 +106,21 @@ impl LockNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &LockNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            LOCK_NODE_STATE_PROP_ID,
+            LOCK_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Lock state")
                 .boolean_labels("unlocked", "locked")
-                .settable(config.settable)
-                .retained(true)
+                .settable(LOCK_NODE_STATE_PROP.settable && config.settable)
+                .retained(LOCK_NODE_STATE_PROP.retained)
                 .build(),
         )
         .add_property(
-            LOCK_NODE_ACTION_PROP_ID,
+            LOCK_NODE_ACTION_PROP.id,
             PropertyDescriptionBuilder::enumeration(["lock", "unlock", "toggle"])
                 .unwrap()
                 .name("Lock action")
-                .settable(config.settable)
-                .retained(false)
+                .settable(LOCK_NODE_ACTION_PROP.settable && config.settable)
+                .retained(LOCK_NODE_ACTION_PROP.retained)
                 .build(),
         )
     }
@@ -146,44 +157,37 @@ impl LockNodeBuilder {
 pub struct LockNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
-    action_prop: HomieID,
 }
 
 impl LockNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: LOCK_NODE_STATE_PROP_ID,
-            action_prop: LOCK_NODE_ACTION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.state_prop,
+            &LOCK_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            LOCK_NODE_STATE_PROP.retained,
         )
     }
 
     pub fn state_target(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.state_prop,
+            &LOCK_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            LOCK_NODE_STATE_PROP.retained,
         )
     }
 
     pub fn action(&self, action: &LockNodeActions) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.action_prop,
+            &LOCK_NODE_ACTION_PROP.id,
             action.as_str(),
-            false,
+            LOCK_NODE_ACTION_PROP.retained,
         )
     }
 }
@@ -199,7 +203,7 @@ impl SetCommandParser for LockNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.state_prop) {
+        if property.match_with_node(&self.node, &LOCK_NODE_STATE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -220,7 +224,7 @@ impl SetCommandParser for LockNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.action_prop) {
+        } else if property.match_with_node(&self.node, &LOCK_NODE_ACTION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -262,7 +266,7 @@ impl SetCommandParser for LockNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.state_prop.to_string(),
+                LOCK_NODE_STATE_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

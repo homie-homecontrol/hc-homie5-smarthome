@@ -6,12 +6,21 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_CAP_BATTERY;
+use crate::{PropSpec, SMARTHOME_CAP_BATTERY};
 
 pub const BATTERY_NODE_DEFAULT_ID: HomieID = HomieID::new_const("battery");
 pub const BATTERY_NODE_DEFAULT_NAME: &str = "Battery";
-pub const BATTERY_NODE_LEVEL_PROP_ID: HomieID = HomieID::new_const("level");
-pub const BATTERY_NODE_VOLTAGE_PROP_ID: HomieID = HomieID::new_const("voltage");
+
+pub const BATTERY_NODE_LEVEL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("level"),
+    retained: true,
+    settable: false,
+};
+pub const BATTERY_NODE_VOLTAGE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("voltage"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct BatteryNode {
@@ -59,7 +68,7 @@ impl BatteryNodeBuilder {
         db: NodeDescriptionBuilder,
         config: &BatteryNodeConfig,
     ) -> NodeDescriptionBuilder {
-        db.add_property_cond(BATTERY_NODE_LEVEL_PROP_ID, config.level, || {
+        db.add_property_cond(BATTERY_NODE_LEVEL_PROP.id, config.level, || {
             PropertyDescriptionBuilder::integer()
                 .name("Battery level")
                 .integer_range(IntegerRange {
@@ -68,16 +77,16 @@ impl BatteryNodeBuilder {
                     step: None,
                 })
                 .unit(HOMIE_UNIT_PERCENT)
-                .settable(false)
-                .retained(true)
+                .settable(BATTERY_NODE_LEVEL_PROP.settable)
+                .retained(BATTERY_NODE_LEVEL_PROP.retained)
                 .build()
         })
-        .add_property_cond(BATTERY_NODE_VOLTAGE_PROP_ID, config.voltage, || {
+        .add_property_cond(BATTERY_NODE_VOLTAGE_PROP.id, config.voltage, || {
             PropertyDescriptionBuilder::integer()
                 .name("Battery voltage")
                 .unit("mV")
-                .settable(false)
-                .retained(true)
+                .settable(BATTERY_NODE_VOLTAGE_PROP.settable)
+                .retained(BATTERY_NODE_VOLTAGE_PROP.retained)
                 .build()
         })
     }
@@ -116,8 +125,6 @@ pub struct BatteryNodePublisher {
     client: Homie5DeviceProtocol,
     config: BatteryNodeConfig,
     node: NodeRef,
-    level_prop: HomieID,
-    voltage_prop: HomieID,
 }
 
 impl BatteryNodePublisher {
@@ -126,8 +133,6 @@ impl BatteryNodePublisher {
             node,
             client,
             config,
-            level_prop: BATTERY_NODE_LEVEL_PROP_ID,
-            voltage_prop: BATTERY_NODE_VOLTAGE_PROP_ID,
         }
     }
 
@@ -137,9 +142,9 @@ impl BatteryNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.level_prop,
+            &BATTERY_NODE_LEVEL_PROP.id,
             value.to_string(),
-            true,
+            BATTERY_NODE_LEVEL_PROP.retained,
         ))
     }
 
@@ -149,9 +154,9 @@ impl BatteryNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.voltage_prop,
+            &BATTERY_NODE_VOLTAGE_PROP.id,
             value.to_string(),
-            true,
+            BATTERY_NODE_VOLTAGE_PROP.retained,
         ))
     }
 }

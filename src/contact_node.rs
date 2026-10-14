@@ -5,11 +5,16 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_CONTACT;
+use crate::{PropSpec, SMARTHOME_CAP_CONTACT};
 
 pub const CONTACT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("contact");
 pub const CONTACT_NODE_DEFAULT_NAME: &str = "Open/Close contact";
-pub const CONTACT_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
+
+pub const CONTACT_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct ContactNode {
@@ -37,12 +42,12 @@ impl ContactNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            CONTACT_NODE_STATE_PROP_ID,
+            CONTACT_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Open/Close state")
                 .boolean_labels("closed", "open")
-                .settable(false)
-                .retained(true)
+                .settable(CONTACT_NODE_STATE_PROP.settable)
+                .retained(CONTACT_NODE_STATE_PROP.retained)
                 .build(),
         )
     }
@@ -79,24 +84,19 @@ impl ContactNodeBuilder {
 pub struct ContactNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
 }
 
 impl ContactNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: CONTACT_NODE_STATE_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.state_prop,
+            &CONTACT_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            CONTACT_NODE_STATE_PROP.retained,
         )
     }
 }
