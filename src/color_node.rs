@@ -8,12 +8,23 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_COLOR, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_COLOR, SetCommandParser,
+};
 
 pub const COLOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("color");
 pub const COLOR_NODE_DEFAULT_NAME: &str = "Color control";
-pub const COLOR_NODE_COLOR_PROP_ID: HomieID = HomieID::new_const("color");
-pub const COLOR_NODE_COLOR_TEMP_PROP_ID: HomieID = HomieID::new_const("color-temperature");
+
+pub const COLOR_NODE_COLOR_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("color"),
+    retained: true,
+    settable: true,
+};
+pub const COLOR_NODE_COLOR_TEMP_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("color-temperature"),
+    retained: true,
+    settable: true,
+};
 
 #[derive(Debug)]
 pub struct ColorNode {
@@ -67,16 +78,16 @@ impl ColorNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &ColorNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            COLOR_NODE_COLOR_PROP_ID,
+            COLOR_NODE_COLOR_PROP.id,
             PropertyDescriptionBuilder::color(config.color_formats.clone())
                 .unwrap()
                 .name("Color")
-                .settable(config.settable)
-                .retained(true)
+                .settable(COLOR_NODE_COLOR_PROP.settable && config.settable)
+                .retained(COLOR_NODE_COLOR_PROP.retained)
                 .build(),
         )
         .add_property(
-            COLOR_NODE_COLOR_TEMP_PROP_ID,
+            COLOR_NODE_COLOR_TEMP_PROP.id,
             PropertyDescriptionBuilder::integer()
                 .name("Color temperature")
                 .integer_range(IntegerRange {
@@ -84,8 +95,8 @@ impl ColorNodeBuilder {
                     max: Some(config.ctmax),
                     step: None,
                 })
-                .settable(config.settable)
-                .retained(true)
+                .settable(COLOR_NODE_COLOR_TEMP_PROP.settable && config.settable)
+                .retained(COLOR_NODE_COLOR_TEMP_PROP.retained)
                 .build(),
         )
     }
@@ -122,45 +133,46 @@ impl ColorNodeBuilder {
 pub struct ColorNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    color_prop_id: HomieID,
-    color_temp_prop_id: HomieID,
 }
 
 impl ColorNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            color_prop_id: COLOR_NODE_COLOR_PROP_ID,
-            color_temp_prop_id: COLOR_NODE_COLOR_TEMP_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn color(&self, value: HomieColorValue) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.color_prop_id, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &COLOR_NODE_COLOR_PROP.id,
+            value,
+            COLOR_NODE_COLOR_PROP.retained,
+        )
     }
 
     pub fn color_target(&self, value: HomieColorValue) -> homie5::client::Publish {
-        self.client
-            .publish_target(self.node.node_id(), &self.color_prop_id, value, true)
+        self.client.publish_target(
+            self.node.node_id(),
+            &COLOR_NODE_COLOR_PROP.id,
+            value,
+            COLOR_NODE_COLOR_PROP.retained,
+        )
     }
 
     pub fn color_temperature(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.color_temp_prop_id,
+            &COLOR_NODE_COLOR_TEMP_PROP.id,
             value.to_string(),
-            true,
+            COLOR_NODE_COLOR_TEMP_PROP.retained,
         )
     }
 
     pub fn color_temperature_target(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.color_temp_prop_id,
+            &COLOR_NODE_COLOR_TEMP_PROP.id,
             value.to_string(),
-            true,
+            COLOR_NODE_COLOR_TEMP_PROP.retained,
         )
     }
 }
@@ -176,7 +188,7 @@ impl SetCommandParser for ColorNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.color_prop_id) {
+        if property.match_with_node(&self.node, &COLOR_NODE_COLOR_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -197,7 +209,7 @@ impl SetCommandParser for ColorNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.color_temp_prop_id) {
+        } else if property.match_with_node(&self.node, &COLOR_NODE_COLOR_TEMP_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -234,7 +246,7 @@ impl SetCommandParser for ColorNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.color_prop_id.to_string(),
+                COLOR_NODE_COLOR_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

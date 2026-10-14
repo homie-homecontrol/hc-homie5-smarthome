@@ -8,16 +8,43 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_THERMOSTAT, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_THERMOSTAT, SetCommandParser,
+};
 
 pub const THERMOSTAT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("thermostat");
 pub const THERMOSTAT_NODE_DEFAULT_NAME: &str = "Thermostat";
-pub const THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID: HomieID = HomieID::new_const("set-temperature");
-pub const THERMOSTAT_NODE_VALVE_PROP_ID: HomieID = HomieID::new_const("valve");
-pub const THERMOSTAT_NODE_MODE_PROP_ID: HomieID = HomieID::new_const("mode");
-pub const THERMOSTAT_NODE_WINDOWOPEN_PROP_ID: HomieID = HomieID::new_const("window-open");
-pub const THERMOSTAT_NODE_BOOST_STATE_PROP_ID: HomieID = HomieID::new_const("boost-state");
-pub const THERMOSTAT_NODE_BOOST_TIME_PROP_ID: HomieID = HomieID::new_const("boost-time");
+
+pub const THERMOSTAT_NODE_SET_TEMPERATURE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("set-temperature"),
+    retained: true,
+    settable: true,
+};
+pub const THERMOSTAT_NODE_VALVE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("valve"),
+    retained: true,
+    settable: false,
+};
+pub const THERMOSTAT_NODE_MODE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("mode"),
+    retained: true,
+    settable: true,
+};
+pub const THERMOSTAT_NODE_WINDOWOPEN_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("window-open"),
+    retained: true,
+    settable: false,
+};
+pub const THERMOSTAT_NODE_BOOST_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("boost-state"),
+    retained: true,
+    settable: true,
+};
+pub const THERMOSTAT_NODE_BOOST_TIME_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("boost-time"),
+    retained: false,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct ThermostatNode {
@@ -168,16 +195,16 @@ impl ThermostatNodeBuilder {
         config: &ThermostatNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID,
+            THERMOSTAT_NODE_SET_TEMPERATURE_PROP.id,
             PropertyDescriptionBuilder::float()
                 .name("Set target temperature")
                 .float_range(config.temp_range.clone())
                 .unit(config.unit.to_owned())
-                .settable(true)
-                .retained(true)
+                .settable(THERMOSTAT_NODE_SET_TEMPERATURE_PROP.settable)
+                .retained(THERMOSTAT_NODE_SET_TEMPERATURE_PROP.retained)
                 .build(),
         )
-        .add_property_cond(THERMOSTAT_NODE_VALVE_PROP_ID, config.valve, || {
+        .add_property_cond(THERMOSTAT_NODE_VALVE_PROP.id, config.valve, || {
             PropertyDescriptionBuilder::integer()
                 .name("Valve opening Level")
                 .integer_range(IntegerRange {
@@ -186,35 +213,35 @@ impl ThermostatNodeBuilder {
                     step: None,
                 })
                 .unit(HOMIE_UNIT_PERCENT)
-                .settable(false)
-                .retained(true)
+                .settable(THERMOSTAT_NODE_VALVE_PROP.settable)
+                .retained(THERMOSTAT_NODE_VALVE_PROP.retained)
                 .build()
         })
         .add_property_cond(
-            THERMOSTAT_NODE_WINDOWOPEN_PROP_ID,
+            THERMOSTAT_NODE_WINDOWOPEN_PROP.id,
             config.windowopen,
             || {
                 PropertyDescriptionBuilder::boolean()
                     .name("Window open detected")
                     .boolean_labels("closed", "open")
-                    .settable(false)
-                    .retained(true)
+                    .settable(THERMOSTAT_NODE_WINDOWOPEN_PROP.settable)
+                    .retained(THERMOSTAT_NODE_WINDOWOPEN_PROP.retained)
                     .build()
             },
         )
         .add_property_cond(
-            THERMOSTAT_NODE_BOOST_STATE_PROP_ID,
+            THERMOSTAT_NODE_BOOST_STATE_PROP.id,
             config.boost_state,
             || {
                 PropertyDescriptionBuilder::boolean()
                     .name("Boost mode active")
-                    .settable(true)
-                    .retained(true)
+                    .settable(THERMOSTAT_NODE_BOOST_STATE_PROP.settable)
+                    .retained(THERMOSTAT_NODE_BOOST_STATE_PROP.retained)
                     .build()
             },
         )
         .add_property_cond(
-            THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
+            THERMOSTAT_NODE_BOOST_TIME_PROP.id,
             config.boost_time,
             || {
                 PropertyDescriptionBuilder::integer()
@@ -225,17 +252,17 @@ impl ThermostatNodeBuilder {
                         step: None,
                     })
                     .unit(HOMIE_UNIT_SECONDS)
-                    .settable(false)
-                    .retained(false)
+                    .settable(THERMOSTAT_NODE_BOOST_TIME_PROP.settable)
+                    .retained(THERMOSTAT_NODE_BOOST_TIME_PROP.retained)
                     .build()
             },
         )
-        .add_property_cond(THERMOSTAT_NODE_MODE_PROP_ID, config.mode, || {
+        .add_property_cond(THERMOSTAT_NODE_MODE_PROP.id, config.mode, || {
             PropertyDescriptionBuilder::enumeration(config.modes.iter().map(<&str>::from))
                 .unwrap()
                 .name("Mode")
-                .settable(true)
-                .retained(true)
+                .settable(THERMOSTAT_NODE_MODE_PROP.settable)
+                .retained(THERMOSTAT_NODE_MODE_PROP.retained)
                 .build()
         })
     }
@@ -294,7 +321,7 @@ mod tests {
 
         let set_temperature = node
             .properties
-            .get(&THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID)
+            .get(&THERMOSTAT_NODE_SET_TEMPERATURE_PROP.id)
             .expect("set-temperature property must exist");
 
         assert_eq!(set_temperature.unit.as_deref(), Some("F"));
@@ -311,24 +338,24 @@ mod tests {
     #[test]
     fn each_boolean_config_gates_the_expected_optional_property() {
         let gated_properties = [
-            THERMOSTAT_NODE_VALVE_PROP_ID,
-            THERMOSTAT_NODE_WINDOWOPEN_PROP_ID,
-            THERMOSTAT_NODE_BOOST_STATE_PROP_ID,
-            THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
-            THERMOSTAT_NODE_MODE_PROP_ID,
+            THERMOSTAT_NODE_VALVE_PROP.id,
+            THERMOSTAT_NODE_WINDOWOPEN_PROP.id,
+            THERMOSTAT_NODE_BOOST_STATE_PROP.id,
+            THERMOSTAT_NODE_BOOST_TIME_PROP.id,
+            THERMOSTAT_NODE_MODE_PROP.id,
         ];
 
         for expected_property_id in gated_properties.iter() {
             let mut config = base_disabled_config();
-            if expected_property_id == &THERMOSTAT_NODE_VALVE_PROP_ID {
+            if expected_property_id == &THERMOSTAT_NODE_VALVE_PROP.id {
                 config.valve = true;
-            } else if expected_property_id == &THERMOSTAT_NODE_WINDOWOPEN_PROP_ID {
+            } else if expected_property_id == &THERMOSTAT_NODE_WINDOWOPEN_PROP.id {
                 config.windowopen = true;
-            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_STATE_PROP_ID {
+            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_STATE_PROP.id {
                 config.boost_state = true;
-            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_TIME_PROP_ID {
+            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_TIME_PROP.id {
                 config.boost_time = true;
-            } else if expected_property_id == &THERMOSTAT_NODE_MODE_PROP_ID {
+            } else if expected_property_id == &THERMOSTAT_NODE_MODE_PROP.id {
                 config.mode = true;
             } else {
                 unreachable!("unknown thermostat property id");
@@ -338,7 +365,7 @@ mod tests {
 
             assert!(
                 node.properties
-                    .contains_key(&THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID),
+                    .contains_key(&THERMOSTAT_NODE_SET_TEMPERATURE_PROP.id),
                 "set-temperature property must always exist"
             );
 
@@ -361,7 +388,7 @@ mod tests {
         let node = ThermostatNodeBuilder::new(&config).build();
         let mode_property = node
             .properties
-            .get(&THERMOSTAT_NODE_MODE_PROP_ID)
+            .get(&THERMOSTAT_NODE_MODE_PROP.id)
             .expect("mode property must exist when mode config is enabled");
 
         assert_eq!(
@@ -375,89 +402,82 @@ mod tests {
 pub struct ThermostatNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    set_temperature_prop: HomieID,
-    boost_prop: HomieID,
-    boost_time_prop: HomieID,
-    mode_prop: HomieID,
-    valve_prop: HomieID,
-    windowopen_prop: HomieID,
 }
 
 impl ThermostatNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            mode_prop: THERMOSTAT_NODE_MODE_PROP_ID,
-            boost_prop: THERMOSTAT_NODE_BOOST_STATE_PROP_ID,
-            boost_time_prop: THERMOSTAT_NODE_BOOST_TIME_PROP_ID,
-            valve_prop: THERMOSTAT_NODE_VALVE_PROP_ID,
-            windowopen_prop: THERMOSTAT_NODE_WINDOWOPEN_PROP_ID,
-            set_temperature_prop: THERMOSTAT_NODE_SET_TEMPERATURE_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn set_temperature(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.set_temperature_prop,
+            &THERMOSTAT_NODE_SET_TEMPERATURE_PROP.id,
             value.to_string(),
-            true,
+            THERMOSTAT_NODE_SET_TEMPERATURE_PROP.retained,
         )
     }
 
     pub fn set_temperature_target(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.set_temperature_prop,
+            &THERMOSTAT_NODE_SET_TEMPERATURE_PROP.id,
             value.to_string(),
-            true,
+            THERMOSTAT_NODE_SET_TEMPERATURE_PROP.retained,
         )
     }
 
     pub fn mode(&self, mode: ThermostatNodeModes) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.mode_prop, &mode, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &THERMOSTAT_NODE_MODE_PROP.id,
+            &mode,
+            THERMOSTAT_NODE_MODE_PROP.retained,
+        )
     }
 
     pub fn mode_target(&self, mode: ThermostatNodeModes) -> homie5::client::Publish {
-        self.client
-            .publish_target(self.node.node_id(), &self.mode_prop, &mode, true)
+        self.client.publish_target(
+            self.node.node_id(),
+            &THERMOSTAT_NODE_MODE_PROP.id,
+            &mode,
+            THERMOSTAT_NODE_MODE_PROP.retained,
+        )
     }
 
     pub fn boost(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.boost_prop,
+            &THERMOSTAT_NODE_BOOST_STATE_PROP.id,
             value.to_string(),
-            true,
+            THERMOSTAT_NODE_BOOST_STATE_PROP.retained,
         )
     }
 
     pub fn boost_time(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.boost_time_prop,
+            &THERMOSTAT_NODE_BOOST_TIME_PROP.id,
             value.to_string(),
-            true,
+            THERMOSTAT_NODE_BOOST_TIME_PROP.retained,
         )
     }
 
     pub fn valve(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.valve_prop,
+            &THERMOSTAT_NODE_VALVE_PROP.id,
             value.to_string(),
-            true,
+            THERMOSTAT_NODE_VALVE_PROP.retained,
         )
     }
 
     pub fn windowopen(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.windowopen_prop,
+            &THERMOSTAT_NODE_WINDOWOPEN_PROP.id,
             value.to_string(),
-            true,
+            THERMOSTAT_NODE_WINDOWOPEN_PROP.retained,
         )
     }
 }
@@ -473,7 +493,7 @@ impl SetCommandParser for ThermostatNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.set_temperature_prop) {
+        if property.match_with_node(&self.node, &THERMOSTAT_NODE_SET_TEMPERATURE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -494,7 +514,7 @@ impl SetCommandParser for ThermostatNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.mode_prop) {
+        } else if property.match_with_node(&self.node, &THERMOSTAT_NODE_MODE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -520,7 +540,7 @@ impl SetCommandParser for ThermostatNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.boost_prop) {
+        } else if property.match_with_node(&self.node, &THERMOSTAT_NODE_BOOST_STATE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -557,7 +577,7 @@ impl SetCommandParser for ThermostatNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.set_temperature_prop.to_string(),
+                THERMOSTAT_NODE_SET_TEMPERATURE_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

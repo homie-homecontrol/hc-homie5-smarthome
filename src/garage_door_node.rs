@@ -12,13 +12,22 @@ use homie5::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_GARAGE_DOOR, SetCommandParser,
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_GARAGE_DOOR, SetCommandParser,
 };
 
 pub const GARAGE_DOOR_NODE_DEFAULT_ID: HomieID = HomieID::new_const("garage-door");
 pub const GARAGE_DOOR_NODE_DEFAULT_NAME: &str = "Garage door";
-pub const GARAGE_DOOR_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
-pub const GARAGE_DOOR_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+
+pub const GARAGE_DOOR_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: false,
+};
+pub const GARAGE_DOOR_NODE_ACTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("action"),
+    retained: false,
+    settable: true,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GarageDoorState {
@@ -194,25 +203,25 @@ impl GarageDoorNodeBuilder {
         config: &GarageDoorNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            GARAGE_DOOR_NODE_STATE_PROP_ID,
+            GARAGE_DOOR_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::enumeration(
                 config.build_state_format().iter().map(|s| s.as_str()),
             )
             .unwrap()
             .name("Garage door state")
-            .settable(false)
-            .retained(true)
+            .settable(GARAGE_DOOR_NODE_STATE_PROP.settable)
+            .retained(GARAGE_DOOR_NODE_STATE_PROP.retained)
             .build(),
         )
         .add_property(
-            GARAGE_DOOR_NODE_ACTION_PROP_ID,
+            GARAGE_DOOR_NODE_ACTION_PROP.id,
             PropertyDescriptionBuilder::enumeration(
                 config.build_action_format().iter().map(|s| s.as_str()),
             )
             .unwrap()
             .name("Garage door action")
-            .settable(config.settable)
-            .retained(false)
+            .settable(GARAGE_DOOR_NODE_ACTION_PROP.settable && config.settable)
+            .retained(GARAGE_DOOR_NODE_ACTION_PROP.retained)
             .build(),
         )
     }
@@ -249,31 +258,28 @@ impl GarageDoorNodeBuilder {
 pub struct GarageDoorNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
-    action_prop: HomieID,
 }
 
 impl GarageDoorNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: GARAGE_DOOR_NODE_STATE_PROP_ID,
-            action_prop: GARAGE_DOOR_NODE_ACTION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, state: GarageDoorState) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.state_prop, state.as_str(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &GARAGE_DOOR_NODE_STATE_PROP.id,
+            state.as_str(),
+            GARAGE_DOOR_NODE_STATE_PROP.retained,
+        )
     }
 
     pub fn action(&self, action: GarageDoorAction) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.action_prop,
+            &GARAGE_DOOR_NODE_ACTION_PROP.id,
             action.as_str(),
-            false,
+            GARAGE_DOOR_NODE_ACTION_PROP.retained,
         )
     }
 }
@@ -289,7 +295,7 @@ impl SetCommandParser for GarageDoorNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.action_prop) {
+        if property.match_with_node(&self.node, &GARAGE_DOOR_NODE_ACTION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -331,7 +337,7 @@ impl SetCommandParser for GarageDoorNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.action_prop.to_string(),
+                GARAGE_DOOR_NODE_ACTION_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

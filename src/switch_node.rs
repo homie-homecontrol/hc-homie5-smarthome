@@ -10,12 +10,23 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SWITCH, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_SWITCH, SetCommandParser,
+};
 
 pub const SWITCH_NODE_DEFAULT_ID: HomieID = HomieID::new_const("switch");
 pub const SWITCH_NODE_DEFAULT_NAME: &str = "On/Off switch";
-pub const SWITCH_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
-pub const SWITCH_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+
+pub const SWITCH_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: true,
+};
+pub const SWITCH_NODE_ACTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("action"),
+    retained: false,
+    settable: true,
+};
 
 #[derive(Debug)]
 pub struct SwitchNode {
@@ -83,21 +94,21 @@ impl SwitchNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &SwitchNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            SWITCH_NODE_STATE_PROP_ID,
+            SWITCH_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("On/Off state")
                 .boolean_labels("off", "on")
-                .settable(config.settable)
-                .retained(true)
+                .settable(SWITCH_NODE_STATE_PROP.settable && config.settable)
+                .retained(SWITCH_NODE_STATE_PROP.retained)
                 .build(),
         )
         .add_property(
-            SWITCH_NODE_ACTION_PROP_ID,
+            SWITCH_NODE_ACTION_PROP.id,
             PropertyDescriptionBuilder::enumeration(["toggle"])
                 .unwrap()
                 .name("Change state")
-                .settable(config.settable)
-                .retained(false)
+                .settable(SWITCH_NODE_ACTION_PROP.settable && config.settable)
+                .retained(SWITCH_NODE_ACTION_PROP.retained)
                 .build(),
         )
     }
@@ -134,44 +145,37 @@ impl SwitchNodeBuilder {
 pub struct SwitchNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
-    action_prop: HomieID,
 }
 
 impl SwitchNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: SWITCH_NODE_STATE_PROP_ID,
-            action_prop: SWITCH_NODE_ACTION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.state_prop,
+            &SWITCH_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            SWITCH_NODE_STATE_PROP.retained,
         )
     }
 
     pub fn state_target(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.state_prop,
+            &SWITCH_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            SWITCH_NODE_STATE_PROP.retained,
         )
     }
 
     pub fn action(&self) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.action_prop,
+            &SWITCH_NODE_ACTION_PROP.id,
             SwitchNodeActions::Toggle.to_string(),
-            false,
+            SWITCH_NODE_ACTION_PROP.retained,
         )
     }
 }
@@ -190,7 +194,7 @@ impl SetCommandParser for SwitchNodePublisher {
         if property.match_with_device(
             self.client.device_ref(),
             self.node.node_id(),
-            &self.state_prop,
+            &SWITCH_NODE_STATE_PROP.id,
         ) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
@@ -212,7 +216,7 @@ impl SetCommandParser for SwitchNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.action_prop) {
+        } else if property.match_with_node(&self.node, &SWITCH_NODE_ACTION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -254,7 +258,7 @@ impl SetCommandParser for SwitchNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.state_prop.to_string(),
+                SWITCH_NODE_STATE_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

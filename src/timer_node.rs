@@ -13,17 +13,48 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_TIMER, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_TIMER, SetCommandParser,
+};
 
 pub const TIMER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("timer");
 pub const TIMER_NODE_DEFAULT_NAME: &str = "Timer";
-pub const TIMER_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
-pub const TIMER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
-pub const TIMER_NODE_LABEL_PROP_ID: HomieID = HomieID::new_const("label");
-pub const TIMER_NODE_DURATION_PROP_ID: HomieID = HomieID::new_const("duration");
-pub const TIMER_NODE_REMAINING_PROP_ID: HomieID = HomieID::new_const("remaining");
-pub const TIMER_NODE_TRIGGER_TIME_PROP_ID: HomieID = HomieID::new_const("trigger-time");
-pub const TIMER_NODE_CREATED_PROP_ID: HomieID = HomieID::new_const("created");
+
+pub const TIMER_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: false,
+};
+pub const TIMER_NODE_ACTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("action"),
+    retained: false,
+    settable: true,
+};
+pub const TIMER_NODE_LABEL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("label"),
+    retained: true,
+    settable: true,
+};
+pub const TIMER_NODE_DURATION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("duration"),
+    retained: true,
+    settable: true,
+};
+pub const TIMER_NODE_REMAINING_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("remaining"),
+    retained: true,
+    settable: false,
+};
+pub const TIMER_NODE_TRIGGER_TIME_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("trigger-time"),
+    retained: true,
+    settable: false,
+};
+pub const TIMER_NODE_CREATED_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("created"),
+    retained: true,
+    settable: false,
+};
 
 // ── Timer state ─────────────────────────────────────────────────────────────
 
@@ -169,25 +200,25 @@ impl TimerNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &TimerNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            TIMER_NODE_STATE_PROP_ID,
+            TIMER_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::enumeration(TimerState::ALL.iter().map(|s| s.as_str()))
                 .unwrap()
                 .name("Timer state")
-                .settable(false)
-                .retained(true)
+                .settable(TIMER_NODE_STATE_PROP.settable)
+                .retained(TIMER_NODE_STATE_PROP.retained)
                 .build(),
         )
         .add_property(
-            TIMER_NODE_ACTION_PROP_ID,
+            TIMER_NODE_ACTION_PROP.id,
             PropertyDescriptionBuilder::enumeration(TimerAction::ALL.iter().map(|a| a.as_str()))
                 .unwrap()
                 .name("Timer action")
-                .settable(true)
-                .retained(false)
+                .settable(TIMER_NODE_ACTION_PROP.settable)
+                .retained(TIMER_NODE_ACTION_PROP.retained)
                 .build(),
         )
         .add_property(
-            TIMER_NODE_DURATION_PROP_ID,
+            TIMER_NODE_DURATION_PROP.id,
             PropertyDescriptionBuilder::integer()
                 .name("Duration")
                 .unit("s")
@@ -196,18 +227,18 @@ impl TimerNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(true)
-                .retained(true)
+                .settable(TIMER_NODE_DURATION_PROP.settable)
+                .retained(TIMER_NODE_DURATION_PROP.retained)
                 .build(),
         )
-        .add_property_cond(TIMER_NODE_LABEL_PROP_ID, config.label, || {
+        .add_property_cond(TIMER_NODE_LABEL_PROP.id, config.label, || {
             PropertyDescriptionBuilder::string()
                 .name("Label")
-                .settable(true)
-                .retained(true)
+                .settable(TIMER_NODE_LABEL_PROP.settable)
+                .retained(TIMER_NODE_LABEL_PROP.retained)
                 .build()
         })
-        .add_property_cond(TIMER_NODE_REMAINING_PROP_ID, config.remaining, || {
+        .add_property_cond(TIMER_NODE_REMAINING_PROP.id, config.remaining, || {
             PropertyDescriptionBuilder::integer()
                 .name("Remaining time")
                 .unit("s")
@@ -216,22 +247,22 @@ impl TimerNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(false)
-                .retained(true)
+                .settable(TIMER_NODE_REMAINING_PROP.settable)
+                .retained(TIMER_NODE_REMAINING_PROP.retained)
                 .build()
         })
-        .add_property_cond(TIMER_NODE_TRIGGER_TIME_PROP_ID, config.trigger_time, || {
+        .add_property_cond(TIMER_NODE_TRIGGER_TIME_PROP.id, config.trigger_time, || {
             PropertyDescriptionBuilder::datetime()
                 .name("Trigger time")
-                .settable(false)
-                .retained(true)
+                .settable(TIMER_NODE_TRIGGER_TIME_PROP.settable)
+                .retained(TIMER_NODE_TRIGGER_TIME_PROP.retained)
                 .build()
         })
-        .add_property_cond(TIMER_NODE_CREATED_PROP_ID, config.created, || {
+        .add_property_cond(TIMER_NODE_CREATED_PROP.id, config.created, || {
             PropertyDescriptionBuilder::datetime()
                 .name("Created")
-                .settable(false)
-                .retained(true)
+                .settable(TIMER_NODE_CREATED_PROP.settable)
+                .retained(TIMER_NODE_CREATED_PROP.retained)
                 .build()
         })
     }
@@ -270,73 +301,64 @@ impl TimerNodeBuilder {
 pub struct TimerNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
-    action_prop: HomieID,
-    label_prop: HomieID,
-    duration_prop: HomieID,
-    remaining_prop: HomieID,
-    trigger_time_prop: HomieID,
-    created_prop: HomieID,
 }
 
 impl TimerNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: TIMER_NODE_STATE_PROP_ID,
-            action_prop: TIMER_NODE_ACTION_PROP_ID,
-            label_prop: TIMER_NODE_LABEL_PROP_ID,
-            duration_prop: TIMER_NODE_DURATION_PROP_ID,
-            remaining_prop: TIMER_NODE_REMAINING_PROP_ID,
-            trigger_time_prop: TIMER_NODE_TRIGGER_TIME_PROP_ID,
-            created_prop: TIMER_NODE_CREATED_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: TimerState) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.state_prop, value.as_str(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &TIMER_NODE_STATE_PROP.id,
+            value.as_str(),
+            TIMER_NODE_STATE_PROP.retained,
+        )
     }
 
     pub fn label(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.label_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &TIMER_NODE_LABEL_PROP.id,
+            value,
+            TIMER_NODE_LABEL_PROP.retained,
+        )
     }
 
     pub fn duration(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.duration_prop,
+            &TIMER_NODE_DURATION_PROP.id,
             value.to_string(),
-            true,
+            TIMER_NODE_DURATION_PROP.retained,
         )
     }
 
     pub fn remaining(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.remaining_prop,
+            &TIMER_NODE_REMAINING_PROP.id,
             value.to_string(),
-            true,
+            TIMER_NODE_REMAINING_PROP.retained,
         )
     }
 
     pub fn trigger_time(&self, value: DateTime<Utc>) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.trigger_time_prop,
+            &TIMER_NODE_TRIGGER_TIME_PROP.id,
             HomieValue::DateTime(value),
-            true,
+            TIMER_NODE_TRIGGER_TIME_PROP.retained,
         )
     }
 
     pub fn created(&self, value: DateTime<Utc>) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.created_prop,
+            &TIMER_NODE_CREATED_PROP.id,
             HomieValue::DateTime(value),
-            true,
+            TIMER_NODE_CREATED_PROP.retained,
         )
     }
 }
@@ -352,7 +374,7 @@ impl SetCommandParser for TimerNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.action_prop) {
+        if property.match_with_node(&self.node, &TIMER_NODE_ACTION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -378,7 +400,7 @@ impl SetCommandParser for TimerNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.label_prop) {
+        } else if property.match_with_node(&self.node, &TIMER_NODE_LABEL_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -399,7 +421,7 @@ impl SetCommandParser for TimerNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.duration_prop) {
+        } else if property.match_with_node(&self.node, &TIMER_NODE_DURATION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -436,7 +458,7 @@ impl SetCommandParser for TimerNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.action_prop.to_string(),
+                TIMER_NODE_ACTION_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

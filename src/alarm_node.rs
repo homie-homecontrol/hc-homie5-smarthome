@@ -7,13 +7,28 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_ALARM, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_ALARM, SetCommandParser,
+};
 
 pub const ALARM_NODE_DEFAULT_ID: HomieID = HomieID::new_const("alarm");
 pub const ALARM_NODE_DEFAULT_NAME: &str = "Alarm";
-pub const ALARM_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
-pub const ALARM_NODE_SOUND_PROP_ID: HomieID = HomieID::new_const("sound");
-pub const ALARM_NODE_DURATION_PROP_ID: HomieID = HomieID::new_const("duration");
+
+pub const ALARM_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: true,
+};
+pub const ALARM_NODE_SOUND_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("sound"),
+    retained: true,
+    settable: true,
+};
+pub const ALARM_NODE_DURATION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("duration"),
+    retained: true,
+    settable: true,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -73,22 +88,22 @@ impl AlarmNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &AlarmNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            ALARM_NODE_STATE_PROP_ID,
+            ALARM_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Alarm state")
-                .settable(true)
-                .retained(true)
+                .settable(ALARM_NODE_STATE_PROP.settable)
+                .retained(ALARM_NODE_STATE_PROP.retained)
                 .build(),
         )
-        .add_property_cond(ALARM_NODE_SOUND_PROP_ID, config.sound, || {
+        .add_property_cond(ALARM_NODE_SOUND_PROP.id, config.sound, || {
             PropertyDescriptionBuilder::enumeration(config.sounds.iter().map(|s| s.as_str()))
                 .unwrap()
                 .name("Alarm sound")
-                .settable(true)
-                .retained(true)
+                .settable(ALARM_NODE_SOUND_PROP.settable)
+                .retained(ALARM_NODE_SOUND_PROP.retained)
                 .build()
         })
-        .add_property_cond(ALARM_NODE_DURATION_PROP_ID, config.duration, || {
+        .add_property_cond(ALARM_NODE_DURATION_PROP.id, config.duration, || {
             PropertyDescriptionBuilder::integer()
                 .name("Alarm duration")
                 .unit("s")
@@ -97,8 +112,8 @@ impl AlarmNodeBuilder {
                     max: None,
                     step: None,
                 })
-                .settable(true)
-                .retained(true)
+                .settable(ALARM_NODE_DURATION_PROP.settable)
+                .retained(ALARM_NODE_DURATION_PROP.retained)
                 .build()
         })
     }
@@ -137,42 +152,37 @@ impl AlarmNodeBuilder {
 pub struct AlarmNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
-    sound_prop: HomieID,
-    duration_prop: HomieID,
 }
 
 impl AlarmNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: ALARM_NODE_STATE_PROP_ID,
-            sound_prop: ALARM_NODE_SOUND_PROP_ID,
-            duration_prop: ALARM_NODE_DURATION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.state_prop,
+            &ALARM_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            ALARM_NODE_STATE_PROP.retained,
         )
     }
 
     pub fn sound(&self, value: &str) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.sound_prop, value, true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &ALARM_NODE_SOUND_PROP.id,
+            value,
+            ALARM_NODE_SOUND_PROP.retained,
+        )
     }
 
     pub fn duration(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.duration_prop,
+            &ALARM_NODE_DURATION_PROP.id,
             value.to_string(),
-            true,
+            ALARM_NODE_DURATION_PROP.retained,
         )
     }
 }
@@ -188,7 +198,7 @@ impl SetCommandParser for AlarmNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.state_prop) {
+        if property.match_with_node(&self.node, &ALARM_NODE_STATE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -209,7 +219,7 @@ impl SetCommandParser for AlarmNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.sound_prop) {
+        } else if property.match_with_node(&self.node, &ALARM_NODE_SOUND_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -230,7 +240,7 @@ impl SetCommandParser for AlarmNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.duration_prop) {
+        } else if property.match_with_node(&self.node, &ALARM_NODE_DURATION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -267,7 +277,7 @@ impl SetCommandParser for AlarmNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.state_prop.to_string(),
+                ALARM_NODE_STATE_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

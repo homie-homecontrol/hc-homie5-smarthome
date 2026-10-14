@@ -10,15 +10,36 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_CAP_DAYLIGHT;
+use crate::{PropSpec, SMARTHOME_CAP_DAYLIGHT};
 
 pub const DAYLIGHT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("daylight");
 pub const DAYLIGHT_NODE_DEFAULT_NAME: &str = "Daylight sensor";
-pub const DAYLIGHT_NODE_DAYLIGHT_PROP_ID: HomieID = HomieID::new_const("daylight");
-pub const DAYLIGHT_NODE_DARK_PROP_ID: HomieID = HomieID::new_const("dark");
-pub const DAYLIGHT_NODE_SUNRISE_PROP_ID: HomieID = HomieID::new_const("sunrise");
-pub const DAYLIGHT_NODE_SUNSET_PROP_ID: HomieID = HomieID::new_const("sunset");
-pub const DAYLIGHT_NODE_PHASE_PROP_ID: HomieID = HomieID::new_const("phase");
+
+pub const DAYLIGHT_NODE_DAYLIGHT_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("daylight"),
+    retained: true,
+    settable: false,
+};
+pub const DAYLIGHT_NODE_DARK_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("dark"),
+    retained: true,
+    settable: false,
+};
+pub const DAYLIGHT_NODE_SUNRISE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("sunrise"),
+    retained: true,
+    settable: false,
+};
+pub const DAYLIGHT_NODE_SUNSET_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("sunset"),
+    retained: true,
+    settable: false,
+};
+pub const DAYLIGHT_NODE_PHASE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("phase"),
+    retained: true,
+    settable: false,
+};
 
 // ── Daylight phase ──────────────────────────────────────────────────────────
 
@@ -102,45 +123,45 @@ impl DaylightNodeBuilder {
         config: &DaylightNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            DAYLIGHT_NODE_DAYLIGHT_PROP_ID,
+            DAYLIGHT_NODE_DAYLIGHT_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Daylight")
                 .boolean_labels("night", "day")
-                .settable(false)
-                .retained(true)
+                .settable(DAYLIGHT_NODE_DAYLIGHT_PROP.settable)
+                .retained(DAYLIGHT_NODE_DAYLIGHT_PROP.retained)
                 .build(),
         )
         .add_property(
-            DAYLIGHT_NODE_DARK_PROP_ID,
+            DAYLIGHT_NODE_DARK_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Dark")
                 .boolean_labels("light", "dark")
-                .settable(false)
-                .retained(true)
+                .settable(DAYLIGHT_NODE_DARK_PROP.settable)
+                .retained(DAYLIGHT_NODE_DARK_PROP.retained)
                 .build(),
         )
         .add_property(
-            DAYLIGHT_NODE_SUNRISE_PROP_ID,
+            DAYLIGHT_NODE_SUNRISE_PROP.id,
             PropertyDescriptionBuilder::datetime()
                 .name("Sunrise")
-                .settable(false)
-                .retained(true)
+                .settable(DAYLIGHT_NODE_SUNRISE_PROP.settable)
+                .retained(DAYLIGHT_NODE_SUNRISE_PROP.retained)
                 .build(),
         )
         .add_property(
-            DAYLIGHT_NODE_SUNSET_PROP_ID,
+            DAYLIGHT_NODE_SUNSET_PROP.id,
             PropertyDescriptionBuilder::datetime()
                 .name("Sunset")
-                .settable(false)
-                .retained(true)
+                .settable(DAYLIGHT_NODE_SUNSET_PROP.settable)
+                .retained(DAYLIGHT_NODE_SUNSET_PROP.retained)
                 .build(),
         )
-        .add_property_cond(DAYLIGHT_NODE_PHASE_PROP_ID, config.phase, || {
+        .add_property_cond(DAYLIGHT_NODE_PHASE_PROP.id, config.phase, || {
             PropertyDescriptionBuilder::enumeration(DaylightPhase::ALL.iter().map(|p| p.as_str()))
                 .unwrap()
                 .name("Daylight phase")
-                .settable(false)
-                .retained(true)
+                .settable(DAYLIGHT_NODE_PHASE_PROP.settable)
+                .retained(DAYLIGHT_NODE_PHASE_PROP.retained)
                 .build()
         })
     }
@@ -179,64 +200,55 @@ impl DaylightNodeBuilder {
 pub struct DaylightNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    daylight_prop: HomieID,
-    dark_prop: HomieID,
-    sunrise_prop: HomieID,
-    sunset_prop: HomieID,
-    phase_prop: HomieID,
 }
 
 impl DaylightNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            daylight_prop: DAYLIGHT_NODE_DAYLIGHT_PROP_ID,
-            dark_prop: DAYLIGHT_NODE_DARK_PROP_ID,
-            sunrise_prop: DAYLIGHT_NODE_SUNRISE_PROP_ID,
-            sunset_prop: DAYLIGHT_NODE_SUNSET_PROP_ID,
-            phase_prop: DAYLIGHT_NODE_PHASE_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn daylight(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.daylight_prop,
+            &DAYLIGHT_NODE_DAYLIGHT_PROP.id,
             value.to_string(),
-            true,
+            DAYLIGHT_NODE_DAYLIGHT_PROP.retained,
         )
     }
 
     pub fn dark(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.dark_prop,
+            &DAYLIGHT_NODE_DARK_PROP.id,
             value.to_string(),
-            true,
+            DAYLIGHT_NODE_DARK_PROP.retained,
         )
     }
 
     pub fn sunrise(&self, value: DateTime<Utc>) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.sunrise_prop,
+            &DAYLIGHT_NODE_SUNRISE_PROP.id,
             HomieValue::DateTime(value),
-            true,
+            DAYLIGHT_NODE_SUNRISE_PROP.retained,
         )
     }
 
     pub fn sunset(&self, value: DateTime<Utc>) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.sunset_prop,
+            &DAYLIGHT_NODE_SUNSET_PROP.id,
             HomieValue::DateTime(value),
-            true,
+            DAYLIGHT_NODE_SUNSET_PROP.retained,
         )
     }
 
     pub fn phase(&self, value: DaylightPhase) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.phase_prop, value.as_str(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &DAYLIGHT_NODE_PHASE_PROP.id,
+            value.as_str(),
+            DAYLIGHT_NODE_PHASE_PROP.retained,
+        )
     }
 }

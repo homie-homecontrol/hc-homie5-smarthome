@@ -8,20 +8,63 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_BBQ_PROBE, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_BBQ_PROBE, SetCommandParser,
+};
 
 pub const BBQ_PROBE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("bbq-probe");
 pub const BBQ_PROBE_NODE_DEFAULT_NAME: &str = "BBQ Probe";
-pub const BBQ_PROBE_NODE_TEMPERATURE_PROP_ID: HomieID = HomieID::new_const("temperature");
-pub const BBQ_PROBE_NODE_CONNECTED_PROP_ID: HomieID = HomieID::new_const("connected");
-pub const BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID: HomieID = HomieID::new_const("low-threshold");
-pub const BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP_ID: HomieID = HomieID::new_const("high-threshold");
-pub const BBQ_PROBE_NODE_THRESHOLD_STATE_PROP_ID: HomieID = HomieID::new_const("threshold-state");
-pub const BBQ_PROBE_NODE_ROLE_PROP_ID: HomieID = HomieID::new_const("role");
-pub const BBQ_PROBE_NODE_LABEL_PROP_ID: HomieID = HomieID::new_const("label");
-pub const BBQ_PROBE_NODE_ALARM_MODE_PROP_ID: HomieID = HomieID::new_const("alarm-mode");
-pub const BBQ_PROBE_NODE_COLOR_PROP_ID: HomieID = HomieID::new_const("color");
-pub const BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID: HomieID = HomieID::new_const("sensor-type");
+
+pub const BBQ_PROBE_NODE_TEMPERATURE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("temperature"),
+    retained: true,
+    settable: false,
+};
+pub const BBQ_PROBE_NODE_CONNECTED_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("connected"),
+    retained: true,
+    settable: false,
+};
+pub const BBQ_PROBE_NODE_LOW_THRESHOLD_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("low-threshold"),
+    retained: true,
+    settable: true,
+};
+pub const BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("high-threshold"),
+    retained: true,
+    settable: true,
+};
+pub const BBQ_PROBE_NODE_THRESHOLD_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("threshold-state"),
+    retained: true,
+    settable: false,
+};
+pub const BBQ_PROBE_NODE_ROLE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("role"),
+    retained: true,
+    settable: true,
+};
+pub const BBQ_PROBE_NODE_LABEL_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("label"),
+    retained: true,
+    settable: true,
+};
+pub const BBQ_PROBE_NODE_ALARM_MODE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("alarm-mode"),
+    retained: true,
+    settable: true,
+};
+pub const BBQ_PROBE_NODE_COLOR_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("color"),
+    retained: true,
+    settable: true,
+};
+pub const BBQ_PROBE_NODE_SENSOR_TYPE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("sensor-type"),
+    retained: true,
+    settable: true,
+};
 
 pub const BBQ_PROBE_ROLE_PIT: &str = "pit";
 pub const BBQ_PROBE_ROLE_FOOD: &str = "food";
@@ -241,95 +284,99 @@ impl BbqProbeNodeBuilder {
         config: &BbqProbeNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            BBQ_PROBE_NODE_TEMPERATURE_PROP_ID,
+            BBQ_PROBE_NODE_TEMPERATURE_PROP.id,
             PropertyDescriptionBuilder::float()
                 .name("Probe temperature")
                 .float_range(config.temp_range.clone())
                 .unit(config.unit.to_owned())
-                .settable(false)
-                .retained(true)
+                .settable(BBQ_PROBE_NODE_TEMPERATURE_PROP.settable)
+                .retained(BBQ_PROBE_NODE_TEMPERATURE_PROP.retained)
                 .build(),
         )
         .add_property(
-            BBQ_PROBE_NODE_CONNECTED_PROP_ID,
+            BBQ_PROBE_NODE_CONNECTED_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Probe connected")
                 .boolean_labels("disconnected", "connected")
-                .settable(false)
-                .retained(true)
+                .settable(BBQ_PROBE_NODE_CONNECTED_PROP.settable)
+                .retained(BBQ_PROBE_NODE_CONNECTED_PROP.retained)
                 .build(),
         )
         .add_property_cond(
-            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID,
+            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id,
             config.thresholds,
             || {
                 PropertyDescriptionBuilder::float()
                     .name("Low temperature threshold")
                     .float_range(config.temp_range.clone())
                     .unit(config.unit.to_owned())
-                    .settable(config.thresholds_settable)
-                    .retained(true)
+                    .settable(
+                        BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.settable && config.thresholds_settable,
+                    )
+                    .retained(BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.retained)
                     .build()
             },
         )
         .add_property_cond(
-            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP_ID,
+            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id,
             config.thresholds,
             || {
                 PropertyDescriptionBuilder::float()
                     .name("High temperature threshold")
                     .float_range(config.temp_range.clone())
                     .unit(config.unit.to_owned())
-                    .settable(config.thresholds_settable)
-                    .retained(true)
+                    .settable(
+                        BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.settable && config.thresholds_settable,
+                    )
+                    .retained(BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.retained)
                     .build()
             },
         )
         .add_property_cond(
-            BBQ_PROBE_NODE_THRESHOLD_STATE_PROP_ID,
+            BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.id,
             config.threshold_state,
             || {
                 PropertyDescriptionBuilder::enumeration(BbqProbeThresholdState::variants())
                     .unwrap()
                     .name("Threshold state")
-                    .settable(false)
-                    .retained(true)
+                    .settable(BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.settable)
+                    .retained(BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.retained)
                     .build()
             },
         )
-        .add_property_cond(BBQ_PROBE_NODE_ROLE_PROP_ID, config.role, || {
+        .add_property_cond(BBQ_PROBE_NODE_ROLE_PROP.id, config.role, || {
             PropertyDescriptionBuilder::enumeration(config.roles.iter().map(String::as_str))
                 .unwrap()
                 .name("Probe role")
-                .settable(config.role_settable)
-                .retained(true)
+                .settable(BBQ_PROBE_NODE_ROLE_PROP.settable && config.role_settable)
+                .retained(BBQ_PROBE_NODE_ROLE_PROP.retained)
                 .build()
         })
-        .add_property_cond(BBQ_PROBE_NODE_LABEL_PROP_ID, config.label, || {
+        .add_property_cond(BBQ_PROBE_NODE_LABEL_PROP.id, config.label, || {
             PropertyDescriptionBuilder::string()
                 .name("Probe label")
-                .settable(config.label_settable)
-                .retained(true)
+                .settable(BBQ_PROBE_NODE_LABEL_PROP.settable && config.label_settable)
+                .retained(BBQ_PROBE_NODE_LABEL_PROP.retained)
                 .build()
         })
-        .add_property_cond(BBQ_PROBE_NODE_ALARM_MODE_PROP_ID, config.alarm_mode, || {
+        .add_property_cond(BBQ_PROBE_NODE_ALARM_MODE_PROP.id, config.alarm_mode, || {
             PropertyDescriptionBuilder::enumeration(config.alarm_modes.iter().map(String::as_str))
                 .unwrap()
                 .name("Alarm mode")
-                .settable(config.alarm_mode_settable)
-                .retained(true)
+                .settable(BBQ_PROBE_NODE_ALARM_MODE_PROP.settable && config.alarm_mode_settable)
+                .retained(BBQ_PROBE_NODE_ALARM_MODE_PROP.retained)
                 .build()
         })
-        .add_property_cond(BBQ_PROBE_NODE_COLOR_PROP_ID, config.color, || {
+        .add_property_cond(BBQ_PROBE_NODE_COLOR_PROP.id, config.color, || {
             PropertyDescriptionBuilder::color(vec![ColorFormat::Rgb])
                 .unwrap()
                 .name("Probe color")
-                .settable(config.color_settable)
-                .retained(true)
+                .settable(BBQ_PROBE_NODE_COLOR_PROP.settable && config.color_settable)
+                .retained(BBQ_PROBE_NODE_COLOR_PROP.retained)
                 .build()
         })
         .add_property_cond(
-            BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID,
+            BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id,
             config.sensor_type,
             || {
                 PropertyDescriptionBuilder::enumeration(
@@ -337,8 +384,8 @@ impl BbqProbeNodeBuilder {
                 )
                 .unwrap()
                 .name("Sensor type")
-                .settable(config.sensor_type_settable)
-                .retained(true)
+                .settable(BBQ_PROBE_NODE_SENSOR_TYPE_PROP.settable && config.sensor_type_settable)
+                .retained(BBQ_PROBE_NODE_SENSOR_TYPE_PROP.retained)
                 .build()
             },
         )
@@ -380,16 +427,6 @@ pub struct BbqProbeNodePublisher {
     client: Homie5DeviceProtocol,
     config: BbqProbeNodeConfig,
     node: NodeRef,
-    temperature_prop: HomieID,
-    connected_prop: HomieID,
-    low_threshold_prop: HomieID,
-    high_threshold_prop: HomieID,
-    threshold_state_prop: HomieID,
-    role_prop: HomieID,
-    label_prop: HomieID,
-    alarm_mode_prop: HomieID,
-    color_prop: HomieID,
-    sensor_type_prop: HomieID,
 }
 
 impl BbqProbeNodePublisher {
@@ -398,34 +435,24 @@ impl BbqProbeNodePublisher {
             node,
             client,
             config,
-            temperature_prop: BBQ_PROBE_NODE_TEMPERATURE_PROP_ID,
-            connected_prop: BBQ_PROBE_NODE_CONNECTED_PROP_ID,
-            low_threshold_prop: BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID,
-            high_threshold_prop: BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP_ID,
-            threshold_state_prop: BBQ_PROBE_NODE_THRESHOLD_STATE_PROP_ID,
-            role_prop: BBQ_PROBE_NODE_ROLE_PROP_ID,
-            label_prop: BBQ_PROBE_NODE_LABEL_PROP_ID,
-            alarm_mode_prop: BBQ_PROBE_NODE_ALARM_MODE_PROP_ID,
-            color_prop: BBQ_PROBE_NODE_COLOR_PROP_ID,
-            sensor_type_prop: BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID,
         }
     }
 
     pub fn temperature(&self, value: f64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.temperature_prop,
+            &BBQ_PROBE_NODE_TEMPERATURE_PROP.id,
             value.to_string(),
-            true,
+            BBQ_PROBE_NODE_TEMPERATURE_PROP.retained,
         )
     }
 
     pub fn connected(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.connected_prop,
+            &BBQ_PROBE_NODE_CONNECTED_PROP.id,
             value.to_string(),
-            true,
+            BBQ_PROBE_NODE_CONNECTED_PROP.retained,
         )
     }
 
@@ -435,9 +462,9 @@ impl BbqProbeNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.low_threshold_prop,
+            &BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id,
             value.to_string(),
-            true,
+            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.retained,
         ))
     }
 
@@ -447,9 +474,9 @@ impl BbqProbeNodePublisher {
         }
         Some(self.client.publish_target(
             self.node.node_id(),
-            &self.low_threshold_prop,
+            &BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id,
             value.to_string(),
-            true,
+            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.retained,
         ))
     }
 
@@ -459,9 +486,9 @@ impl BbqProbeNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.high_threshold_prop,
+            &BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id,
             value.to_string(),
-            true,
+            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.retained,
         ))
     }
 
@@ -471,9 +498,9 @@ impl BbqProbeNodePublisher {
         }
         Some(self.client.publish_target(
             self.node.node_id(),
-            &self.high_threshold_prop,
+            &BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id,
             value.to_string(),
-            true,
+            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.retained,
         ))
     }
 
@@ -486,9 +513,9 @@ impl BbqProbeNodePublisher {
         }
         Some(self.client.publish_value(
             self.node.node_id(),
-            &self.threshold_state_prop,
+            &BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.id,
             value.as_str(),
-            true,
+            BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.retained,
         ))
     }
 
@@ -496,100 +523,120 @@ impl BbqProbeNodePublisher {
         if !self.config.role {
             return None;
         }
-        Some(
-            self.client
-                .publish_value(self.node.node_id(), &self.role_prop, value, true),
-        )
+        Some(self.client.publish_value(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_ROLE_PROP.id,
+            value,
+            BBQ_PROBE_NODE_ROLE_PROP.retained,
+        ))
     }
 
     pub fn role_target(&self, value: &str) -> Option<homie5::client::Publish> {
         if !self.config.role {
             return None;
         }
-        Some(
-            self.client
-                .publish_target(self.node.node_id(), &self.role_prop, value, true),
-        )
+        Some(self.client.publish_target(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_ROLE_PROP.id,
+            value,
+            BBQ_PROBE_NODE_ROLE_PROP.retained,
+        ))
     }
 
     pub fn label(&self, value: &str) -> Option<homie5::client::Publish> {
         if !self.config.label {
             return None;
         }
-        Some(
-            self.client
-                .publish_value(self.node.node_id(), &self.label_prop, value, true),
-        )
+        Some(self.client.publish_value(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_LABEL_PROP.id,
+            value,
+            BBQ_PROBE_NODE_LABEL_PROP.retained,
+        ))
     }
 
     pub fn label_target(&self, value: &str) -> Option<homie5::client::Publish> {
         if !self.config.label {
             return None;
         }
-        Some(
-            self.client
-                .publish_target(self.node.node_id(), &self.label_prop, value, true),
-        )
+        Some(self.client.publish_target(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_LABEL_PROP.id,
+            value,
+            BBQ_PROBE_NODE_LABEL_PROP.retained,
+        ))
     }
 
     pub fn alarm_mode(&self, value: &str) -> Option<homie5::client::Publish> {
         if !self.config.alarm_mode {
             return None;
         }
-        Some(
-            self.client
-                .publish_value(self.node.node_id(), &self.alarm_mode_prop, value, true),
-        )
+        Some(self.client.publish_value(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_ALARM_MODE_PROP.id,
+            value,
+            BBQ_PROBE_NODE_ALARM_MODE_PROP.retained,
+        ))
     }
 
     pub fn alarm_mode_target(&self, value: &str) -> Option<homie5::client::Publish> {
         if !self.config.alarm_mode {
             return None;
         }
-        Some(
-            self.client
-                .publish_target(self.node.node_id(), &self.alarm_mode_prop, value, true),
-        )
+        Some(self.client.publish_target(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_ALARM_MODE_PROP.id,
+            value,
+            BBQ_PROBE_NODE_ALARM_MODE_PROP.retained,
+        ))
     }
 
     pub fn color(&self, value: HomieColorValue) -> Option<homie5::client::Publish> {
         if !self.config.color {
             return None;
         }
-        Some(
-            self.client
-                .publish_value(self.node.node_id(), &self.color_prop, value, true),
-        )
+        Some(self.client.publish_value(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_COLOR_PROP.id,
+            value,
+            BBQ_PROBE_NODE_COLOR_PROP.retained,
+        ))
     }
 
     pub fn color_target(&self, value: HomieColorValue) -> Option<homie5::client::Publish> {
         if !self.config.color {
             return None;
         }
-        Some(
-            self.client
-                .publish_target(self.node.node_id(), &self.color_prop, value, true),
-        )
+        Some(self.client.publish_target(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_COLOR_PROP.id,
+            value,
+            BBQ_PROBE_NODE_COLOR_PROP.retained,
+        ))
     }
 
     pub fn sensor_type(&self, value: &str) -> Option<homie5::client::Publish> {
         if !self.config.sensor_type {
             return None;
         }
-        Some(
-            self.client
-                .publish_value(self.node.node_id(), &self.sensor_type_prop, value, true),
-        )
+        Some(self.client.publish_value(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id,
+            value,
+            BBQ_PROBE_NODE_SENSOR_TYPE_PROP.retained,
+        ))
     }
 
     pub fn sensor_type_target(&self, value: &str) -> Option<homie5::client::Publish> {
         if !self.config.sensor_type {
             return None;
         }
-        Some(
-            self.client
-                .publish_target(self.node.node_id(), &self.sensor_type_prop, value, true),
-        )
+        Some(self.client.publish_target(
+            self.node.node_id(),
+            &BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id,
+            value,
+            BBQ_PROBE_NODE_SENSOR_TYPE_PROP.retained,
+        ))
     }
 }
 
@@ -604,7 +651,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.low_threshold_prop) {
+        if property.match_with_node(&self.node, &BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id) {
             if !self.config.thresholds || !self.config.thresholds_settable {
                 return ParseOutcome::NoMatch;
             }
@@ -628,7 +675,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.high_threshold_prop) {
+        } else if property.match_with_node(&self.node, &BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id) {
             if !self.config.thresholds || !self.config.thresholds_settable {
                 return ParseOutcome::NoMatch;
             }
@@ -652,7 +699,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.role_prop) {
+        } else if property.match_with_node(&self.node, &BBQ_PROBE_NODE_ROLE_PROP.id) {
             if !self.config.role || !self.config.role_settable {
                 return ParseOutcome::NoMatch;
             }
@@ -676,7 +723,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
                     ParseErrorKind::InvalidVariant,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.label_prop) {
+        } else if property.match_with_node(&self.node, &BBQ_PROBE_NODE_LABEL_PROP.id) {
             if !self.config.label || !self.config.label_settable {
                 return ParseOutcome::NoMatch;
             }
@@ -700,7 +747,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.alarm_mode_prop) {
+        } else if property.match_with_node(&self.node, &BBQ_PROBE_NODE_ALARM_MODE_PROP.id) {
             if !self.config.alarm_mode || !self.config.alarm_mode_settable {
                 return ParseOutcome::NoMatch;
             }
@@ -724,7 +771,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
                     ParseErrorKind::InvalidVariant,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.color_prop) {
+        } else if property.match_with_node(&self.node, &BBQ_PROBE_NODE_COLOR_PROP.id) {
             if !self.config.color || !self.config.color_settable {
                 return ParseOutcome::NoMatch;
             }
@@ -748,7 +795,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.sensor_type_prop) {
+        } else if property.match_with_node(&self.node, &BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id) {
             if !self.config.sensor_type || !self.config.sensor_type_settable {
                 return ParseOutcome::NoMatch;
             }
@@ -788,7 +835,7 @@ impl SetCommandParser for BbqProbeNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.temperature_prop.to_string(),
+                BBQ_PROBE_NODE_TEMPERATURE_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),
@@ -858,7 +905,7 @@ mod tests {
 
         let temperature = node
             .properties
-            .get(&BBQ_PROBE_NODE_TEMPERATURE_PROP_ID)
+            .get(&BBQ_PROBE_NODE_TEMPERATURE_PROP.id)
             .expect("temperature property must exist");
         assert_eq!(temperature.unit.as_deref(), Some("°F"));
         assert!(!temperature.settable);
@@ -874,7 +921,7 @@ mod tests {
 
         let connected = node
             .properties
-            .get(&BBQ_PROBE_NODE_CONNECTED_PROP_ID)
+            .get(&BBQ_PROBE_NODE_CONNECTED_PROP.id)
             .expect("connected property must exist");
         assert!(!connected.settable);
         assert!(connected.retained);
@@ -893,45 +940,45 @@ mod tests {
             Case {
                 enable: |c| c.thresholds = true,
                 expected: vec![
-                    BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID,
-                    BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP_ID,
+                    BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id,
+                    BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id,
                 ],
             },
             Case {
                 enable: |c| c.threshold_state = true,
-                expected: vec![BBQ_PROBE_NODE_THRESHOLD_STATE_PROP_ID],
+                expected: vec![BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.id],
             },
             Case {
                 enable: |c| c.role = true,
-                expected: vec![BBQ_PROBE_NODE_ROLE_PROP_ID],
+                expected: vec![BBQ_PROBE_NODE_ROLE_PROP.id],
             },
             Case {
                 enable: |c| c.label = true,
-                expected: vec![BBQ_PROBE_NODE_LABEL_PROP_ID],
+                expected: vec![BBQ_PROBE_NODE_LABEL_PROP.id],
             },
             Case {
                 enable: |c| c.alarm_mode = true,
-                expected: vec![BBQ_PROBE_NODE_ALARM_MODE_PROP_ID],
+                expected: vec![BBQ_PROBE_NODE_ALARM_MODE_PROP.id],
             },
             Case {
                 enable: |c| c.color = true,
-                expected: vec![BBQ_PROBE_NODE_COLOR_PROP_ID],
+                expected: vec![BBQ_PROBE_NODE_COLOR_PROP.id],
             },
             Case {
                 enable: |c| c.sensor_type = true,
-                expected: vec![BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID],
+                expected: vec![BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id],
             },
         ];
 
         let all_optional = [
-            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID,
-            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP_ID,
-            BBQ_PROBE_NODE_THRESHOLD_STATE_PROP_ID,
-            BBQ_PROBE_NODE_ROLE_PROP_ID,
-            BBQ_PROBE_NODE_LABEL_PROP_ID,
-            BBQ_PROBE_NODE_ALARM_MODE_PROP_ID,
-            BBQ_PROBE_NODE_COLOR_PROP_ID,
-            BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID,
+            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id,
+            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id,
+            BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.id,
+            BBQ_PROBE_NODE_ROLE_PROP.id,
+            BBQ_PROBE_NODE_LABEL_PROP.id,
+            BBQ_PROBE_NODE_ALARM_MODE_PROP.id,
+            BBQ_PROBE_NODE_COLOR_PROP.id,
+            BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id,
         ];
 
         for case in &cases {
@@ -962,13 +1009,13 @@ mod tests {
 
         let node = BbqProbeNodeBuilder::new(&config).build();
         for prop_id in [
-            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID,
-            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP_ID,
-            BBQ_PROBE_NODE_ROLE_PROP_ID,
-            BBQ_PROBE_NODE_LABEL_PROP_ID,
-            BBQ_PROBE_NODE_ALARM_MODE_PROP_ID,
-            BBQ_PROBE_NODE_COLOR_PROP_ID,
-            BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID,
+            BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id,
+            BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id,
+            BBQ_PROBE_NODE_ROLE_PROP.id,
+            BBQ_PROBE_NODE_LABEL_PROP.id,
+            BBQ_PROBE_NODE_ALARM_MODE_PROP.id,
+            BBQ_PROBE_NODE_COLOR_PROP.id,
+            BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id,
         ] {
             let prop = node
                 .properties
@@ -982,7 +1029,7 @@ mod tests {
     fn enum_properties_use_configured_variants() {
         let node = BbqProbeNodeBuilder::new(&full_config()).build();
 
-        let role = node.properties.get(&BBQ_PROBE_NODE_ROLE_PROP_ID).unwrap();
+        let role = node.properties.get(&BBQ_PROBE_NODE_ROLE_PROP.id).unwrap();
         assert_eq!(
             role.format,
             HomiePropertyFormat::Enum(vec![
@@ -995,7 +1042,7 @@ mod tests {
 
         let alarm_mode = node
             .properties
-            .get(&BBQ_PROBE_NODE_ALARM_MODE_PROP_ID)
+            .get(&BBQ_PROBE_NODE_ALARM_MODE_PROP.id)
             .unwrap();
         assert_eq!(
             alarm_mode.format,
@@ -1009,7 +1056,7 @@ mod tests {
 
         let sensor_type = node
             .properties
-            .get(&BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID)
+            .get(&BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id)
             .unwrap();
         assert_eq!(
             sensor_type.format,
@@ -1018,7 +1065,7 @@ mod tests {
 
         let threshold_state = node
             .properties
-            .get(&BBQ_PROBE_NODE_THRESHOLD_STATE_PROP_ID)
+            .get(&BBQ_PROBE_NODE_THRESHOLD_STATE_PROP.id)
             .unwrap();
         assert_eq!(
             threshold_state.format,
@@ -1095,21 +1142,21 @@ mod tests {
         let (desc, publisher, _client, device_id) = publisher_fixture();
 
         // Valid float threshold.
-        let low = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID);
+        let low = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id);
         match publisher.parse_set(&low, &desc, "55.5") {
             ParseOutcome::Parsed(BbqProbeNodeSetEvents::LowThreshold(v)) => assert_eq!(v, 55.5),
             other => panic!("expected parsed low threshold, got {other:?}"),
         }
 
         // Out-of-range threshold is invalid.
-        let high = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP_ID);
+        let high = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_HIGH_THRESHOLD_PROP.id);
         assert!(matches!(
             publisher.parse_set(&high, &desc, "9999"),
             ParseOutcome::Invalid(_)
         ));
 
         // Valid enum variants.
-        let role = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_ROLE_PROP_ID);
+        let role = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_ROLE_PROP.id);
         match publisher.parse_set(&role, &desc, "food") {
             ParseOutcome::Parsed(BbqProbeNodeSetEvents::Role(v)) => assert_eq!(v, "food"),
             other => panic!("expected parsed role, got {other:?}"),
@@ -1119,7 +1166,7 @@ mod tests {
             ParseOutcome::Invalid(_)
         ));
 
-        let alarm = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_ALARM_MODE_PROP_ID);
+        let alarm = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_ALARM_MODE_PROP.id);
         match publisher.parse_set(&alarm, &desc, "push-buzzer") {
             ParseOutcome::Parsed(BbqProbeNodeSetEvents::AlarmMode(v)) => {
                 assert_eq!(v, "push-buzzer")
@@ -1127,7 +1174,7 @@ mod tests {
             other => panic!("expected parsed alarm mode, got {other:?}"),
         }
 
-        let sensor = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID);
+        let sensor = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id);
         match publisher.parse_set(&sensor, &desc, "iGrill2") {
             ParseOutcome::Parsed(BbqProbeNodeSetEvents::SensorType(v)) => {
                 assert_eq!(v, "iGrill2")
@@ -1136,14 +1183,14 @@ mod tests {
         }
 
         // Valid label.
-        let label = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_LABEL_PROP_ID);
+        let label = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_LABEL_PROP.id);
         match publisher.parse_set(&label, &desc, "Brisket") {
             ParseOutcome::Parsed(BbqProbeNodeSetEvents::Label(v)) => assert_eq!(v, "Brisket"),
             other => panic!("expected parsed label, got {other:?}"),
         }
 
         // Valid Homie RGB color.
-        let color = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_COLOR_PROP_ID);
+        let color = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_COLOR_PROP.id);
         match publisher.parse_set(&color, &desc, "rgb,255,128,0") {
             ParseOutcome::Parsed(BbqProbeNodeSetEvents::Color(HomieColorValue::RGB(r, g, b))) => {
                 assert_eq!((r, g, b), (255, 128, 0));
@@ -1163,7 +1210,7 @@ mod tests {
         ));
 
         // Same property on a different node must not match.
-        let other_node = prop_ref(&device_id, "probe-2", BBQ_PROBE_NODE_LOW_THRESHOLD_PROP_ID);
+        let other_node = prop_ref(&device_id, "probe-2", BBQ_PROBE_NODE_LOW_THRESHOLD_PROP.id);
         assert!(matches!(
             publisher.parse_set(&other_node, &desc, "55.5"),
             ParseOutcome::NoMatch
@@ -1185,7 +1232,7 @@ mod tests {
             .add_node(node_id, node_desc)
             .build();
 
-        let sensor = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_SENSOR_TYPE_PROP_ID);
+        let sensor = prop_ref(&device_id, "probe-1", BBQ_PROBE_NODE_SENSOR_TYPE_PROP.id);
         assert!(matches!(
             publisher.parse_set(&sensor, &desc, "iGrill2"),
             ParseOutcome::NoMatch

@@ -5,11 +5,16 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_CO;
+use crate::{PropSpec, SMARTHOME_CAP_CO};
 
 pub const CO_NODE_DEFAULT_ID: HomieID = HomieID::new_const("co");
 pub const CO_NODE_DEFAULT_NAME: &str = "Carbon monoxide detector";
-pub const CO_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
+
+pub const CO_NODE_DETECTED_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("detected"),
+    retained: true,
+    settable: false,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -41,12 +46,12 @@ impl CoNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            CO_NODE_DETECTED_PROP_ID,
+            CO_NODE_DETECTED_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("CO detected")
                 .boolean_labels("clear", "co detected")
-                .settable(false)
-                .retained(true)
+                .settable(CO_NODE_DETECTED_PROP.settable)
+                .retained(CO_NODE_DETECTED_PROP.retained)
                 .build(),
         )
     }
@@ -85,24 +90,19 @@ impl CoNodeBuilder {
 pub struct CoNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    detected_prop: HomieID,
 }
 
 impl CoNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            detected_prop: CO_NODE_DETECTED_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn detected(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.detected_prop,
+            &CO_NODE_DETECTED_PROP.id,
             value.to_string(),
-            true,
+            CO_NODE_DETECTED_PROP.retained,
         )
     }
 }

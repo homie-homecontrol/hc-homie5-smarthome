@@ -6,13 +6,21 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::SMARTHOME_CAP_VIBRATION;
+use crate::{PropSpec, SMARTHOME_CAP_VIBRATION};
 
 pub const VIBRATION_NODE_DEFAULT_ID: HomieID = HomieID::new_const("vibration");
 pub const VIBRATION_NODE_DEFAULT_NAME: &str = "Vibration sensor";
-pub const VIBRATION_NODE_VIBRATION_PROP_ID: HomieID = HomieID::new_const("vibration");
-pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID: HomieID =
-    HomieID::new_const("vibration-strength");
+
+pub const VIBRATION_NODE_VIBRATION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("vibration"),
+    retained: true,
+    settable: false,
+};
+pub const VIBRATION_NODE_VIBRATION_STRENGTH_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("vibration-strength"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct VibrationNode {
@@ -55,22 +63,22 @@ impl VibrationNodeBuilder {
         config: &VibrationNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            VIBRATION_NODE_VIBRATION_PROP_ID,
+            VIBRATION_NODE_VIBRATION_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Vibration detected")
                 .boolean_labels("no-vibration", "vibration")
-                .retained(true)
-                .settable(false)
+                .retained(VIBRATION_NODE_VIBRATION_PROP.retained)
+                .settable(VIBRATION_NODE_VIBRATION_PROP.settable)
                 .build(),
         )
         .add_property_cond(
-            VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID,
+            VIBRATION_NODE_VIBRATION_STRENGTH_PROP.id,
             config.vibration_strength,
             || {
                 PropertyDescriptionBuilder::integer()
                     .name("Vibration strength")
-                    .retained(true)
-                    .settable(false)
+                    .retained(VIBRATION_NODE_VIBRATION_STRENGTH_PROP.retained)
+                    .settable(VIBRATION_NODE_VIBRATION_STRENGTH_PROP.settable)
                     .build()
             },
         )
@@ -108,35 +116,28 @@ impl VibrationNodeBuilder {
 pub struct VibrationNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    vibr_prop: HomieID,
-    vibr_strength: HomieID,
 }
 
 impl VibrationNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            vibr_prop: VIBRATION_NODE_VIBRATION_PROP_ID,
-            vibr_strength: VIBRATION_NODE_VIBRATION_STRENGTH_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn vibration(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.vibr_prop,
+            &VIBRATION_NODE_VIBRATION_PROP.id,
             value.to_string(),
-            true,
+            VIBRATION_NODE_VIBRATION_PROP.retained,
         )
     }
 
     pub fn vibration_strength(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.vibr_strength,
+            &VIBRATION_NODE_VIBRATION_STRENGTH_PROP.id,
             value.to_string(),
-            true,
+            VIBRATION_NODE_VIBRATION_STRENGTH_PROP.retained,
         )
     }
 }

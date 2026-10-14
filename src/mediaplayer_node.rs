@@ -12,15 +12,32 @@ use homie5::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_MEDIAPLAYER, SetCommandParser,
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_MEDIAPLAYER, SetCommandParser,
 };
 
 pub const MEDIAPLAYER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("mediaplayer");
 pub const MEDIAPLAYER_NODE_DEFAULT_NAME: &str = "Media player";
-pub const MEDIAPLAYER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
-pub const MEDIAPLAYER_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
-pub const MEDIAPLAYER_NODE_SHUFFLE_PROP_ID: HomieID = HomieID::new_const("shuffle");
-pub const MEDIAPLAYER_NODE_REPEAT_PROP_ID: HomieID = HomieID::new_const("repeat");
+
+pub const MEDIAPLAYER_NODE_ACTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("action"),
+    retained: false,
+    settable: true,
+};
+pub const MEDIAPLAYER_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: false,
+};
+pub const MEDIAPLAYER_NODE_SHUFFLE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("shuffle"),
+    retained: true,
+    settable: true,
+};
+pub const MEDIAPLAYER_NODE_REPEAT_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("repeat"),
+    retained: true,
+    settable: true,
+};
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -226,37 +243,37 @@ impl MediaplayerNodeBuilder {
         config: &MediaplayerNodeConfig,
     ) -> NodeDescriptionBuilder {
         db.add_property(
-            MEDIAPLAYER_NODE_ACTION_PROP_ID,
+            MEDIAPLAYER_NODE_ACTION_PROP.id,
             PropertyDescriptionBuilder::enumeration(config.build_action_format())
                 .unwrap()
                 .name("Player action")
-                .settable(true)
-                .retained(false)
+                .settable(MEDIAPLAYER_NODE_ACTION_PROP.settable)
+                .retained(MEDIAPLAYER_NODE_ACTION_PROP.retained)
                 .build(),
         )
         .add_property(
-            MEDIAPLAYER_NODE_STATE_PROP_ID,
+            MEDIAPLAYER_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::enumeration(["playing", "paused", "stopped"])
                 .unwrap()
                 .name("Play state")
-                .settable(false)
-                .retained(true)
+                .settable(MEDIAPLAYER_NODE_STATE_PROP.settable)
+                .retained(MEDIAPLAYER_NODE_STATE_PROP.retained)
                 .build(),
         )
-        .add_property_cond(MEDIAPLAYER_NODE_SHUFFLE_PROP_ID, config.shuffle, || {
+        .add_property_cond(MEDIAPLAYER_NODE_SHUFFLE_PROP.id, config.shuffle, || {
             PropertyDescriptionBuilder::enumeration(CONTROL_STATE_FORMAT)
                 .unwrap()
                 .name("Shuffle mode")
-                .settable(true)
-                .retained(true)
+                .settable(MEDIAPLAYER_NODE_SHUFFLE_PROP.settable)
+                .retained(MEDIAPLAYER_NODE_SHUFFLE_PROP.retained)
                 .build()
         })
-        .add_property_cond(MEDIAPLAYER_NODE_REPEAT_PROP_ID, config.repeat, || {
+        .add_property_cond(MEDIAPLAYER_NODE_REPEAT_PROP.id, config.repeat, || {
             PropertyDescriptionBuilder::enumeration(CONTROL_STATE_FORMAT)
                 .unwrap()
                 .name("Repeat mode")
-                .settable(true)
-                .retained(true)
+                .settable(MEDIAPLAYER_NODE_REPEAT_PROP.settable)
+                .retained(MEDIAPLAYER_NODE_REPEAT_PROP.retained)
                 .build()
         })
     }
@@ -295,41 +312,38 @@ impl MediaplayerNodeBuilder {
 pub struct MediaplayerNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    action_prop: HomieID,
-    state_prop: HomieID,
-    shuffle_prop: HomieID,
-    repeat_prop: HomieID,
 }
 
 impl MediaplayerNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            action_prop: MEDIAPLAYER_NODE_ACTION_PROP_ID,
-            state_prop: MEDIAPLAYER_NODE_STATE_PROP_ID,
-            shuffle_prop: MEDIAPLAYER_NODE_SHUFFLE_PROP_ID,
-            repeat_prop: MEDIAPLAYER_NODE_REPEAT_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: MediaplayerState) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.state_prop, value.as_str(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &MEDIAPLAYER_NODE_STATE_PROP.id,
+            value.as_str(),
+            MEDIAPLAYER_NODE_STATE_PROP.retained,
+        )
     }
 
     pub fn shuffle(&self, value: ControlState) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.shuffle_prop,
+            &MEDIAPLAYER_NODE_SHUFFLE_PROP.id,
             value.as_str(),
-            true,
+            MEDIAPLAYER_NODE_SHUFFLE_PROP.retained,
         )
     }
 
     pub fn repeat(&self, value: ControlState) -> homie5::client::Publish {
-        self.client
-            .publish_value(self.node.node_id(), &self.repeat_prop, value.as_str(), true)
+        self.client.publish_value(
+            self.node.node_id(),
+            &MEDIAPLAYER_NODE_REPEAT_PROP.id,
+            value.as_str(),
+            MEDIAPLAYER_NODE_REPEAT_PROP.retained,
+        )
     }
 }
 
@@ -344,7 +358,7 @@ impl SetCommandParser for MediaplayerNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.action_prop) {
+        if property.match_with_node(&self.node, &MEDIAPLAYER_NODE_ACTION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -370,7 +384,7 @@ impl SetCommandParser for MediaplayerNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.shuffle_prop) {
+        } else if property.match_with_node(&self.node, &MEDIAPLAYER_NODE_SHUFFLE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -396,7 +410,7 @@ impl SetCommandParser for MediaplayerNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.repeat_prop) {
+        } else if property.match_with_node(&self.node, &MEDIAPLAYER_NODE_REPEAT_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -438,7 +452,7 @@ impl SetCommandParser for MediaplayerNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.action_prop.to_string(),
+                MEDIAPLAYER_NODE_ACTION_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

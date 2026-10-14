@@ -5,11 +5,16 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_SMOKE;
+use crate::{PropSpec, SMARTHOME_CAP_SMOKE};
 
 pub const SMOKE_NODE_DEFAULT_ID: HomieID = HomieID::new_const("smoke");
 pub const SMOKE_NODE_DEFAULT_NAME: &str = "Smoke detector";
-pub const SMOKE_NODE_DETECTED_PROP_ID: HomieID = HomieID::new_const("detected");
+
+pub const SMOKE_NODE_DETECTED_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("detected"),
+    retained: true,
+    settable: false,
+};
 
 // ── Node (state) ────────────────────────────────────────────────────────────
 
@@ -41,12 +46,12 @@ impl SmokeNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            SMOKE_NODE_DETECTED_PROP_ID,
+            SMOKE_NODE_DETECTED_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Smoke detected")
                 .boolean_labels("no smoke", "smoke detected")
-                .settable(false)
-                .retained(true)
+                .settable(SMOKE_NODE_DETECTED_PROP.settable)
+                .retained(SMOKE_NODE_DETECTED_PROP.retained)
                 .build(),
         )
     }
@@ -85,24 +90,19 @@ impl SmokeNodeBuilder {
 pub struct SmokeNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    detected_prop: HomieID,
 }
 
 impl SmokeNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            detected_prop: SMOKE_NODE_DETECTED_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn detected(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.detected_prop,
+            &SMOKE_NODE_DETECTED_PROP.id,
             value.to_string(),
-            true,
+            SMOKE_NODE_DETECTED_PROP.retained,
         )
     }
 }

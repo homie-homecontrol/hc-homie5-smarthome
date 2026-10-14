@@ -5,11 +5,16 @@ use homie5::{
     },
 };
 
-use crate::SMARTHOME_CAP_TILT;
+use crate::{PropSpec, SMARTHOME_CAP_TILT};
 
 pub const TILT_NODE_DEFAULT_ID: HomieID = HomieID::new_const("tilt");
 pub const TILT_NODE_DEFAULT_NAME: &str = "Tilt sensor";
-pub const TILT_NODE_STATE_PROP_ID: HomieID = HomieID::new_const("state");
+
+pub const TILT_NODE_STATE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("state"),
+    retained: true,
+    settable: false,
+};
 
 #[derive(Debug)]
 pub struct TiltNode {
@@ -37,12 +42,12 @@ impl TiltNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder) -> NodeDescriptionBuilder {
         db.add_property(
-            TILT_NODE_STATE_PROP_ID,
+            TILT_NODE_STATE_PROP.id,
             PropertyDescriptionBuilder::boolean()
                 .name("Tilted state")
                 .boolean_labels("not tilted", "tilted")
-                .settable(false)
-                .retained(true)
+                .settable(TILT_NODE_STATE_PROP.settable)
+                .retained(TILT_NODE_STATE_PROP.retained)
                 .build(),
         )
     }
@@ -79,24 +84,19 @@ impl TiltNodeBuilder {
 pub struct TiltNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    state_prop: HomieID,
 }
 
 impl TiltNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            state_prop: TILT_NODE_STATE_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn state(&self, value: bool) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.state_prop,
+            &TILT_NODE_STATE_PROP.id,
             value.to_string(),
-            true,
+            TILT_NODE_STATE_PROP.retained,
         )
     }
 }

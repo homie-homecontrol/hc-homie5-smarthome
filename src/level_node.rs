@@ -10,12 +10,23 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_LEVEL, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_LEVEL, SetCommandParser,
+};
 
 pub const LEVEL_NODE_DEFAULT_ID: HomieID = HomieID::new_const("level");
 pub const LEVEL_NODE_DEFAULT_NAME: &str = "Level control";
-pub const LEVEL_NODE_VALUE_PROP_ID: HomieID = HomieID::new_const("value");
-pub const LEVEL_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+
+pub const LEVEL_NODE_VALUE_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("value"),
+    retained: true,
+    settable: true,
+};
+pub const LEVEL_NODE_ACTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("action"),
+    retained: false,
+    settable: true,
+};
 
 #[derive(Debug)]
 pub struct LevelNode {
@@ -80,7 +91,7 @@ impl LevelNodeBuilder {
 
     fn build_node(db: NodeDescriptionBuilder, config: &LevelNodeConfig) -> NodeDescriptionBuilder {
         db.add_property(
-            LEVEL_NODE_VALUE_PROP_ID,
+            LEVEL_NODE_VALUE_PROP.id,
             PropertyDescriptionBuilder::integer()
                 .name("Level")
                 .integer_range(IntegerRange {
@@ -89,16 +100,16 @@ impl LevelNodeBuilder {
                     step: None,
                 })
                 .unit(HOMIE_UNIT_PERCENT)
-                .settable(config.settable)
-                .retained(true)
+                .settable(LEVEL_NODE_VALUE_PROP.settable && config.settable)
+                .retained(LEVEL_NODE_VALUE_PROP.retained)
                 .build(),
         )
-        .add_property_cond(LEVEL_NODE_ACTION_PROP_ID, config.step_action, || {
+        .add_property_cond(LEVEL_NODE_ACTION_PROP.id, config.step_action, || {
             PropertyDescriptionBuilder::enumeration(["step-up", "step-down"])
                 .unwrap()
                 .name("Step level")
-                .settable(config.settable)
-                .retained(false)
+                .settable(LEVEL_NODE_ACTION_PROP.settable && config.settable)
+                .retained(LEVEL_NODE_ACTION_PROP.retained)
                 .build()
         })
     }
@@ -132,35 +143,28 @@ impl LevelNodeBuilder {
 pub struct LevelNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    value_prop: HomieID,
-    action_prop: HomieID,
 }
 
 impl LevelNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            value_prop: LEVEL_NODE_VALUE_PROP_ID,
-            action_prop: LEVEL_NODE_ACTION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn value(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.value_prop,
+            &LEVEL_NODE_VALUE_PROP.id,
             value.to_string(),
-            true,
+            LEVEL_NODE_VALUE_PROP.retained,
         )
     }
 
     pub fn value_target(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.value_prop,
+            &LEVEL_NODE_VALUE_PROP.id,
             value.to_string(),
-            true,
+            LEVEL_NODE_VALUE_PROP.retained,
         )
     }
 
@@ -169,8 +173,12 @@ impl LevelNodePublisher {
             LevelNodeActions::StepUp => "step-up",
             LevelNodeActions::StepDown => "step-down",
         };
-        self.client
-            .publish_value(self.node.node_id(), &self.action_prop, action_str, false)
+        self.client.publish_value(
+            self.node.node_id(),
+            &LEVEL_NODE_ACTION_PROP.id,
+            action_str,
+            LEVEL_NODE_ACTION_PROP.retained,
+        )
     }
 }
 
@@ -185,7 +193,7 @@ impl SetCommandParser for LevelNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.value_prop) {
+        if property.match_with_node(&self.node, &LEVEL_NODE_VALUE_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -206,7 +214,7 @@ impl SetCommandParser for LevelNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.action_prop) {
+        } else if property.match_with_node(&self.node, &LEVEL_NODE_ACTION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -248,7 +256,7 @@ impl SetCommandParser for LevelNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.value_prop.to_string(),
+                LEVEL_NODE_VALUE_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),

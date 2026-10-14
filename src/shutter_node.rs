@@ -10,12 +10,23 @@ use homie5::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{ParseError, ParseErrorKind, ParseOutcome, SMARTHOME_CAP_SHUTTER, SetCommandParser};
+use crate::{
+    ParseError, ParseErrorKind, ParseOutcome, PropSpec, SMARTHOME_CAP_SHUTTER, SetCommandParser,
+};
 
 pub const SHUTTER_NODE_DEFAULT_ID: HomieID = HomieID::new_const("shutter");
 pub const SHUTTER_NODE_DEFAULT_NAME: &str = "Shutter control";
-pub const SHUTTER_NODE_POSITION_PROP_ID: HomieID = HomieID::new_const("position");
-pub const SHUTTER_NODE_ACTION_PROP_ID: HomieID = HomieID::new_const("action");
+
+pub const SHUTTER_NODE_POSITION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("position"),
+    retained: true,
+    settable: true,
+};
+pub const SHUTTER_NODE_ACTION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("action"),
+    retained: false,
+    settable: true,
+};
 
 #[derive(Debug)]
 pub struct ShutterNode {
@@ -103,7 +114,7 @@ impl ShutterNodeBuilder {
         }
 
         db.add_property(
-            SHUTTER_NODE_POSITION_PROP_ID,
+            SHUTTER_NODE_POSITION_PROP.id,
             PropertyDescriptionBuilder::integer()
                 .name("Shutter position")
                 .integer_range(IntegerRange {
@@ -112,17 +123,17 @@ impl ShutterNodeBuilder {
                     step: None,
                 })
                 .unit(HOMIE_UNIT_PERCENT)
-                .settable(true)
-                .retained(true)
+                .settable(SHUTTER_NODE_POSITION_PROP.settable)
+                .retained(SHUTTER_NODE_POSITION_PROP.retained)
                 .build(),
         )
         .add_property(
-            SHUTTER_NODE_ACTION_PROP_ID,
+            SHUTTER_NODE_ACTION_PROP.id,
             PropertyDescriptionBuilder::enumeration(actions.iter().map(|a| a.to_string()))
                 .unwrap()
                 .name("Control Shutter")
-                .settable(true)
-                .retained(false)
+                .settable(SHUTTER_NODE_ACTION_PROP.settable)
+                .retained(SHUTTER_NODE_ACTION_PROP.retained)
                 .build(),
         )
     }
@@ -156,44 +167,37 @@ impl ShutterNodeBuilder {
 pub struct ShutterNodePublisher {
     client: Homie5DeviceProtocol,
     node: NodeRef,
-    position_prop: HomieID,
-    action_prop: HomieID,
 }
 
 impl ShutterNodePublisher {
     pub fn new(node: NodeRef, client: Homie5DeviceProtocol) -> Self {
-        Self {
-            node,
-            client,
-            position_prop: SHUTTER_NODE_POSITION_PROP_ID,
-            action_prop: SHUTTER_NODE_ACTION_PROP_ID,
-        }
+        Self { node, client }
     }
 
     pub fn position(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.position_prop,
+            &SHUTTER_NODE_POSITION_PROP.id,
             value.to_string(),
-            true,
+            SHUTTER_NODE_POSITION_PROP.retained,
         )
     }
 
     pub fn position_target(&self, value: i64) -> homie5::client::Publish {
         self.client.publish_target(
             self.node.node_id(),
-            &self.position_prop,
+            &SHUTTER_NODE_POSITION_PROP.id,
             value.to_string(),
-            true,
+            SHUTTER_NODE_POSITION_PROP.retained,
         )
     }
 
     pub fn action(&self, action: ShutterNodeActions) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &self.action_prop,
+            &SHUTTER_NODE_ACTION_PROP.id,
             action.to_string(),
-            false,
+            SHUTTER_NODE_ACTION_PROP.retained,
         )
     }
 }
@@ -209,7 +213,7 @@ impl SetCommandParser for ShutterNodePublisher {
     ) -> ParseOutcome<Self::Event> {
         let property_id = property.prop_id().to_string();
 
-        if property.match_with_node(&self.node, &self.position_prop) {
+        if property.match_with_node(&self.node, &SHUTTER_NODE_POSITION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -230,7 +234,7 @@ impl SetCommandParser for ShutterNodePublisher {
                     ParseErrorKind::InvalidHomieValue,
                 )),
             }
-        } else if property.match_with_node(&self.node, &self.action_prop) {
+        } else if property.match_with_node(&self.node, &SHUTTER_NODE_ACTION_PROP.id) {
             let Some(parsed) = desc.with_property(property, |prop_desc| {
                 HomieValue::parse(set_value, prop_desc)
             }) else {
@@ -272,7 +276,7 @@ impl SetCommandParser for ShutterNodePublisher {
                 set_value,
             } => self.parse_set(property, desc, set_value),
             _ => ParseOutcome::Invalid(ParseError::new(
-                self.position_prop.to_string(),
+                SHUTTER_NODE_POSITION_PROP.id.to_string(),
                 "",
                 ParseErrorKind::UnexpectedMessageType,
             )),
