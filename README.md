@@ -306,11 +306,29 @@ on a separate `climate` capability node.
 | Valve opening level         | `valve`           | Integer  | `%`  | `0:100`                                 | no       | yes      | yes      | Current valve opening       |
 | Window open detected        | `window-open`     | Boolean  | --   | `false="closed"`, `true="open"`         | no       | yes      | yes      | Window-open condition       |
 | Boost mode active           | `boost-state`     | Boolean  | --   | --                                      | yes      | yes      | yes      | Boost heating active        |
-| Seconds remaining for boost | `boost-time`      | Integer  | `s`  | `0:`                                    | no       | no       | yes      | Remaining boost seconds     |
-| Mode                        | `mode`            | Enum     | --   | Configured mode values                  | yes      | yes      | yes      | Operating mode              |
+| Boost end                   | `boost-end`       | Datetime | --   | --                                      | no       | yes      | yes      | When the running boost ends |
+| Boost duration              | `boost-duration`  | Integer  | `s`  | `0:`                                    | no       | yes      | yes      | Configured boost length     |
+| Mode                        | `mode`            | Enum     | --   | Configured mode values                  | yes      | yes      | yes      | Base operating mode         |
 
 All possible mode values: `off`, `auto`, `manual`, `party`, `boost`, `cool`,
 `heat`, `emergency-heating`, `precooling`, `fan-only`, `dry`, `sleep`.
+
+`mode` is the base operating mode and MUST NOT carry a temporary overlay such as
+boost or party. The `party` and `boost` values are deprecated for publishing and
+remain only so that values from older publishers still parse.
+
+Boost is an overlay on top of `mode`: `boost-state` is true while it runs and is
+settable, so automations can start or stop a boost. `boost-end` is only
+meaningful while `boost-state` is true; Homie allows empty payloads only for
+strings, so the last end time stays published after a boost ends.
+`boost-duration` is the configured boost length from the device setting.
+Consumers compute the remaining time locally as `boost-end − now`.
+
+> **Breaking change in 0.11.0:** `boost-time` (non-retained seconds remaining)
+> was removed together with `THERMOSTAT_NODE_BOOST_TIME_PROP`, the `boost_time`
+> config flag, `ThermostatNode::boost_time` and
+> `ThermostatNodePublisher::boost_time()`. Publish `boost-end` and
+> `boost-duration` instead.
 
 ---
 
@@ -913,7 +931,7 @@ All config structs implement `Default` and `Deserialize` with
 | Color       | `ColorNodeConfig`       | `settable`, `color_formats`, `ctmin`, `ctmax`            |
 | Scene       | `SceneNodeConfig`       | `scenes`, `settable`                                     |
 | Shutter     | `ShutterNodeConfig`     | `can_stop`                                               |
-| Thermostat  | `ThermostatNodeConfig`  | `unit`, `valve`, `windowopen`, `boost_state`, `boost_time`, `mode`, `modes`, `temp_range` |
+| Thermostat  | `ThermostatNodeConfig`  | `unit`, `valve`, `windowopen`, `boost_state`, `boost_end`, `boost_duration`, `mode`, `modes`, `temp_range` |
 | Lock        | `LockNodeConfig`        | `settable`                                               |
 | Valve       | `ValveNodeConfig`       | `settable`                                               |
 | Alarm       | `AlarmNodeConfig`       | `sound`, `sounds`, `duration`                            |
