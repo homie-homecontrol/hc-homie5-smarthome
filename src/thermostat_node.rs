@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use homie5::{
     HOMIE_UNIT_DEGREE_CELSIUS, HOMIE_UNIT_PERCENT, HOMIE_UNIT_SECONDS, Homie5DeviceProtocol,
     Homie5Message, Homie5ProtocolError, HomieID, HomieValue, NodeRef, PropertyRef,
@@ -25,6 +26,8 @@ pub const THERMOSTAT_NODE_VALVE_PROP: PropSpec = PropSpec {
     retained: true,
     settable: false,
 };
+/// Base operating mode. It never carries a temporary overlay such as boost or party; a running
+/// boost is reported through `boost-state`, `boost-end` and `boost-duration` instead.
 pub const THERMOSTAT_NODE_MODE_PROP: PropSpec = PropSpec {
     id: HomieID::new_const("mode"),
     retained: true,
@@ -35,14 +38,23 @@ pub const THERMOSTAT_NODE_WINDOWOPEN_PROP: PropSpec = PropSpec {
     retained: true,
     settable: false,
 };
+/// Boost overlay on top of the base `mode`. Settable so automations can start or stop a boost.
 pub const THERMOSTAT_NODE_BOOST_STATE_PROP: PropSpec = PropSpec {
     id: HomieID::new_const("boost-state"),
     retained: true,
     settable: true,
 };
-pub const THERMOSTAT_NODE_BOOST_TIME_PROP: PropSpec = PropSpec {
-    id: HomieID::new_const("boost-time"),
-    retained: false,
+/// Time at which the running boost ends. Meaningful only while `boost-state` is true. Homie allows
+/// empty payloads only for strings, so the last end time stays published after a boost ends.
+pub const THERMOSTAT_NODE_BOOST_END_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("boost-end"),
+    retained: true,
+    settable: false,
+};
+/// Configured boost length in seconds, from the device setting.
+pub const THERMOSTAT_NODE_BOOST_DURATION_PROP: PropSpec = PropSpec {
+    id: HomieID::new_const("boost-duration"),
+    retained: true,
     settable: false,
 };
 
@@ -55,7 +67,8 @@ pub struct ThermostatNode {
     pub mode: Option<ThermostatNodeModes>,
     pub windowopen: Option<bool>,
     pub boost_state: Option<bool>,
-    pub boost_time: Option<i64>,
+    pub boost_end: Option<DateTime<Utc>>,
+    pub boost_duration: Option<i64>,
 }
 
 #[derive(Debug, Default, Copy, PartialEq, Clone, Serialize, Deserialize)]
@@ -64,7 +77,11 @@ pub enum ThermostatNodeModes {
     Off,
     Auto,
     Manual,
+    /// Deprecated for publishing: `mode` is the base mode, never a temporary overlay.
+    /// Still parsed for compatibility with older publishers.
     Party,
+    /// Deprecated for publishing: report a boost through `boost-state`/`boost-end` instead.
+    /// Still parsed for compatibility with older publishers.
     Boost,
     Cool,
     Heat,
@@ -150,7 +167,8 @@ pub struct ThermostatNodeConfig {
     pub valve: bool,
     pub windowopen: bool,
     pub boost_state: bool,
-    pub boost_time: bool,
+    pub boost_end: bool,
+    pub boost_duration: bool,
     pub mode: bool,
     pub modes: Vec<ThermostatNodeModes>,
     pub temp_range: FloatRange,
@@ -163,7 +181,8 @@ impl Default for ThermostatNodeConfig {
             valve: true,
             windowopen: true,
             boost_state: true,
-            boost_time: true,
+            boost_end: true,
+            boost_duration: true,
             mode: true,
             modes: vec![ThermostatNodeModes::Auto, ThermostatNodeModes::Manual],
             temp_range: FloatRange {
@@ -240,20 +259,27 @@ impl ThermostatNodeBuilder {
                     .build()
             },
         )
+        .add_property_cond(THERMOSTAT_NODE_BOOST_END_PROP.id, config.boost_end, || {
+            PropertyDescriptionBuilder::datetime()
+                .name("Boost end")
+                .settable(THERMOSTAT_NODE_BOOST_END_PROP.settable)
+                .retained(THERMOSTAT_NODE_BOOST_END_PROP.retained)
+                .build()
+        })
         .add_property_cond(
-            THERMOSTAT_NODE_BOOST_TIME_PROP.id,
-            config.boost_time,
+            THERMOSTAT_NODE_BOOST_DURATION_PROP.id,
+            config.boost_duration,
             || {
                 PropertyDescriptionBuilder::integer()
-                    .name("Seconds remaining for boost")
+                    .name("Boost duration")
                     .integer_range(IntegerRange {
                         min: Some(0),
                         max: None,
                         step: None,
                     })
                     .unit(HOMIE_UNIT_SECONDS)
-                    .settable(THERMOSTAT_NODE_BOOST_TIME_PROP.settable)
-                    .retained(THERMOSTAT_NODE_BOOST_TIME_PROP.retained)
+                    .settable(THERMOSTAT_NODE_BOOST_DURATION_PROP.settable)
+                    .retained(THERMOSTAT_NODE_BOOST_DURATION_PROP.retained)
                     .build()
             },
         )
@@ -295,7 +321,7 @@ impl ThermostatNodeBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use homie5::device_description::HomiePropertyFormat;
+    use homie5::{HomieDataType, device_description::HomiePropertyFormat};
 
     fn base_disabled_config() -> ThermostatNodeConfig {
         ThermostatNodeConfig {
@@ -303,7 +329,8 @@ mod tests {
             valve: false,
             windowopen: false,
             boost_state: false,
-            boost_time: false,
+            boost_end: false,
+            boost_duration: false,
             mode: false,
             modes: vec![ThermostatNodeModes::Cool, ThermostatNodeModes::Heat],
             temp_range: FloatRange {
@@ -341,7 +368,8 @@ mod tests {
             THERMOSTAT_NODE_VALVE_PROP.id,
             THERMOSTAT_NODE_WINDOWOPEN_PROP.id,
             THERMOSTAT_NODE_BOOST_STATE_PROP.id,
-            THERMOSTAT_NODE_BOOST_TIME_PROP.id,
+            THERMOSTAT_NODE_BOOST_END_PROP.id,
+            THERMOSTAT_NODE_BOOST_DURATION_PROP.id,
             THERMOSTAT_NODE_MODE_PROP.id,
         ];
 
@@ -353,8 +381,10 @@ mod tests {
                 config.windowopen = true;
             } else if expected_property_id == &THERMOSTAT_NODE_BOOST_STATE_PROP.id {
                 config.boost_state = true;
-            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_TIME_PROP.id {
-                config.boost_time = true;
+            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_END_PROP.id {
+                config.boost_end = true;
+            } else if expected_property_id == &THERMOSTAT_NODE_BOOST_DURATION_PROP.id {
+                config.boost_duration = true;
             } else if expected_property_id == &THERMOSTAT_NODE_MODE_PROP.id {
                 config.mode = true;
             } else {
@@ -395,6 +425,63 @@ mod tests {
             mode_property.format,
             HomiePropertyFormat::Enum(vec!["cool".to_string(), "heat".to_string()])
         );
+    }
+
+    #[test]
+    fn boost_end_is_a_retained_read_only_datetime() {
+        let node = ThermostatNodeBuilder::new(&ThermostatNodeConfig::default()).build();
+        let boost_end = node
+            .properties
+            .get(&THERMOSTAT_NODE_BOOST_END_PROP.id)
+            .expect("boost-end property must exist by default");
+
+        assert_eq!(boost_end.datatype, HomieDataType::Datetime);
+        assert_eq!(boost_end.format, HomiePropertyFormat::Empty);
+        assert_eq!(boost_end.unit, None);
+        assert!(boost_end.retained);
+        assert!(!boost_end.settable);
+    }
+
+    #[test]
+    fn boost_duration_is_a_retained_read_only_seconds_integer() {
+        let node = ThermostatNodeBuilder::new(&ThermostatNodeConfig::default()).build();
+        let boost_duration = node
+            .properties
+            .get(&THERMOSTAT_NODE_BOOST_DURATION_PROP.id)
+            .expect("boost-duration property must exist by default");
+
+        assert_eq!(boost_duration.datatype, HomieDataType::Integer);
+        assert_eq!(
+            boost_duration.format,
+            HomiePropertyFormat::IntegerRange(IntegerRange {
+                min: Some(0),
+                max: None,
+                step: None,
+            })
+        );
+        assert_eq!(boost_duration.unit.as_deref(), Some(HOMIE_UNIT_SECONDS));
+        assert!(boost_duration.retained);
+        assert!(!boost_duration.settable);
+    }
+
+    #[test]
+    fn boost_state_stays_settable() {
+        let node = ThermostatNodeBuilder::new(&ThermostatNodeConfig::default()).build();
+        let boost_state = node
+            .properties
+            .get(&THERMOSTAT_NODE_BOOST_STATE_PROP.id)
+            .expect("boost-state property must exist by default");
+
+        assert!(boost_state.settable);
+        assert!(boost_state.retained);
+    }
+
+    #[test]
+    fn config_without_boost_fields_defaults_new_flags_to_true() {
+        let config: ThermostatNodeConfig = serde_json::from_str(r#"{"valve": false}"#).unwrap();
+
+        assert!(config.boost_end);
+        assert!(config.boost_duration);
     }
 }
 
@@ -454,12 +541,21 @@ impl ThermostatNodePublisher {
         )
     }
 
-    pub fn boost_time(&self, value: i64) -> homie5::client::Publish {
+    pub fn boost_end(&self, value: DateTime<Utc>) -> homie5::client::Publish {
         self.client.publish_value(
             self.node.node_id(),
-            &THERMOSTAT_NODE_BOOST_TIME_PROP.id,
+            &THERMOSTAT_NODE_BOOST_END_PROP.id,
+            HomieValue::DateTime(value),
+            THERMOSTAT_NODE_BOOST_END_PROP.retained,
+        )
+    }
+
+    pub fn boost_duration(&self, value: i64) -> homie5::client::Publish {
+        self.client.publish_value(
+            self.node.node_id(),
+            &THERMOSTAT_NODE_BOOST_DURATION_PROP.id,
             value.to_string(),
-            THERMOSTAT_NODE_BOOST_TIME_PROP.retained,
+            THERMOSTAT_NODE_BOOST_DURATION_PROP.retained,
         )
     }
 
