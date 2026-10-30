@@ -31,6 +31,7 @@ pub mod text_node;
 pub mod thermostat_node;
 pub mod tilt_node;
 pub mod timer_node;
+pub mod vacuum_node;
 pub mod valve_node;
 pub mod vibration_node;
 pub mod volume_node;
@@ -72,6 +73,7 @@ use text_node::TextNode;
 use thermostat_node::{ThermostatNode, ThermostatNodeConfig};
 use tilt_node::TiltNode;
 use timer_node::{TimerNode, TimerNodeConfig};
+use vacuum_node::{VacuumNode, VacuumNodeConfig};
 use valve_node::{ValveNode, ValveNodeConfig};
 use vibration_node::{VibrationNode, VibrationNodeConfig};
 use volume_node::{VolumeNode, VolumeNodeConfig};
@@ -139,6 +141,7 @@ pub const SMARTHOME_CAP_TEXT: &str = smarthome_cap!("text");
 pub const SMARTHOME_CAP_ROTARY: &str = smarthome_cap!("rotary");
 pub const SMARTHOME_CAP_GESTURE: &str = smarthome_cap!("gesture");
 pub const SMARTHOME_CAP_SELECTOR: &str = smarthome_cap!("selector");
+pub const SMARTHOME_CAP_VACUUM: &str = smarthome_cap!("vacuum");
 
 // ── Well-known device class constants ───────────────────────────────────────
 //
@@ -170,6 +173,7 @@ pub const DEVICE_CLASS_VIBRATION_SENSOR: &str = smarthome_dc!("vibration-sensor"
 pub const DEVICE_CLASS_TILT_SENSOR: &str = smarthome_dc!("tilt-sensor");
 pub const DEVICE_CLASS_BBQ_THERMOMETER: &str = smarthome_dc!("bbq-thermometer");
 pub const DEVICE_CLASS_CAMERA: &str = smarthome_dc!("camera");
+pub const DEVICE_CLASS_VACUUM: &str = smarthome_dc!("vacuum");
 
 // ── Property specs ──────────────────────────────────────────────────────────
 
@@ -331,6 +335,7 @@ pub enum SmarthomeType {
     Rotary,
     Gesture,
     Selector,
+    Vacuum,
 }
 
 impl SmarthomeType {
@@ -373,6 +378,7 @@ impl SmarthomeType {
             SmarthomeType::Rotary => SMARTHOME_CAP_ROTARY,
             SmarthomeType::Gesture => SMARTHOME_CAP_GESTURE,
             SmarthomeType::Selector => SMARTHOME_CAP_SELECTOR,
+            SmarthomeType::Vacuum => SMARTHOME_CAP_VACUUM,
         }
     }
 
@@ -415,6 +421,7 @@ impl SmarthomeType {
             SMARTHOME_CAP_ROTARY => Some(SmarthomeType::Rotary),
             SMARTHOME_CAP_GESTURE => Some(SmarthomeType::Gesture),
             SMARTHOME_CAP_SELECTOR => Some(SmarthomeType::Selector),
+            SMARTHOME_CAP_VACUUM => Some(SmarthomeType::Vacuum),
             _ => None,
         }
     }
@@ -481,6 +488,7 @@ pub enum SmarthomeProperyConfig {
     Switch(SwitchNodeConfig),
     Thermostat(ThermostatNodeConfig),
     Timer(TimerNodeConfig),
+    Vacuum(VacuumNodeConfig),
     Valve(ValveNodeConfig),
     Vibration(VibrationNodeConfig),
     Volume(VolumeNodeConfig),
@@ -519,6 +527,7 @@ pub enum SmarthomeNode {
     ThermostatNode(ThermostatNode),
     TiltNode(TiltNode),
     TimerNode(TimerNode),
+    VacuumNode(VacuumNode),
     ValveNode(ValveNode),
     VibrationNode(VibrationNode),
     VolumeNode(VolumeNode),
@@ -694,6 +703,10 @@ mod config_serde_default_tests {
         let selector: SelectorNodeConfig =
             serde_json::from_str("{}").expect("selector config must deserialize");
         assert_eq!(selector, SelectorNodeConfig::default());
+
+        let vacuum: VacuumNodeConfig =
+            serde_json::from_str("{}").expect("vacuum config must deserialize");
+        assert_eq!(vacuum, VacuumNodeConfig::default());
     }
 
     #[test]
@@ -763,6 +776,7 @@ mod smarthome_type_serde_tests {
             SmarthomeType::Rotary,
             SmarthomeType::Gesture,
             SmarthomeType::Selector,
+            SmarthomeType::Vacuum,
         ];
 
         for ty in types {
@@ -773,6 +787,19 @@ mod smarthome_type_serde_tests {
                 serde_json::from_str(&json).expect("deserialize smarthome type");
             assert_eq!(parsed, ty);
         }
+    }
+
+    #[test]
+    fn vacuum_type_and_device_class_use_the_v2_namespace() {
+        assert_eq!(
+            serde_json::to_string(&SmarthomeType::Vacuum).unwrap(),
+            r#""hc-smarthome/v2/cap/vacuum""#
+        );
+        assert_eq!(
+            serde_json::from_str::<SmarthomeType>(r#""hc-smarthome/v2/cap/vacuum""#).unwrap(),
+            SmarthomeType::Vacuum
+        );
+        assert_eq!(DEVICE_CLASS_VACUUM, "hc-smarthome/v2/dc/vacuum");
     }
 
     #[test]
