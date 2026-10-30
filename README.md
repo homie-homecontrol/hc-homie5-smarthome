@@ -71,6 +71,7 @@ document are to be interpreted as described in
 | Valve       | `valve`        | `hc-smarthome/v2/cap/valve`        | Actuator       | Binary valve open/close control               |
 | Alarm       | `alarm`        | `hc-smarthome/v2/cap/alarm`        | Actuator       | Siren/alarm on/off, sound, duration           |
 | Garage Door | `garage-door`  | `hc-smarthome/v2/cap/garage-door`  | Actuator       | Garage door action/state control              |
+| Vacuum      | `vacuum`       | `hc-smarthome/v2/cap/vacuum`       | Actuator       | Robot vacuum state, actions, suction, consumables |
 | Climate     | `climate`      | `hc-smarthome/v2/cap/climate`      | Sensor         | Temperature, humidity, pressure sensing       |
 | Motion      | `motion`       | `hc-smarthome/v2/cap/motion`       | Sensor         | Binary motion detection                       |
 | Illuminance | `illuminance`  | `hc-smarthome/v2/cap/illuminance`  | Sensor         | Ambient light level (lux)                     |
@@ -130,6 +131,7 @@ document are to be interpreted as described in
 | Tilt Sensor    | `hc-smarthome/v2/dc/tilt-sensor`    | `tilt`       | --                                     | Tilt sensor                      |
 | Camera         | `hc-smarthome/v2/dc/camera`         | `camera`     | --                                     | IP camera                        |
 | BBQ Thermometer | `hc-smarthome/v2/dc/bbq-thermometer` | `bbq-probe` (1+) | --                                | BBQ/food thermometer             |
+| Vacuum         | `hc-smarthome/v2/dc/vacuum`         | `vacuum`     | `switch`                               | Robot vacuum cleaner             |
 
 Any device class MAY additionally expose `battery` and/or `link` capability
 nodes. These are optional for all device classes and provide device health
@@ -180,6 +182,16 @@ capabilities, the following rules apply:
   when contact data is available.
 - For openers supporting pulse-style `trigger`, after a `stopped` state the
   next `trigger` SHOULD reverse the previous travel direction.
+
+#### Vacuum: Vacuum + Switch Coupling
+
+When a device of class `vacuum` exposes a `switch` capability next to
+`vacuum`, the switch is a simple on/off view of cleaning:
+
+- `switch/state` SHOULD be `true` exactly while `vacuum/state` is `cleaning`.
+- Setting `switch/state` to `true` SHOULD act like `vacuum/action=start`
+  (start, or resume a paused run); setting it to `false` SHOULD act like
+  `vacuum/action=dock`.
 
 #### Mediaplayer / Media Info Coherence
 
@@ -385,6 +397,33 @@ Garage door control with command actions and retained runtime state.
 
 `trigger` is intended for pulse-style openers that toggle behavior based on
 current movement state.
+
+---
+
+#### Vacuum
+
+**ID:** `vacuum` | **Type:** `hc-smarthome/v2/cap/vacuum`
+
+Vendor-neutral robot vacuum control: coarse runtime state, command actions,
+and optionally suction presets, the current error and consumable life.
+Cleaning statistics are not part of the capability; bridges publish them on an
+extension node.
+
+| Property           | ID                  | Datatype | Unit | Format                                               | Settable | Retained | Optional | Description                              |
+| ------------------ | ------------------- | -------- | ---- | ---------------------------------------------------- | -------- | -------- | -------- | ---------------------------------------- |
+| Vacuum state       | `state`             | Enum     | --   | `idle,cleaning,paused,returning,docked,error`        | no       | yes      | no       | Current runtime state                    |
+| Vacuum action      | `action`            | Enum     | --   | Configured subset of `start,pause,stop,dock,spot,locate` | yes  | no       | no       | Command to the robot                     |
+| Suction            | `suction`           | Enum     | --   | Configured presets                                   | yes      | yes      | yes      | Current suction preset                   |
+| Error              | `error`             | String   | --   | --                                                   | no       | yes      | yes      | Current error text; empty when no error  |
+| `<consumable>` life | `<consumable>-life` | Integer  | `%`  | `0:100`                                              | no       | yes      | yes      | Remaining life of one consumable         |
+| Reset consumable   | `reset-consumable`  | Enum     | --   | Configured consumables                               | yes      | no       | yes      | Reset a consumable after replacing it    |
+
+Consumable IDs: `main-brush`, `side-brush`, `filter`, `sensor`, `mop`. Each
+configured consumable gets one `<consumable>-life` property (for example
+`main-brush-life`); `reset-consumable` exists when at least one consumable is
+configured. `start` also resumes a paused run, `dock` returns to the dock,
+`spot` cleans around the current position, and `locate` makes the robot
+announce itself. An overdue consumable reports `0`.
 
 ---
 
@@ -939,6 +978,7 @@ All config structs implement `Default` and `Deserialize` with
 | Vibration   | `VibrationNodeConfig`   | `vibration_strength`                                     |
 | Daylight    | `DaylightNodeConfig`    | `phase`                                                  |
 | Garage Door | `GarageDoorNodeConfig`  | `settable`, action flags, state flags                    |
+| Vacuum      | `VacuumNodeConfig`      | `actions` (default: all six), `suction` (presets, default none), `error` (default `false`), `consumables` (default none) |
 | Air Quality | `AirQualityNodeConfig`  | `co2`, `voc`, `pm25`, `pm10`, `aqi`                     |
 | Button      | `ButtonNodeConfig`      | `actions` (default `press-end`)                          |
 | Gesture     | `GestureNodeConfig`     | `gestures` (default: all gestures)                       |
@@ -959,6 +999,10 @@ Capabilities **without** configuration (no optional properties): `motion`,
 `SelectorNodeBuilder::new` returns a `Result`: it rejects a config whose
 `labels` don't cover every position between `min` and `max`, an empty range,
 and labels that aren't a valid Homie enum (empty or duplicate names).
+
+`VacuumNodeBuilder::new` also returns a `Result`: it rejects an empty
+`actions` list and duplicate or empty entries in `actions`, `suction` and
+`consumables`.
 
 ## Code Examples
 
